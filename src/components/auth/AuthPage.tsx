@@ -9,7 +9,7 @@ const AuthPage: React.FC = () => {
   const [mode, setMode] = useState<AuthMode>('login');
 
   const navigateToAnalysts = () => {
-    window.location.href = '/analysts';
+    window.location.href = '/login/analysts';
   };
 
   const handleToggleMode = () => {

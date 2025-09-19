@@ -89,7 +89,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     getSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       try {
         if (session?.user) {
           setUser(session.user);
@@ -136,31 +136,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     return () => subscription.unsubscribe();
   }, []);
 
-  const fetchAnalystProfile = async (userId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('analysts')
-        .select('*')
-        .eq('id', userId)
-        .maybeSingle();
 
-      if (error) {
-        console.error('Error fetching analyst profile:', error);
-        setLoading(false);
-        return;
-      }
-
-      if (data) {
-        setAnalyst(data);
-      } else {
-        console.error('No analyst profile found for user:', userId);
-      }
-    } catch (err) {
-      console.error('Error fetching analyst profile:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -249,8 +225,10 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
   const signOut = async () => {
     await supabase.auth.signOut();
-    setAnalyst(null);
+    setProfile(null);
     setUser(null);
+    // Redirecionar para landing page após logout
+    window.location.href = '/';
   };
 
   const value = {

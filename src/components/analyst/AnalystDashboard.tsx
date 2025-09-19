@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Target, Users, MessageCircle, Search, Bell, LogOut, Package } from 'lucide-react';
+import { LayoutDashboard, Target, Users, MessageCircle, Bell, Package } from 'lucide-react';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRouter } from '../../hooks/useRouter';
 import AnalystGlobalSearch from './AnalystGlobalSearch';
@@ -18,7 +18,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
 }) => {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
-  const { analyst, signOut } = useAnalystAuth();
+  const { profile, signOut } = useAnalystAuth();
   const { currentPath, navigate } = useRouter();
   
   const menuItems = [
@@ -112,19 +112,19 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
             sidebarExpanded ? 'px-3 py-2' : 'px-2 py-2 justify-center'
           }`}>
             <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-              {analyst?.name?.charAt(0) || analyst?.email?.charAt(0).toUpperCase()}
+              {profile?.name?.charAt(0) || profile?.email?.charAt(0).toUpperCase()}
             </div>
             <div className={`ml-3 transition-opacity duration-300 min-w-0 flex-1 ${
               sidebarExpanded ? 'opacity-100' : 'opacity-0'
             }`}>
-              <div className="text-sm font-medium text-gray-900 truncate">{analyst?.name}</div>
-              <div className="text-xs text-gray-500">{analyst?.company}</div>
+              <div className="text-sm font-medium text-gray-900 truncate">{profile?.name}</div>
+              <div className="text-xs text-gray-500">{profile?.company}</div>
             </div>
             
             {/* Tooltip for collapsed state */}
             {!sidebarExpanded && (
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
-                {analyst?.name}
+                {profile?.name}
               </div>
             )}
           </div>
@@ -148,11 +148,11 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
                 className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
-                  {analyst?.name?.charAt(0) || analyst?.email?.charAt(0).toUpperCase()}
+                  {profile?.name?.charAt(0) || profile?.email?.charAt(0).toUpperCase()}
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-medium text-gray-900">{analyst?.name}</div>
-                  <div className="text-xs text-gray-500">{analyst?.company}</div>
+                  <div className="text-sm font-medium text-gray-900">{profile?.name}</div>
+                  <div className="text-xs text-gray-500">{profile?.company}</div>
                 </div>
               </button>
 

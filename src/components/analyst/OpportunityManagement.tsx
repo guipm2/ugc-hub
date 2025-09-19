@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Filter, Edit, Trash2, Eye, Users, Target, UserCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
@@ -30,20 +30,16 @@ const OpportunityManagement: React.FC = () => {
     opportunityTitle: string;
   } | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
-  const { analyst } = useAnalystAuth();
+  const { profile } = useAnalystAuth();
 
-  useEffect(() => {
-    fetchOpportunities();
-  }, [analyst]);
-
-  const fetchOpportunities = async () => {
-    if (!analyst) return;
+  const fetchOpportunities = useCallback(async () => {
+    if (!profile) return;
 
     try {
       const { data, error } = await supabase
         .from('opportunities')
         .select('*')
-        .eq('analyst_id', analyst.id)
+        .eq('analyst_id', profile.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -56,19 +52,23 @@ const OpportunityManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [profile]);
+
+  useEffect(() => {
+    fetchOpportunities();
+  }, [fetchOpportunities]);
 
   const handleCreateOpportunity = async (opportunityData: any) => {
-    if (!analyst) return;
+    if (!profile) return;
 
     try {
       const { data, error } = await supabase
         .from('opportunities')
         .insert({
           ...opportunityData,
-          analyst_id: analyst.id,
-          company: analyst.company,
-          created_by: analyst.id
+          analyst_id: profile.id,
+          company: profile.company,
+          created_by: profile.id
         })
         .select()
         .single();

@@ -6,7 +6,7 @@ const AnalystAuthPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
 
   const navigateToCreators = () => {
-    window.location.href = '/creators';
+    window.location.href = '/login/creators';
   };
 
   const [formData, setFormData] = useState({
@@ -51,7 +51,7 @@ const AnalystAuthPage: React.FC = () => {
           setSuccess(true);
         }
       }
-    } catch (err) {
+    } catch {
       setError('Erro inesperado. Tente novamente.');
     } finally {
       setLoading(false);

@@ -143,11 +143,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     termsVersion?: string;
   }) => {
     try {
-      // Check if email already exists in analysts table
+      // Check if email already exists as analyst in profiles table
       const { data: analystExists } = await supabase
-        .from('analysts')
+        .from('profiles')
         .select('email')
         .eq('email', email)
+        .eq('role', 'analyst')
         .maybeSingle();
 
       if (analystExists) {
@@ -204,11 +205,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signIn = async (email: string, password: string) => {
     try {
-      // First check if this email exists in analysts table
+      // First check if this email exists as analyst in profiles table
       const { data: analystExists } = await supabase
-        .from('analysts')
+        .from('profiles')
         .select('email')
         .eq('email', email)
+        .eq('role', 'analyst')
         .maybeSingle();
 
       if (analystExists) {
@@ -279,6 +281,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
+    if (!error) {
+      // Redirecionar para landing page após logout
+      window.location.href = '/';
+    }
     return { error };
   };
 

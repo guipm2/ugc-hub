@@ -37,6 +37,7 @@ const route = currentPath.replace('/analysts', '');
     case '/messages':
       return <AnalystMessages selectedConversationId={selectedConversationId} onBackToList={onBackToList} />;
     case '/settings':
+    case '/profile':
       return <AnalystAccountSettings />;
     default:
       return <AnalystOverview />;

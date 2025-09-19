@@ -1,20 +1,21 @@
-import React, { useState, useEffect } from 'react';
-import { LayoutDashboard, Target, MessageCircle, GraduationCap, User, HelpCircle, Search, Bell, Filter, Lock, Folder } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { LayoutDashboard, Target, MessageCircle, GraduationCap, User, HelpCircle, Lock, Folder } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AnalystAuthProvider, useAnalystAuth } from './contexts/AnalystAuthContext';
 import { useRouter } from './hooks/useRouter';
 import { supabase } from './lib/supabase';
 import CreatorRouter from './components/creator/CreatorRouter';
-import AnalystRouter from './components/analyst/AnalystRouter';
 import GlobalSearch from './components/GlobalSearch';
 import NotificationDropdown from './components/NotificationDropdown';
-import AnalystNotificationDropdown from './components/analyst/NotificationDropdown';
 import AuthPage from './components/auth/AuthPage';
+import CreatorLoginPage from './components/auth/CreatorLoginPage';
+import AnalystLoginPage from './components/auth/AnalystLoginPage';
 import AnalystAuthPage from './components/analyst/AnalystAuthPage';
 import AnalystDashboard from './components/analyst/AnalystDashboard';
+import LandingPage from './components/LandingPage';
 
 function AnalystApp() {
-  const { profile, loading } = useAnalystAuth();
+  const { profile } = useAnalystAuth();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const { navigate } = useRouter();
 
@@ -85,7 +86,7 @@ function CreatorApp() {
 
   // Redirect to /creators/opportunities if on root creators path
   useEffect(() => {
-    if (currentPath === '/creators' || currentPath === '/') {
+    if (currentPath === '/creators') {
       navigate('/creators/opportunities');
     }
   }, [currentPath, navigate]);
@@ -308,7 +309,31 @@ function CreatorApp() {
 function App() {
   const { currentPath, navigate } = useRouter();
 
-  // Route to appropriate app based on URL
+  console.log('Current path:', currentPath); // Debug log
+
+  // Handle login routes first (more specific)
+  if (currentPath === '/login/creators') {
+    return (
+      <AuthProvider>
+        <CreatorLoginPage />
+      </AuthProvider>
+    );
+  }
+
+  if (currentPath === '/login/analysts') {
+    return (
+      <AnalystAuthProvider>
+        <AnalystLoginPage />
+      </AnalystAuthProvider>
+    );
+  }
+
+  // Handle root route
+  if (currentPath === '/') {
+    return <LandingPage />;
+  }
+
+  // Handle analyst routes
   if (currentPath.startsWith('/analysts')) {
     return (
       <AnalystAuthProvider>
@@ -317,18 +342,18 @@ function App() {
     );
   }
 
-  // Redirect root to creators by default (only if not on analysts path)
-  if (currentPath === '/') {
-    navigate('/creators/opportunities');
-    return null;
+  // Handle creator routes
+  if (currentPath.startsWith('/creators')) {
+    return (
+      <AuthProvider>
+        <CreatorApp />
+      </AuthProvider>
+    );
   }
 
-  // Default to creators app
-  return (
-    <AuthProvider>
-      <CreatorApp />
-    </AuthProvider>
-  );
+  // Default fallback to landing page for any unmatched route
+  console.log('Fallback to landing page for path:', currentPath);
+  return <LandingPage />;
 }
 
 export default App;
