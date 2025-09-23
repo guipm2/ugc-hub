@@ -38,27 +38,46 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let mounted = true;
+
     // Check for existing session
     const getSession = async () => {
-      console.log('🔍 Checking session...');
       try {
-        const { data: { session } } = await supabase.auth.getSession();
-        console.log('📊 Session found:', !!session?.user);
+        const { data: { session }, error: sessionError } = await supabase.auth.getSession();
         
+        if (sessionError) {
+          console.error('Session error:', sessionError);
+          if (mounted) {
+            setProfile(null);
+            setUser(null);
+            setLoading(false);
+          }
+          return;
+        }
+
         if (session?.user) {
-          setUser(session.user);
+          if (mounted) {
+            setUser(session.user);
+          }
+          
           // Busca perfil na tabela profiles
-          let { data: userProfile } = await supabase
+          const { data: userProfile, error: profileError } = await supabase
             .from('profiles')
             .select('*')
             .eq('id', session.user.id)
             .maybeSingle();
 
-          console.log('👤 Profile found:', !!userProfile);
+          if (profileError) {
+            console.error('Profile fetch error:', profileError);
+            if (mounted) {
+              setProfile(null);
+              setLoading(false);
+            }
+            return;
+          }
 
           // Se não existe perfil, cria automaticamente
           if (!userProfile) {
-            console.log('🆕 Creating new profile...');
             const { error: profileError } = await supabase
               .from('profiles')
               .insert({
@@ -71,6 +90,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
                 terms_accepted_at: new Date().toISOString(),
                 terms_version: '1.0',
               });
+              
             if (!profileError) {
               await new Promise(res => setTimeout(res, 300));
               const { data: newProfile } = await supabase
@@ -78,29 +98,112 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
                 .select('*')
                 .eq('id', session.user.id)
                 .maybeSingle();
-              userProfile = newProfile;
-              console.log('✅ Profile created');
+              if (mounted) {
+                setProfile(newProfile ?? null);
+              }
             } else {
-              console.error('❌ Profile creation failed:', profileError);
+              console.error('Profile creation error:', profileError);
+              if (mounted) {
+                setProfile(null);
+              }
+            }
+          } else {
+            if (mounted) {
+              setProfile(userProfile);
             }
           }
-          setProfile(userProfile ?? null);
         } else {
+          if (mounted) {
+            setProfile(null);
+            setUser(null);
+          }
+        }
+      } catch (error) {
+        console.error('Error getting session:', error);
+        if (mounted) {
           setProfile(null);
           setUser(null);
         }
+      }
+      
+      if (mounted) {
+        setLoading(false);
+      }
+    };
+
+    getSession();
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('Auth state change:', event, session?.user?.id);
+      
+      if (!mounted) return;
+
+      try {
+        if (session?.user) {
+          setUser(session.user);
+          
+          const { data: userProfile, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+
+          if (profileError) {
+            console.error('Profile fetch error on auth change:', profileError);
+            setProfile(null);
+            return;
+          }
+
+          if (!userProfile) {
+            const { error: profileError } = await supabase
+              .from('profiles')
+              .insert({
+                id: session.user.id,
+                email: session.user.email || '',
+                name: session.user.user_metadata?.name || '',
+                company: session.user.user_metadata?.company || '',
+                role: 'analyst',
+                terms_accepted: true,
+                terms_accepted_at: new Date().toISOString(),
+                terms_version: '1.0',
+              });
+              
+            if (!profileError) {
+              await new Promise(res => setTimeout(res, 300));
+              const { data: newProfile } = await supabase
+                .from('profiles')
+                .select('*')
+                .eq('id', session.user.id)
+                .maybeSingle();
+              setProfile(newProfile ?? null);
+            } else {
+              console.error('Profile creation error on auth change:', profileError);
+              setProfile(null);
+            }
+          } else {
+            setProfile(userProfile);
+          }
+        } else {
+          setUser(null);
+          setProfile(null);
+        }
       } catch (error) {
-        console.error('💥 Error getting session:', error);
+        console.error('Error in auth state change:', error);
         setProfile(null);
         setUser(null);
       }
       
-      console.log('✅ Setting loading to false');
       setLoading(false);
-    };
+    });
 
-    getSession();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
+
+
 
   const signIn = async (email: string, password: string) => {
     try {
@@ -196,7 +299,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const value = {
-    profile,
+  profile,
     user,
     loading,
     signIn,

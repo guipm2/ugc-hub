@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Filter, Package, Truck, FileText, Video, Edit, CheckCircle, Clock, Plus, Save, X, Eye, Grid3X3, List, MoreVertical, ChevronDown, ChevronRight, Users, UserCheck, User, MapPin, ExternalLink, Globe, Calendar, Mail, Phone } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Search, Package, Truck, FileText, Video, Edit, CheckCircle, Clock, Plus, Save, X, Eye, Grid3X3, List, MoreVertical, ChevronDown, ChevronRight, Users, UserCheck, User, MapPin, ExternalLink, Globe, Calendar, Mail, Phone } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 
@@ -60,7 +60,7 @@ interface CreatorStageUpdate {
 interface StageConfig {
   key: string;
   label: string;
-  icon: React.ComponentType<any>;
+  icon: React.ComponentType<{ className?: string; [key: string]: unknown }>;
   color: string;
   bgColor: string;
   description: string;
@@ -82,8 +82,19 @@ const OpportunityStagesManagement: React.FC = () => {
   const [expandedOpportunities, setExpandedOpportunities] = useState<Set<string>>(new Set());
   const [opportunitiesWithCreators, setOpportunitiesWithCreators] = useState<OpportunityWithCreators[]>([]);
   const [showCreatorTrackingModal, setShowCreatorTrackingModal] = useState<CreatorStageUpdate | null>(null);
-  const [selectedCreatorProfile, setSelectedCreatorProfile] = useState<any>(null);
-  const { analyst } = useAnalystAuth();
+  const [selectedCreatorProfile, setSelectedCreatorProfile] = useState<{
+    name: string;
+    email: string;
+    bio?: string;
+    location?: string;
+    niche?: string;
+    followers?: string;
+    website?: string;
+    phone?: string;
+    avatar_url?: string;
+    created_at: string;
+  } | null>(null);
+  const { user: analyst } = useAnalystAuth();
 
   const stageConfigs: StageConfig[] = [
     {
@@ -152,15 +163,8 @@ const OpportunityStagesManagement: React.FC = () => {
     }
   ];
 
-  useEffect(() => {
-    if (analyst) {
-      fetchStages();
-      fetchOpportunitiesWithCreators();
-    }
-  }, [analyst]);
-
-  const fetchStages = async () => {
-    if (!analyst) return;
+  const fetchStages = useCallback(async () => {
+    if (!analyst?.id) return;
 
     try {
       const { data, error } = await supabase
@@ -191,10 +195,10 @@ const OpportunityStagesManagement: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [analyst?.id]);
 
-  const fetchOpportunitiesWithCreators = async () => {
-    if (!analyst) return;
+  const fetchOpportunitiesWithCreators = useCallback(async () => {
+    if (!analyst?.id) return;
 
     try {
       // Buscar oportunidades com candidaturas aprovadas
@@ -276,13 +280,20 @@ const OpportunityStagesManagement: React.FC = () => {
     } catch (err) {
       console.error('Erro ao buscar oportunidades com criadores:', err);
     }
-  };
+  }, [analyst?.id]);
+
+  useEffect(() => {
+    if (analyst?.id) {
+      fetchStages();
+      fetchOpportunitiesWithCreators();
+    }
+  }, [analyst?.id, fetchStages, fetchOpportunitiesWithCreators]);
 
   const updateStage = async (stageId: string, newStage: string, trackingCode?: string, notes?: string) => {
     setUpdating(stageId);
 
     try {
-      const updateData: any = {
+      const updateData: { [key: string]: string | null } = {
         stage: newStage,
         updated_at: new Date().toISOString()
       };
@@ -1340,6 +1351,7 @@ const OpportunityStagesManagement: React.FC = () => {
                 {selectedCreatorProfile.phone && (
                   <button
                     onClick={() => {
+                      if (!selectedCreatorProfile.phone) return;
                       // Limpar o número de telefone (remover caracteres não numéricos)
                       const cleanPhone = selectedCreatorProfile.phone.replace(/\D/g, '');
                       
@@ -1347,7 +1359,7 @@ const OpportunityStagesManagement: React.FC = () => {
                       const phoneWithCountryCode = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
                       
                       // Mensagem personalizada
-                      const message = `Olá ${selectedCreatorProfile.name || selectedCreatorProfile.email}! Sou ${analyst?.name} da ${analyst?.company}. Gostaria de conversar sobre o projeto.`;
+                      const message = `Olá ${selectedCreatorProfile.name || selectedCreatorProfile.email}! Sou ${analyst?.email}. Gostaria de conversar sobre o projeto.`;
                       
                       // Criar URL do WhatsApp
                       const whatsappUrl = `https://wa.me/${phoneWithCountryCode}?text=${encodeURIComponent(message)}`;

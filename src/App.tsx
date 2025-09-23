@@ -15,7 +15,7 @@ import AnalystDashboard from './components/analyst/AnalystDashboard';
 import LandingPage from './components/LandingPage';
 
 function AnalystApp() {
-  const { profile } = useAnalystAuth();
+  const { profile, loading } = useAnalystAuth();
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const { navigate } = useRouter();
 
@@ -28,8 +28,22 @@ function AnalystApp() {
     setSelectedConversationId(null);
   };
 
-  // Remove tela de loading. Usuário verá login ou dashboard diretamente.
+  // Se ainda está carregando, mostra loading
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl mb-4 mx-auto">
+            UGC
+          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
 
+  // Se não tem perfil, mostra tela de login
   if (!profile) {
     return <AnalystAuthPage />;
   }
@@ -307,7 +321,7 @@ function CreatorApp() {
 }
 
 function App() {
-  const { currentPath, navigate } = useRouter();
+  const { currentPath } = useRouter();
 
   console.log('Current path:', currentPath); // Debug log
 

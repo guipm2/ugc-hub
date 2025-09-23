@@ -16,7 +16,7 @@ const LandingPage: React.FC = () => {
     {
       icon: Users,
       title: 'Conexão Direta',
-      description: 'Conecte-se diretamente com marcas e empresas sem intermediários',
+      description: 'Conecte-se diretamente com oportunidades da empresa sem intermediários',
       color: 'text-purple-600',
       bg: 'bg-purple-100'
     },
@@ -44,7 +44,7 @@ const LandingPage: React.FC = () => {
     {
       icon: Star,
       title: 'Qualidade Premium',
-      description: 'Apenas criadores e marcas verificados para garantir excelência',
+      description: 'Apenas criadores e oportunidades verificados para garantir excelência',
       color: 'text-yellow-600',
       bg: 'bg-yellow-100'
     }
@@ -52,7 +52,7 @@ const LandingPage: React.FC = () => {
 
   const stats = [
     { number: '500+', label: 'Criadores Ativos' },
-    { number: '200+', label: 'Marcas Parceiras' },
+    { number: '200+', label: 'Oportunidades Ativas' },
     { number: '1000+', label: 'Campanhas Realizadas' },
     { number: '98%', label: 'Satisfação' }
   ];
@@ -96,7 +96,7 @@ const LandingPage: React.FC = () => {
                 onClick={() => navigate('/login/analysts')}
                 className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-2 rounded-lg font-medium hover:from-blue-700 hover:to-purple-700 transition-all duration-200"
               >
-                Sou Empresa
+                Sou Analista
               </button>
             </div>
           </div>
@@ -110,11 +110,11 @@ const LandingPage: React.FC = () => {
             <h1 className="text-4xl md:text-6xl font-bold text-gray-900 mb-6">
               Conecte <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-purple-600">Criadores</span>
               <br />
-              com <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Marcas</span>
+              com <span className="text-transparent bg-clip-text bg-gradient-to-r from-purple-600 to-blue-600">Oportunidades</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 max-w-3xl mx-auto">
-              A plataforma definitiva para User Generated Content. Criadores encontram oportunidades incríveis, 
-              marcas descobrem talentos autênticos. Tudo em um só lugar.
+              A plataforma definitiva para User Generated Content. Criadores freelancers encontram oportunidades incríveis, 
+              analistas descobrem talentos autênticos. Tudo em um só lugar.
             </p>
             
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
@@ -129,7 +129,7 @@ const LandingPage: React.FC = () => {
                 onClick={() => navigate('/login/analysts')}
                 className="border-2 border-gray-300 text-gray-700 px-8 py-4 rounded-xl font-semibold text-lg hover:border-gray-400 hover:bg-gray-50 transition-all duration-200 flex items-center gap-2"
               >
-                Encontrar Criadores
+                Acesso de Analista
                 <ChevronRight className="w-5 h-5" />
               </button>
             </div>
@@ -163,7 +163,7 @@ const LandingPage: React.FC = () => {
               Por que escolher o UGC Hub?
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Uma plataforma completa que transforma a forma como criadores e marcas colaboram
+              Uma plataforma completa que transforma a forma como criadores e analistas colaboram
             </p>
           </div>
 
@@ -246,10 +246,10 @@ const LandingPage: React.FC = () => {
               </div>
             </div>
 
-            {/* Para Empresas */}
+            {/* Para Analistas */}
             <div>
               <h3 className="text-2xl font-bold text-purple-600 mb-8 text-center">
-                Para Empresas
+                Para Analistas
               </h3>
               <div className="space-y-6">
                 <div className="flex items-start gap-4">
@@ -257,7 +257,7 @@ const LandingPage: React.FC = () => {
                     1
                   </div>
                   <div>
-                    <h4 className="font-semibold text-gray-900 mb-1">Defina sua campanha</h4>
+                    <h4 className="font-semibold text-gray-900 mb-1">Defina oportunidades</h4>
                     <p className="text-gray-600">Crie briefings claros com objetivos e orçamento</p>
                   </div>
                 </div>
@@ -276,7 +276,7 @@ const LandingPage: React.FC = () => {
                   </div>
                   <div>
                     <h4 className="font-semibold text-gray-900 mb-1">Selecione talentos</h4>
-                    <p className="text-gray-600">Escolha os criadores ideais para sua marca</p>
+                    <p className="text-gray-600">Escolha os criadores ideais para a empresa</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-4">
@@ -301,7 +301,7 @@ const LandingPage: React.FC = () => {
             Pronto para começar?
           </h2>
           <p className="text-xl text-blue-100 mb-8">
-            Junte-se a milhares de criadores e marcas que já transformam ideias em resultados
+            Junte-se a milhares de criadores e analistas que já transformam ideias em resultados
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
@@ -314,7 +314,7 @@ const LandingPage: React.FC = () => {
               onClick={() => navigate('/login/analysts')}
               className="border-2 border-white text-white px-8 py-4 rounded-xl font-semibold text-lg hover:bg-white hover:text-blue-600 transition-colors"
             >
-              Cadastrar como Empresa
+              Cadastrar como Analista
             </button>
           </div>
         </div>
@@ -332,7 +332,7 @@ const LandingPage: React.FC = () => {
                 <span className="ml-3 text-lg font-bold">UGC Hub</span>
               </div>
               <p className="text-gray-400 mb-4 max-w-md">
-                A plataforma que conecta criadores de conteúdo autênticos com marcas visionárias.
+                A plataforma que conecta criadores de conteúdo autênticos com oportunidades da empresa.
               </p>
             </div>
             

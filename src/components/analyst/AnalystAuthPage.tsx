@@ -41,6 +41,9 @@ const AnalystAuthPage: React.FC = () => {
         result = await signIn(formData.email, formData.password);
         if (result.error) {
           setError(result.error);
+        } else {
+          // Login bem-sucedido - o contexto se encarrega de atualizar o estado
+          // O App.tsx automaticamente renderizará o dashboard
         }
       } else {
         // Unifica cadastro igual ao creator, mas passando role e company

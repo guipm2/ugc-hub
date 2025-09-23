@@ -74,12 +74,12 @@ const AnalystLoginPage: React.FC = () => {
               <Building className="w-8 h-8 text-white" />
             </div>
             <h1 className="text-2xl font-bold text-gray-900">
-              {isLogin ? 'Entrar como Empresa' : 'Cadastrar Empresa'}
+              {isLogin ? 'Entrar como Analista' : 'Cadastrar Analista'}
             </h1>
             <p className="text-gray-600 mt-2">
               {isLogin 
-                ? 'Acesse sua conta e encontre criadores talentosos' 
-                : 'Cadastre sua empresa e conecte-se com criadores'
+                ? 'Acesse sua conta e gerencie oportunidades' 
+                : 'Cadastre-se como analista da empresa'
               }
             </p>
           </div>
@@ -134,7 +134,7 @@ const AnalystLoginPage: React.FC = () => {
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email corporativo
+                Email da empresa
               </label>
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -143,7 +143,7 @@ const AnalystLoginPage: React.FC = () => {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                  placeholder="contato@empresa.com"
+                  placeholder="analista@empresa.com"
                   required
                 />
               </div>

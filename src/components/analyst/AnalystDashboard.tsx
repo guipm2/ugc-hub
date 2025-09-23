@@ -18,6 +18,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
 }) => {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showSidebarUserDropdown, setShowSidebarUserDropdown] = useState(false);
   const { profile, signOut } = useAnalystAuth();
   const { currentPath, navigate } = useRouter();
   
@@ -108,24 +109,71 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
           onMouseEnter={() => setSidebarExpanded(true)}
           onMouseLeave={() => setSidebarExpanded(false)}
         >
-          <div className={`flex items-center rounded-lg hover:bg-gray-50 cursor-pointer transition-all duration-300 group relative ${
-            sidebarExpanded ? 'px-3 py-2' : 'px-2 py-2 justify-center'
-          }`}>
-            <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-              {profile?.name?.charAt(0) || profile?.email?.charAt(0).toUpperCase()}
-            </div>
-            <div className={`ml-3 transition-opacity duration-300 min-w-0 flex-1 ${
-              sidebarExpanded ? 'opacity-100' : 'opacity-0'
-            }`}>
-              <div className="text-sm font-medium text-gray-900 truncate">{profile?.name}</div>
-              <div className="text-xs text-gray-500">{profile?.company}</div>
-            </div>
+          <div className="relative">
+            <button
+              onClick={() => setShowSidebarUserDropdown(!showSidebarUserDropdown)}
+              className={`w-full flex items-center rounded-lg hover:bg-gray-50 cursor-pointer transition-all duration-300 group ${
+                sidebarExpanded ? 'px-3 py-2' : 'px-2 py-2 justify-center'
+              }`}
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                {profile?.name?.charAt(0) || profile?.email?.charAt(0).toUpperCase()}
+              </div>
+              <div className={`ml-3 transition-opacity duration-300 min-w-0 flex-1 ${
+                sidebarExpanded ? 'opacity-100' : 'opacity-0'
+              }`}>
+                <div className="text-sm font-medium text-gray-900 truncate">{profile?.name}</div>
+                <div className="text-xs text-gray-500">{profile?.company}</div>
+              </div>
+            </button>
             
             {/* Tooltip for collapsed state */}
             {!sidebarExpanded && (
               <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                 {profile?.name}
               </div>
+            )}
+
+            {/* Sidebar User Dropdown */}
+            {showSidebarUserDropdown && sidebarExpanded && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowSidebarUserDropdown(false)}
+                />
+                <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        setShowSidebarUserDropdown(false);
+                        navigate('/analysts/profile');
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      Meu Perfil
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/analysts/settings');
+                        setShowSidebarUserDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      Configurações da Conta
+                    </button>
+                    <hr className="my-1" />
+                    <button
+                      onClick={() => {
+                        setShowSidebarUserDropdown(false);
+                        signOut();
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         </div>

@@ -27,7 +27,7 @@ const CreatorLoginPage: React.FC = () => {
         // Login
         const { error } = await signIn(email, password);
         if (error) {
-          setError(error.message);
+          setError(error.message || 'Erro ao fazer login');
         } else {
           navigate('/creators/opportunities');
         }
@@ -46,7 +46,7 @@ const CreatorLoginPage: React.FC = () => {
         });
 
         if (error) {
-          setError(error.message);
+          setError(error.message || 'Erro ao criar conta');
         } else {
           navigate('/creators/opportunities');
         }

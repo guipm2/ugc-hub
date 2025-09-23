@@ -4,6 +4,8 @@ import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import CreateOpportunityModal from './CreateOpportunityModal';
 import ApplicationsModal from './ApplicationsModal';
+import ViewOpportunityModal from './ViewOpportunityModal';
+import EditOpportunityModal from './EditOpportunityModal';
 
 interface Opportunity {
   id: string;
@@ -29,6 +31,9 @@ const OpportunityManagement: React.FC = () => {
     opportunityId: string;
     opportunityTitle: string;
   } | null>(null);
+  const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
+  const [showViewModal, setShowViewModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const { profile } = useAnalystAuth();
 
@@ -39,7 +44,7 @@ const OpportunityManagement: React.FC = () => {
       const { data, error } = await supabase
         .from('opportunities')
         .select('*')
-        .eq('analyst_id', profile.id)
+        .eq('created_by', profile.id)
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -58,7 +63,7 @@ const OpportunityManagement: React.FC = () => {
     fetchOpportunities();
   }, [fetchOpportunities]);
 
-  const handleCreateOpportunity = async (opportunityData: any) => {
+  const handleCreateOpportunity = async (opportunityData: Record<string, unknown>) => {
     if (!profile) return;
 
     try {
@@ -66,7 +71,8 @@ const OpportunityManagement: React.FC = () => {
         .from('opportunities')
         .insert({
           ...opportunityData,
-          analyst_id: profile.id,
+          // Não vamos usar analyst_id por agora, apenas created_by
+          // analyst_id: profile.id,
           company: profile.company,
           created_by: profile.id
         })
@@ -107,6 +113,16 @@ const OpportunityManagement: React.FC = () => {
       console.error('Erro ao excluir oportunidade:', err);
       alert('Erro ao excluir oportunidade');
     }
+  };
+
+  const handleViewOpportunity = (opportunity: Opportunity) => {
+    setSelectedOpportunity(opportunity);
+    setShowViewModal(true);
+  };
+
+  const handleEditOpportunity = (opportunity: Opportunity) => {
+    setSelectedOpportunity(opportunity);
+    setShowEditModal(true);
   };
 
   const filteredOpportunities = opportunities.filter(opportunity =>
@@ -236,11 +252,17 @@ const OpportunityManagement: React.FC = () => {
                   <UserCheck className="h-4 w-4" />
                   Candidaturas
                 </button>
-                <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <button 
+                  onClick={() => handleViewOpportunity(opportunity)}
+                  className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
+                >
                   <Eye className="h-4 w-4" />
                   Ver
                 </button>
-                <button className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors">
+                <button 
+                  onClick={() => handleEditOpportunity(opportunity)}
+                  className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
+                >
                   <Edit className="h-4 w-4" />
                   Editar
                 </button>
@@ -295,6 +317,31 @@ const OpportunityManagement: React.FC = () => {
           opportunityId={showApplicationsModal.opportunityId}
           opportunityTitle={showApplicationsModal.opportunityTitle}
           onClose={() => setShowApplicationsModal(null)}
+        />
+      )}
+
+      {/* View Opportunity Modal */}
+      {showViewModal && selectedOpportunity && (
+        <ViewOpportunityModal
+          opportunity={selectedOpportunity}
+          onClose={() => setShowViewModal(false)}
+        />
+      )}
+
+      {/* Edit Opportunity Modal */}
+      {showEditModal && selectedOpportunity && (
+        <EditOpportunityModal
+          opportunity={selectedOpportunity}
+          onClose={() => setShowEditModal(false)}
+          onSubmit={(updatedData: Partial<Opportunity>) => {
+            // Atualizar a oportunidade na lista
+            setOpportunities(opportunities.map(opp => 
+              opp.id === selectedOpportunity.id 
+                ? { ...opp, ...updatedData }
+                : opp
+            ));
+            setShowEditModal(false);
+          }}
         />
       )}
     </div>
