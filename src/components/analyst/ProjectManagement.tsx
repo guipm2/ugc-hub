@@ -74,7 +74,6 @@ const ProjectManagement: React.FC = () => {
           opportunity_id,
           creator_id,
           status,
-          created_at,
           opportunity:opportunities (
             id,
             title,
@@ -148,7 +147,7 @@ const ProjectManagement: React.FC = () => {
           standardDeliverables,
           customDeliverables: [],
           conversation_id: undefined,
-          created_at: app.created_at
+          created_at: new Date().toISOString() // Usar data atual como fallback
         });
       }
 
