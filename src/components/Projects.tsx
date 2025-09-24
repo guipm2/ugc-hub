@@ -451,12 +451,13 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
           </div>
 
           {/* Deliverables Customizados */}
-          {selectedProject.customDeliverables && selectedProject.customDeliverables.length > 0 && (
-            <div>
-              <h4 className="text-md font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                <AlertCircle className="h-4 w-4 text-purple-600" />
-                Entregas Específicas do Analista
-              </h4>
+          <div>
+            <h4 className="text-md font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-purple-600" />
+              Entregas Específicas do Analista
+            </h4>
+            
+            {selectedProject.customDeliverables && selectedProject.customDeliverables.length > 0 ? (
               <div className="space-y-4">
                 {selectedProject.customDeliverables.map((deliverable) => (
                   <div key={deliverable.id} className="border border-purple-200 rounded-lg p-4 bg-purple-50/30">
@@ -520,8 +521,23 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                   </div>
                 ))}
               </div>
-            </div>
-          )}
+            ) : (
+              <div className="border border-purple-200 rounded-lg p-6 bg-purple-50/20 text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <MessageCircle className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-gray-900 mb-1">Nenhuma entrega específica ainda</h5>
+                    <p className="text-sm text-gray-600 max-w-md">
+                      Até o momento, não há entregas específicas criadas pelo analista para este projeto. 
+                      Caso seja necessário, o analista entrará em contato e criará as entregas adicionais.
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Modal de Upload */}
