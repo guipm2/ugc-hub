@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Target, Users, MessageCircle, Bell, Package, Calendar } from 'lucide-react';
+import { LayoutDashboard, Target, Users, MessageCircle, Package, Calendar } from 'lucide-react';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRouter } from '../../hooks/useRouter';
 import AnalystGlobalSearch from './AnalystGlobalSearch';
 import AnalystRouter from './AnalystRouter';
+import AnalystNotificationDropdown from './NotificationDropdown';
 
 interface AnalystDashboardProps {
   onOpenConversation: (conversationId: string) => void;
@@ -187,9 +188,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
           <AnalystGlobalSearch />
           
           <div className="flex items-center space-x-4">
-            <button className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors">
-              <Bell className="h-5 w-5" />
-            </button>
+            <AnalystNotificationDropdown />
             
             <div className="relative">
               <button
