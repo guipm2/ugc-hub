@@ -3,7 +3,6 @@ import { LayoutDashboard, Target, MessageCircle, GraduationCap, User, HelpCircle
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AnalystAuthProvider, useAnalystAuth } from './contexts/AnalystAuthContext';
 import { useRouter } from './hooks/useRouter';
-import { supabase } from './lib/supabase';
 import CreatorRouter from './components/creator/CreatorRouter';
 import GlobalSearch from './components/GlobalSearch';
 import NotificationDropdown from './components/NotificationDropdown';
@@ -63,64 +62,6 @@ function CreatorApp() {
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const { user, loading, signOut, profile } = useAuth();
   const { currentPath, navigate } = useRouter();
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const [roleLoading, setRoleLoading] = useState(true);
-
-  // Check user role and redirect if not creator
-  useEffect(() => {
-    // Usa o estado global profile do contexto
-        if (!user) {
-          setRoleLoading(false);
-          return;
-        }
-
-    // Adiciona logs para depuração
-    console.log('user:', user);
-    console.log('profile:', profile);
-
-        if (profile && profile.role === 'creator') {
-          setUserRole('creator');
-          setRoleLoading(false);
-        } else if (profile && profile.role === 'analyst') {
-          // User is an analyst, sign them out and redirect
-          supabase.auth.signOut();
-          navigate('/creators');
-          setRoleLoading(false);
-          return;
-        } else if (profile === null && user) {
-          // Fallback: perfil não encontrado, força reautenticação
-          setUserRole(null);
-          setRoleLoading(false);
-        } else {
-          // Default to creator role if não encontrou role
-          setUserRole('creator');
-          setRoleLoading(false);
-        }
-  }, [user, profile, navigate]);
-
-  // Redirect to /creators/opportunities if on root creators path
-  useEffect(() => {
-    if (currentPath === '/creators') {
-      navigate('/creators/opportunities');
-    }
-  }, [currentPath, navigate]);
-
-  if (loading || roleLoading) {
-    return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl mb-4 mx-auto">
-            UGC
-          </div>
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-        </div>
-      </div>
-    );
-  }
-
-  if (!user || userRole !== 'creator') {
-    return <AuthPage />;
-  }
 
   const handleOpenConversation = (conversationId: string) => {
     setSelectedConversationId(conversationId);
@@ -130,6 +71,39 @@ function CreatorApp() {
   const handleBackToMessagesList = () => {
     setSelectedConversationId(null);
   };
+
+  // Redirect to /creators/opportunities if on root creators path
+  useEffect(() => {
+    if (currentPath === '/creators') {
+      navigate('/creators/opportunities');
+    }
+  }, [currentPath, navigate]);
+
+  // Se ainda está carregando, mostra loading
+  if (loading) {
+    console.log('⏳ [CREATOR APP] Still loading... user:', !!user, 'profile:', !!profile);
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl mb-4 mx-auto">
+            UGC
+          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  console.log('🔍 [CREATOR APP] Auth check - user:', !!user, 'profile:', profile, 'role:', profile?.role);
+
+  // Se não tem usuário ou perfil, mostra tela de login
+  if (!user || !profile || profile.role !== 'creator') {
+    console.log('❌ [CREATOR APP] Auth failed - redirecting to login');
+    return <AuthPage />;
+  }
+
+  console.log('✅ [CREATOR APP] Auth success - rendering creator interface');
 
   const menuItems = [
     { path: '/creators/dashboard', label: 'Dashboard', icon: LayoutDashboard },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Search, Filter, MapPin, Users, ExternalLink, Grid3X3, List, X, Instagram, Phone, Calendar, Globe, User, MessageCircle, Mail } from 'lucide-react';
+import { Search, Filter, MapPin, Users, ExternalLink, Grid3X3, List, X, Phone, Calendar, Globe, MessageCircle, Mail } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 
@@ -30,7 +30,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
   const [selectedCreator, setSelectedCreator] = useState<Creator | null>(null);
   const [contactingCreator, setContactingCreator] = useState<string | null>(null);
   const [showContactModal, setShowContactModal] = useState<string | null>(null);
-  const { analyst } = useAnalystAuth();
+  const { profile: analyst } = useAnalystAuth();
 
   useEffect(() => {
     fetchCreators();
@@ -41,6 +41,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
+        .eq('role', 'creator')
         .order('created_at', { ascending: false });
 
       if (error) {
@@ -73,7 +74,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
     const phoneWithCountryCode = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
     
     // Mensagem personalizada
-    const message = `Olá ${name}! Sou ${analyst?.name} da ${analyst?.company}. Vi seu perfil na UGC Hub e gostaria de conversar sobre uma possível parceria.`;
+    const message = `Olá ${name}! Sou ${analyst?.email}. Vi seu perfil na UGC Hub e gostaria de conversar sobre uma possível parceria.`;
     
     // Criar URL do WhatsApp
     const whatsappUrl = `https://wa.me/${phoneWithCountryCode}?text=${encodeURIComponent(message)}`;
@@ -82,7 +83,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
     window.open(whatsappUrl, '_blank');
   };
 
-  const handleCreateConversation = async (creatorId: string, creatorName: string) => {
+  const handleCreateConversation = async (creatorId: string) => {
     if (!analyst) return;
     
     setContactingCreator(creatorId);
@@ -570,7 +571,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
                 onClick={() => {
                   const creator = creators.find(c => c.id === showContactModal);
                   if (creator) {
-                    handleCreateConversation(creator.id, creator.name || creator.email);
+                    handleCreateConversation(creator.id);
                   }
                   setShowContactModal(null);
                 }}

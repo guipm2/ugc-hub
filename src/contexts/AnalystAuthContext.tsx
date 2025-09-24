@@ -16,6 +16,7 @@ interface Analyst {
 interface AnalystAuthContextType {
   profile: Analyst | null;
   user: User | null;
+  analyst: Analyst | null; // Dados específicos da tabela analysts
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (email: string, password: string, name: string, company: string) => Promise<{ error: string | null }>;
@@ -35,6 +36,7 @@ export const useAnalystAuth = () => {
 export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profile, setProfile] = useState<Analyst | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [analyst, setAnalyst] = useState<Analyst | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -71,7 +73,25 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
                 terms_accepted_at: new Date().toISOString(),
                 terms_version: '1.0',
               });
+            
             if (!profileError) {
+              // Criar também registro na tabela analysts
+              const { error: analystError } = await supabase
+                .from('analysts')
+                .insert({
+                  id: session.user.id, // Usar o mesmo ID do auth.users
+                  email: session.user.email || '',
+                  name: session.user.user_metadata?.name || '',
+                  company: session.user.user_metadata?.company || '',
+                  role: 'analyst'
+                });
+              
+              if (analystError) {
+                console.error('❌ Analyst record creation failed:', analystError);
+              } else {
+                console.log('✅ Analyst record created');
+              }
+              
               await new Promise(res => setTimeout(res, 300));
               const { data: newProfile } = await supabase
                 .from('profiles')
@@ -84,15 +104,29 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
               console.error('❌ Profile creation failed:', profileError);
             }
           }
+          
           setProfile(userProfile ?? null);
+          
+          // Buscar dados específicos da tabela analysts
+          if (userProfile) {
+            const { data: analystData } = await supabase
+              .from('analysts')
+              .select('*')
+              .eq('id', session.user.id)
+              .maybeSingle();
+            
+            setAnalyst(analystData ?? null);
+          }
         } else {
           setProfile(null);
           setUser(null);
+          setAnalyst(null);
         }
       } catch (error) {
         console.error('💥 Error getting session:', error);
         setProfile(null);
         setUser(null);
+        setAnalyst(null);
       }
       
       console.log('✅ Setting loading to false');
@@ -137,8 +171,16 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
           return { error: 'Acesso negado. Esta área é apenas para analistas.' };
         }
 
+        // Buscar dados específicos da tabela analysts
+        const { data: analystData } = await supabase
+          .from('analysts')
+          .select('*')
+          .eq('id', data.user.id)
+          .maybeSingle();
+
         setUser(data.user);
         setProfile(userProfile);
+        setAnalyst(analystData ?? null);
       }
 
       return { error: null };
@@ -180,6 +222,13 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return { error: 'Erro ao criar conta' };
       }
 
+      // Se o usuário foi criado com sucesso, criar perfil e registro de analyst
+      if (authData.user) {
+        // Aguardar confirmação do usuário por email antes de criar registros
+        // Os registros serão criados automaticamente no getSession() quando o usuário confirmar
+        console.log('✅ User created, waiting for email confirmation to create profile and analyst record');
+      }
+
       setUser(authData.user ?? null);
       return { error: null };
     } catch {
@@ -191,6 +240,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     await supabase.auth.signOut();
     setProfile(null);
     setUser(null);
+    setAnalyst(null);
     // Redirecionar para landing page após logout
     window.location.href = '/';
   };
@@ -198,6 +248,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   const value = {
     profile,
     user,
+    analyst,
     loading,
     signIn,
     signUp,

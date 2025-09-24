@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { router } from '../utils/router';
 
 export const useRouter = () => {
@@ -16,9 +16,9 @@ export const useRouter = () => {
     };
   }, []);
 
-  const navigate = (path: string) => {
+  const navigate = useCallback((path: string) => {
     router.navigate(path);
-  };
+  }, []);
 
   return {
     currentPath,

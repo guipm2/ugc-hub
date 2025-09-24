@@ -3,6 +3,7 @@ import { useRouter } from '../../hooks/useRouter';
 import AnalystOverview from './AnalystOverview';
 import OpportunityManagement from './OpportunityManagement';
 import OpportunityStagesManagement from './OpportunityStagesManagement';
+import DeliverableManagement from './DeliverableManagement';
 import CreatorsList from './CreatorsList';
 import AnalystMessages from './AnalystMessages';
 import AnalystAccountSettings from './AnalystAccountSettings';
@@ -21,8 +22,7 @@ const AnalystRouter: React.FC<AnalystRouterProps> = ({
   const { currentPath } = useRouter();
 
   // Extract the route from the path (remove /analysts prefix)
-  //const route = currentPath.replace('/analysts', '') || '/overview';
-const route = currentPath.replace('/analysts', '');
+  const route = currentPath.replace('/analysts', '');
 
   
   switch (route) {
@@ -32,6 +32,9 @@ const route = currentPath.replace('/analysts', '');
       return <OpportunityManagement />;
     case '/stages':
       return <OpportunityStagesManagement />;
+    case '/deliverables':
+    case '/prazos':
+      return <DeliverableManagement />;
     case '/creators':
       return <CreatorsList onOpenConversation={onOpenConversation} />;
     case '/messages':

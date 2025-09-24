@@ -71,8 +71,8 @@ const OpportunityManagement: React.FC = () => {
         .from('opportunities')
         .insert({
           ...opportunityData,
-          // Não vamos usar analyst_id por agora, apenas created_by
-          // analyst_id: profile.id,
+          // Usar analyst_id para referenciar tabela analysts
+          analyst_id: profile.id,
           company: profile.company,
           created_by: profile.id
         })

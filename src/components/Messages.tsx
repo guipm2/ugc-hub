@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircle, Search, MoreVertical, Send, ArrowLeft } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
@@ -50,11 +50,93 @@ const Messages: React.FC<MessagesProps> = ({ selectedConversationId, onBackToLis
   const { user } = useAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  const fetchConversations = useCallback(async () => {
+    if (!user) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('conversations')
+        .select(`
+          id,
+          opportunity_id,
+          analyst_id,
+          creator_id,
+          last_message_at,
+          created_at,
+          opportunity:opportunities (
+            title,
+            company
+          ),
+          analyst:profiles!analyst_id (
+            name,
+            company
+          )
+        `)
+        .eq('creator_id', user.id)
+        .order('last_message_at', { ascending: false });
+
+      if (error) {
+        console.error('Erro ao buscar conversas:', error);
+      } else {
+        // Fetch last message for each conversation
+        const conversationsWithLastMessage = await Promise.all(
+          (data || []).map(async (conv) => {
+            const { data: lastMessage } = await supabase
+              .from('messages')
+              .select('content, sender_type, created_at')
+              .eq('conversation_id', conv.id)
+              .order('created_at', { ascending: false })
+              .limit(1)
+              .single();
+
+            return {
+              ...conv,
+              opportunity: Array.isArray(conv.opportunity) ? conv.opportunity[0] : conv.opportunity,
+              analyst: Array.isArray(conv.analyst) ? conv.analyst[0] : conv.analyst,
+              lastMessage: lastMessage || undefined
+            };
+          })
+        );
+
+        setConversations(conversationsWithLastMessage);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar conversas:', err);
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  const fetchMessages = useCallback(async (conversationId: string) => {
+    try {
+      const { data, error } = await supabase
+        .from('messages')
+        .select('*')
+        .eq('conversation_id', conversationId)
+        .order('created_at', { ascending: true });
+
+      if (error) {
+        console.error('Erro ao buscar mensagens:', error);
+      } else {
+        setMessages(data || []);
+        
+        // Mark messages as read
+        await supabase
+          .from('messages')
+          .update({ read: true })
+          .eq('conversation_id', conversationId)
+          .neq('sender_id', user?.id);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar mensagens:', err);
+    }
+  }, [user]);
+
   useEffect(() => {
     if (user) {
       fetchConversations();
     }
-  }, [user]);
+  }, [user, fetchConversations]);
 
   // Auto-select conversation if provided
   useEffect(() => {
@@ -92,7 +174,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedConversationId, onBackToLis
         supabase.removeChannel(channel);
       };
     }
-  }, [selectedConversation]);
+  }, [selectedConversation, fetchMessages]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -101,80 +183,6 @@ const Messages: React.FC<MessagesProps> = ({ selectedConversationId, onBackToLis
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-  const fetchConversations = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('conversations')
-        .select(`
-          *,
-          opportunity:opportunities (
-            title,
-            company
-          ),
-          analyst:analysts (
-            name,
-            company
-          )
-        `)
-        .eq('creator_id', user.id)
-        .order('last_message_at', { ascending: false });
-
-      if (error) {
-        console.error('Erro ao buscar conversas:', error);
-      } else {
-        // Fetch last message for each conversation
-        const conversationsWithLastMessage = await Promise.all(
-          (data || []).map(async (conv) => {
-            const { data: lastMessage } = await supabase
-              .from('messages')
-              .select('content, sender_type, created_at')
-              .eq('conversation_id', conv.id)
-              .order('created_at', { ascending: false })
-              .limit(1)
-              .single();
-
-            return {
-              ...conv,
-              lastMessage
-            };
-          })
-        );
-
-        setConversations(conversationsWithLastMessage);
-      }
-    } catch (err) {
-      console.error('Erro ao buscar conversas:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const fetchMessages = async (conversationId: string) => {
-    try {
-      const { data, error } = await supabase
-        .from('messages')
-        .select('*')
-        .eq('conversation_id', conversationId)
-        .order('created_at', { ascending: true });
-
-      if (error) {
-        console.error('Erro ao buscar mensagens:', error);
-      } else {
-        setMessages(data || []);
-        
-        // Mark messages as read
-        await supabase
-          .from('messages')
-          .update({ read: true })
-          .eq('conversation_id', conversationId)
-          .neq('sender_id', user?.id);
-      }
-    } catch (err) {
-      console.error('Erro ao buscar mensagens:', err);
-    }
   };
 
   const sendMessage = async () => {

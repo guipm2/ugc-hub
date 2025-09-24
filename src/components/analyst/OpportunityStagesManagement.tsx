@@ -94,7 +94,7 @@ const OpportunityStagesManagement: React.FC = () => {
     avatar_url?: string;
     created_at: string;
   } | null>(null);
-  const { user: analyst } = useAnalystAuth();
+  const { profile: analyst } = useAnalystAuth();
 
   const stageConfigs: StageConfig[] = [
     {
