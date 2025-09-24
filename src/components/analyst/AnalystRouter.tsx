@@ -4,6 +4,7 @@ import AnalystOverview from './AnalystOverview';
 import OpportunityManagement from './OpportunityManagement';
 import OpportunityStagesManagement from './OpportunityStagesManagement';
 import DeliverableManagement from './DeliverableManagement';
+import ProjectManagement from './ProjectManagement';
 import CreatorsList from './CreatorsList';
 import AnalystMessages from './AnalystMessages';
 import AnalystAccountSettings from './AnalystAccountSettings';
@@ -32,6 +33,8 @@ const AnalystRouter: React.FC<AnalystRouterProps> = ({
       return <OpportunityManagement />;
     case '/stages':
       return <OpportunityStagesManagement />;
+    case '/projects':
+      return <ProjectManagement />;
     case '/deliverables':
     case '/prazos':
       return <DeliverableManagement />;
