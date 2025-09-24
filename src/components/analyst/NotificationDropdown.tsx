@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Bell, X, Check, Clock, Target, Users } from 'lucide-react';
+import { Bell, X, Check, Target, Users, MessageCircle } from 'lucide-react';
 import { useAnalystNotifications } from '../../hooks/useAnalystNotifications';
 
 const AnalystNotificationDropdown: React.FC = () => {
@@ -16,6 +16,8 @@ const AnalystNotificationDropdown: React.FC = () => {
         return <Check className="h-4 w-4 text-green-600" />;
       case 'application_rejected':
         return <X className="h-4 w-4 text-red-600" />;
+      case 'new_message':
+        return <MessageCircle className="h-4 w-4 text-blue-600" />;
       default:
         return <Bell className="h-4 w-4 text-gray-600" />;
     }

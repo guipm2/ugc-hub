@@ -1,13 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAnalystAuth } from '../contexts/AnalystAuthContext';
 
 export interface AnalystNotification {
   id: string;
-  type: 'new_opportunity' | 'new_application' | 'application_approved' | 'application_rejected';
+  type: 'new_opportunity' | 'new_application' | 'application_approved' | 'application_rejected' | 'new_message';
   title: string;
   message: string;
-  data: any;
+  data: {
+    conversation_id?: string;
+    message_id?: string;
+    opportunity_id?: string;
+    opportunity_title?: string;
+    sender_type?: 'analyst' | 'creator';
+    [key: string]: unknown;
+  };
   read: boolean;
   created_at: string;
 }
@@ -18,7 +25,7 @@ export const useAnalystNotifications = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAnalystAuth();
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -39,7 +46,7 @@ export const useAnalystNotifications = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -89,7 +96,7 @@ export const useAnalystNotifications = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [user]);
+  }, [user, fetchNotifications]);
 
   return {
     notifications,

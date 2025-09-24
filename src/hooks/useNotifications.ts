@@ -1,13 +1,20 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
 export interface Notification {
   id: string;
-  type: 'new_opportunity' | 'new_application' | 'application_approved' | 'application_rejected';
+  type: 'new_opportunity' | 'new_application' | 'application_approved' | 'application_rejected' | 'new_message';
   title: string;
   message: string;
-  data: any;
+  data: {
+    conversation_id?: string;
+    message_id?: string;
+    opportunity_id?: string;
+    opportunity_title?: string;
+    sender_type?: 'analyst' | 'creator';
+    [key: string]: unknown;
+  };
   read: boolean;
   created_at: string;
 }
@@ -18,7 +25,7 @@ export const useNotifications = () => {
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -40,7 +47,7 @@ export const useNotifications = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
 
   const markAsRead = async (notificationId: string) => {
     try {
@@ -134,7 +141,7 @@ export const useNotifications = () => {
         supabase.removeChannel(channel);
       };
     }
-  }, [user]);
+  }, [user, fetchNotifications]);
 
   return {
     notifications,

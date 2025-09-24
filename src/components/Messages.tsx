@@ -67,7 +67,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedConversationId, onBackToLis
             title,
             company
           ),
-          analyst:profiles!analyst_id (
+          analyst:analysts!analyst_id (
             name,
             company
           )

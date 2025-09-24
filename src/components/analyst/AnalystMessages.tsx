@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MessageCircle, Search, MoreVertical, Send, ArrowLeft } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
@@ -40,7 +40,7 @@ interface AnalystMessagesProps {
   onBackToList?: () => void;
 }
 
-const AnalystMessages: React.FC<AnalystMessagesProps> = ({ selectedConversationId, onBackToList }) => {
+const AnalystMessages: React.FC<AnalystMessagesProps> = ({ selectedConversationId }) => {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -50,58 +50,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({ selectedConversationI
   const { analyst } = useAnalystAuth();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  useEffect(() => {
-    if (analyst) {
-      fetchConversations();
-    }
-  }, [analyst]);
-
-  // Auto-select conversation if provided
-  useEffect(() => {
-    if (selectedConversationId && conversations.length > 0) {
-      const conversation = conversations.find(c => c.id === selectedConversationId);
-      if (conversation) {
-        setSelectedConversation(conversation);
-      }
-    }
-  }, [selectedConversationId, conversations]);
-  useEffect(() => {
-    if (selectedConversation) {
-      fetchMessages(selectedConversation.id);
-      
-      // Subscribe to new messages
-      const channel = supabase
-        .channel(`messages_${selectedConversation.id}`)
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'messages',
-            filter: `conversation_id=eq.${selectedConversation.id}`
-          },
-          (payload) => {
-            const newMessage = payload.new as Message;
-            setMessages(prev => [...prev, newMessage]);
-          }
-        )
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [selectedConversation]);
-
-  // Scroll to bottom when messages change
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
-  const fetchConversations = async () => {
+  const fetchConversations = useCallback(async () => {
     if (!analyst) return;
 
     try {
@@ -149,9 +98,9 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({ selectedConversationI
     } finally {
       setLoading(false);
     }
-  };
+  }, [analyst]);
 
-  const fetchMessages = async (conversationId: string) => {
+  const fetchMessages = useCallback(async (conversationId: string) => {
     try {
       const { data, error } = await supabase
         .from('messages')
@@ -174,6 +123,59 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({ selectedConversationI
     } catch (err) {
       console.error('Erro ao buscar mensagens:', err);
     }
+  }, [analyst]);
+
+  useEffect(() => {
+    if (analyst) {
+      fetchConversations();
+    }
+  }, [analyst, fetchConversations]);
+
+  // Auto-select conversation if provided
+  useEffect(() => {
+    if (selectedConversationId && conversations.length > 0) {
+      const conversation = conversations.find(c => c.id === selectedConversationId);
+      if (conversation) {
+        setSelectedConversation(conversation);
+      }
+    }
+  }, [selectedConversationId, conversations]);
+
+  useEffect(() => {
+    if (selectedConversation) {
+      fetchMessages(selectedConversation.id);
+      
+      // Subscribe to new messages
+      const channel = supabase
+        .channel(`messages_${selectedConversation.id}`)
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'messages',
+            filter: `conversation_id=eq.${selectedConversation.id}`
+          },
+          (payload) => {
+            const newMessage = payload.new as Message;
+            setMessages(prev => [...prev, newMessage]);
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
+    }
+  }, [selectedConversation, fetchMessages]);
+
+  // Scroll to bottom when messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const sendMessage = async () => {
@@ -231,66 +233,132 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({ selectedConversationI
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Mensagens</h1>
-          <p className="text-gray-600 mt-1">Carregando conversas...</p>
-        </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
-        </div>
+      <div className="flex items-center justify-center h-full">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600"></div>
       </div>
     );
   }
 
-  if (selectedConversation) {
-    return (
-      <div className="space-y-6">
-        {/* Chat Header */}
-        <div className="flex items-center gap-4 sticky top-16 bg-gray-50 z-50 py-4">
-          <button
-            onClick={() => {
-              setSelectedConversation(null);
-              if (onBackToList) {
-                onBackToList();
-              }
-            }}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </button>
-          <div>
-            <h1 className="text-2xl font-semibold text-gray-900">
-              {selectedConversation.creator.name || selectedConversation.creator.email}
-            </h1>
-            <p className="text-gray-600">
-              {selectedConversation.opportunity?.title || 'Conversa Direta'}
-            </p>
+  return (
+    <div className="flex h-full bg-white rounded-lg shadow-sm border border-gray-200">
+      {/* Conversations List */}
+      <div className={`${selectedConversation ? 'hidden md:block' : 'block'} w-full md:w-1/3 border-r border-gray-200`}>
+        <div className="p-4 border-b border-gray-200">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-semibold text-gray-900">Mensagens</h2>
+            <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+              <MoreVertical className="h-5 w-5" />
+            </button>
+          </div>
+          
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Buscar conversas..."
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+            />
           </div>
         </div>
 
-        {/* Chat Container */}
-        <div className="bg-white rounded-xl border border-gray-200 h-[calc(100vh-200px)] flex flex-col">
+        <div className="overflow-y-auto" style={{ height: 'calc(100% - 140px)' }}>
+          {conversations.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-64 text-gray-500">
+              <MessageCircle className="h-12 w-12 mb-4" />
+              <p>Nenhuma conversa encontrada</p>
+            </div>
+          ) : (
+            conversations.map((conversation) => (
+              <div
+                key={conversation.id}
+                onClick={() => setSelectedConversation(conversation)}
+                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                  selectedConversation?.id === conversation.id ? 'bg-purple-50' : ''
+                }`}
+              >
+                <div className="flex items-start space-x-3">
+                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                    <span className="text-purple-600 font-medium text-sm">
+                      {conversation.creator.name?.[0] || 'U'}
+                    </span>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between">
+                      <h3 className="text-sm font-medium text-gray-900 truncate">
+                        {conversation.creator.name || 'Usuário'}
+                      </h3>
+                      {conversation.lastMessage && (
+                        <span className="text-xs text-gray-500">
+                          {formatTime(conversation.lastMessage.created_at)}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-xs text-gray-500 truncate">
+                      {conversation.opportunity?.title || 'Oportunidade'}
+                    </p>
+                    {conversation.lastMessage && (
+                      <p className="text-sm text-gray-600 truncate mt-1">
+                        {conversation.lastMessage.sender_type === 'analyst' ? 'Você: ' : ''}
+                        {conversation.lastMessage.content}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+
+      {/* Messages View */}
+      {selectedConversation ? (
+        <div className="flex-1 flex flex-col">
+          {/* Header */}
+          <div className="p-4 border-b border-gray-200 bg-white">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setSelectedConversation(null)}
+                  className="md:hidden p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <span className="text-purple-600 font-medium text-sm">
+                    {selectedConversation.creator.name?.[0] || 'U'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium text-gray-900">
+                    {selectedConversation.creator.name || 'Usuário'}
+                  </h3>
+                  <p className="text-xs text-gray-500">
+                    {selectedConversation.opportunity?.title || 'Oportunidade'}
+                  </p>
+                </div>
+              </div>
+              <button className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
+                <MoreVertical className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.sender_type === 'analyst' ? 'justify-end' : 'justify-start'}`}
               >
-                <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
-                    message.sender_type === 'analyst'
-                      ? 'bg-purple-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
-                  }`}
-                >
+                <div className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  message.sender_type === 'analyst'
+                    ? 'bg-purple-600 text-white'
+                    : 'bg-gray-200 text-gray-900'
+                }`}>
                   <p className="text-sm">{message.content}</p>
-                  <p
-                    className={`text-xs mt-1 ${
-                      message.sender_type === 'analyst' ? 'text-purple-100' : 'text-gray-500'
-                    }`}
-                  >
+                  <p className={`text-xs mt-1 ${
+                    message.sender_type === 'analyst' ? 'text-purple-200' : 'text-gray-500'
+                  }`}>
                     {formatMessageTime(message.created_at)}
                   </p>
                 </div>
@@ -300,113 +368,41 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({ selectedConversationI
           </div>
 
           {/* Message Input */}
-          <div className="border-t border-gray-200 p-4 sticky bottom-0 bg-white">
-            <div className="flex items-center gap-3">
+          <div className="p-4 border-t border-gray-200 bg-white">
+            <div className="flex space-x-2">
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
-                onKeyPress={(e) => e.key === 'Enter' && sendMessage()}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    sendMessage();
+                  }
+                }}
                 placeholder="Digite sua mensagem..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="flex-1 px-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                disabled={sendingMessage}
               />
               <button
                 onClick={sendMessage}
-                disabled={!newMessage.trim() || sendingMessage}
-                className="bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white p-2 rounded-lg transition-colors"
+                disabled={sendingMessage || !newMessage.trim()}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {sendingMessage ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
-                ) : (
-                  <Send className="h-5 w-5" />
-                )}
+                <Send className="h-4 w-4" />
               </button>
             </div>
           </div>
         </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Mensagens</h1>
-        <p className="text-gray-600 mt-1">Converse com criadores sobre oportunidades aprovadas</p>
-      </div>
-
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-        {/* Search */}
-        <div className="p-4 border-b border-gray-200">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Buscar conversas..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-            />
+      ) : (
+        <div className="hidden md:flex flex-1 items-center justify-center">
+          <div className="text-center text-gray-500">
+            <MessageCircle className="h-16 w-16 mx-auto mb-4" />
+            <p className="text-lg font-medium">Selecione uma conversa</p>
+            <p className="text-sm">Escolha uma conversa para começar a trocar mensagens</p>
           </div>
         </div>
-
-        {/* Conversations List */}
-        <div className="divide-y divide-gray-200">
-          {conversations.map((conversation) => (
-            <div
-              key={conversation.id}
-              className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-              onClick={() => setSelectedConversation(conversation)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
-                    {conversation.creator.name?.charAt(0) || conversation.creator.email?.charAt(0).toUpperCase()}
-                  </div>
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <h3 className="font-semibold text-gray-900">
-                        {conversation.creator.name || conversation.creator.email}
-                      </h3>
-                      <div className="w-2 h-2 bg-purple-600 rounded-full"></div>
-                    </div>
-                    <p className="text-gray-500 text-xs mb-1">
-                      {conversation.opportunity?.title || 'Conversa Direta'}
-                    </p>
-                    {conversation.lastMessage && (
-                      <p className="text-gray-600 text-sm truncate max-w-xs">
-                        {conversation.lastMessage.sender_type === 'analyst' ? 'Você: ' : ''}
-                        {conversation.lastMessage.content}
-                      </p>
-                    )}
-                  </div>
-                </div>
-                
-                <div className="flex items-center space-x-2">
-                  {conversation.lastMessage && (
-                    <span className="text-xs text-gray-500">
-                      {formatTime(conversation.lastMessage.created_at)}
-                    </span>
-                  )}
-                  <button className="p-1 hover:bg-gray-200 rounded">
-                    <MoreVertical className="h-4 w-4 text-gray-400" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-
-        {/* Empty State */}
-        {conversations.length === 0 && (
-          <div className="text-center py-12">
-            <MessageCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma conversa ainda</h3>
-            <p className="text-gray-600">
-              Suas conversas com criadores aparecerão aqui quando você aprovar candidaturas
-            </p>
-          </div>
-        )}
-      </div>
+      )}
     </div>
   );
 };
