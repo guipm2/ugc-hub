@@ -55,7 +55,23 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
         return;
       }
 
-      setOpportunity(oppData);
+      // Buscar contagem dinâmica de candidatos
+      const { count: candidatesCount, error: countError } = await supabase
+        .from('opportunity_applications')
+        .select('*', { count: 'exact', head: true })
+        .eq('opportunity_id', opportunityId);
+
+      if (countError) {
+        console.error('Erro ao buscar contagem de candidatos:', countError);
+      }
+
+      // Atualizar dados da oportunidade com contagem dinâmica
+      const updatedOpportunity = {
+        ...oppData,
+        candidates_count: candidatesCount || 0
+      };
+
+      setOpportunity(updatedOpportunity);
 
       // Buscar candidatura do usuário se logado
       if (user) {
@@ -88,7 +104,8 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
     
     setApplying(true);
     try {
-      const { error } = await supabase
+      // Inserir nova candidatura
+      const { error: insertError } = await supabase
         .from('opportunity_applications')
         .insert({
           opportunity_id: opportunity.id,
@@ -97,16 +114,31 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
           status: 'pending'
         });
 
-      if (error) {
-        console.error('Erro ao enviar candidatura:', error);
+      if (insertError) {
+        console.error('Erro ao enviar candidatura:', insertError);
         alert('Erro ao enviar candidatura. Tente novamente.');
-      } else {
-        alert('Candidatura enviada com sucesso!');
-        setShowApplicationForm(false);
-        setApplicationMessage('');
-        // Recarregar dados para mostrar a nova candidatura
-        fetchOpportunityDetails();
+        return;
       }
+
+      // Atualizar contagem de candidatos na tabela opportunities
+      const { error: updateError } = await supabase
+        .from('opportunities')
+        .update({ 
+          candidates_count: (opportunity.candidates_count || 0) + 1,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', opportunity.id);
+
+      if (updateError) {
+        console.error('Erro ao atualizar contagem de candidatos:', updateError);
+        // Não interromper o fluxo, pois a candidatura já foi criada
+      }
+
+      alert('Candidatura enviada com sucesso!');
+      setShowApplicationForm(false);
+      setApplicationMessage('');
+      // Recarregar dados para mostrar a nova candidatura
+      fetchOpportunityDetails();
     } catch (error) {
       console.error('Erro ao enviar candidatura:', error);
       alert('Erro ao enviar candidatura. Tente novamente.');

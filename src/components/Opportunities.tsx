@@ -78,8 +78,27 @@ const Opportunities = () => {
         }
       }
 
+      // Get candidates count for each opportunity
+      const opportunitiesWithCounts = await Promise.all(
+        (opportunitiesData || []).map(async (opp) => {
+          const { count, error: countError } = await supabase
+            .from('opportunity_applications')
+            .select('*', { count: 'exact', head: true })
+            .eq('opportunity_id', opp.id);
+
+          if (countError) {
+            console.error('Erro ao buscar contagem de candidatos:', countError);
+          }
+
+          return {
+            ...opp,
+            candidates_count: count || 0
+          };
+        })
+      );
+
       // Combine data
-      const formattedOpportunities = opportunitiesData?.map(opp => {
+      const formattedOpportunities = opportunitiesWithCounts?.map(opp => {
         const deadline = new Date(opp.deadline);
         const today = new Date();
         const diffTime = deadline.getTime() - today.getTime();
@@ -166,7 +185,8 @@ const Opportunities = () => {
     setActionLoading(opportunityId);
     
     try {
-      const { error } = await supabase
+      // Insert application
+      const { error: insertError } = await supabase
         .from('opportunity_applications')
         .insert({
           opportunity_id: opportunityId,
@@ -174,18 +194,35 @@ const Opportunities = () => {
           message: 'Tenho interesse nesta oportunidade!'
         });
 
-      if (error) {
-        if (error.code === '23505') { // Unique constraint violation
+      if (insertError) {
+        if (insertError.code === '23505') { // Unique constraint violation
           alert('Você já se candidatou para esta oportunidade!');
         } else {
-          console.error('Erro ao se candidatar:', error);
+          console.error('Erro ao se candidatar:', insertError);
           alert('Erro ao se candidatar. Tente novamente.');
         }
-      } else {
-        alert('Candidatura enviada com sucesso!');
-        // Refresh opportunities to update application status
-        fetchOpportunities();
+        return;
       }
+
+      // Update candidates count in opportunities table
+      const currentOpportunity = opportunities.find(opp => opp.id === opportunityId);
+      if (currentOpportunity) {
+        const { error: updateError } = await supabase
+          .from('opportunities')
+          .update({ 
+            candidates_count: (currentOpportunity.candidates || 0) + 1,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', opportunityId);
+
+        if (updateError) {
+          console.error('Erro ao atualizar contagem de candidatos:', updateError);
+        }
+      }
+
+      alert('Candidatura enviada com sucesso!');
+      // Refresh opportunities to update application status
+      fetchOpportunities();
     } catch (err) {
       console.error('Erro ao se candidatar:', err);
       alert('Erro ao se candidatar. Tente novamente.');
@@ -202,7 +239,7 @@ const Opportunities = () => {
     setActionLoading(opportunityId);
     
     try {
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('opportunity_applications')
         .delete()
         .eq('id', applicationId)
