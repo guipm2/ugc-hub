@@ -209,8 +209,7 @@ const OpportunityStagesManagement: React.FC = () => {
           title,
           company,
           deadline,
-          content_type,
-          candidates_count
+          content_type
         `)
         .eq('created_by', analyst.id);
 
@@ -222,6 +221,16 @@ const OpportunityStagesManagement: React.FC = () => {
       // Para cada oportunidade, buscar criadores aprovados e suas etapas
       const opportunitiesWithCreators = await Promise.all(
         (opportunities || []).map(async (opp) => {
+          // Calculate dynamic candidates count for this opportunity
+          const { count: candidatesCount, error: candidatesError } = await supabase
+            .from('opportunity_applications')
+            .select('*', { count: 'exact', head: true })
+            .eq('opportunity_id', opp.id);
+
+          if (candidatesError) {
+            console.error('Erro ao buscar contagem de candidatos:', candidatesError);
+          }
+
           // Buscar candidaturas aprovadas
           const { data: applications } = await supabase
             .from('opportunity_applications')
@@ -270,6 +279,7 @@ const OpportunityStagesManagement: React.FC = () => {
 
           return {
             ...opp,
+            candidates_count: candidatesCount || 0,
             approved_count: applications?.length || 0,
             creators
           };

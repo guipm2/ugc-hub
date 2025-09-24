@@ -79,8 +79,27 @@ const AnalystOverview: React.FC = () => {
           totalApplications: totalApplications || 0,
         });
 
-        // Pegar as 5 oportunidades mais recentes
-        setRecentOpportunities(opportunities?.slice(0, 5) || []);
+        // Calcular contagem dinâmica de candidatos para cada oportunidade
+        const opportunitiesWithCandidatesCount = await Promise.all(
+          (opportunities || []).map(async (opp) => {
+            const { count, error: countError } = await supabase
+              .from('opportunity_applications')
+              .select('*', { count: 'exact', head: true })
+              .eq('opportunity_id', opp.id);
+
+            if (countError) {
+              console.error('Erro ao buscar contagem de candidatos:', countError);
+            }
+
+            return {
+              ...opp,
+              candidates_count: count || 0
+            };
+          })
+        );
+
+        // Pegar as 5 oportunidades mais recentes com contagem atualizada
+        setRecentOpportunities(opportunitiesWithCandidatesCount.slice(0, 5));
 
       } catch (error) {
         console.error('Erro ao buscar dados do dashboard:', error);

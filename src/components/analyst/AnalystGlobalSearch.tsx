@@ -84,7 +84,26 @@ const AnalystGlobalSearch: React.FC<AnalystGlobalSearchProps> = ({
           .limit(5);
 
         if (opportunities) {
-          opportunities.forEach(opp => {
+          // Calculate dynamic candidates count for each opportunity
+          const opportunitiesWithCount = await Promise.all(
+            opportunities.map(async (opp) => {
+              const { count, error: countError } = await supabase
+                .from('opportunity_applications')
+                .select('*', { count: 'exact', head: true })
+                .eq('opportunity_id', opp.id);
+
+              if (countError) {
+                console.error('Erro ao buscar contagem de candidatos:', countError);
+              }
+
+              return {
+                ...opp,
+                candidates_count: count || 0
+              };
+            })
+          );
+
+          opportunitiesWithCount.forEach(opp => {
             searchResults.push({
               id: opp.id,
               type: 'opportunity',
