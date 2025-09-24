@@ -4,7 +4,7 @@ import { useAnalystAuth } from '../contexts/AnalystAuthContext';
 
 export interface AnalystNotification {
   id: string;
-  type: 'new_opportunity' | 'new_application' | 'application_approved' | 'application_rejected' | 'new_message';
+  type: 'new_opportunity' | 'new_application' | 'application_approved' | 'application_rejected' | 'new_message' | 'new_deliverable';
   title: string;
   message: string;
   data: {
@@ -13,6 +13,12 @@ export interface AnalystNotification {
     opportunity_id?: string;
     opportunity_title?: string;
     sender_type?: 'analyst' | 'creator';
+    deliverable_id?: string;
+    deliverable_title?: string;
+    due_date?: string;
+    priority?: number;
+    company?: string;
+    analyst_id?: string;
     [key: string]: unknown;
   };
   read: boolean;

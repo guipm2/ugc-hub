@@ -1,10 +1,46 @@
 import React, { useState } from 'react';
-import { Bell, X, Check, Target, Users, MessageCircle } from 'lucide-react';
-import { useAnalystNotifications } from '../../hooks/useAnalystNotifications';
+import { Bell, X, Check, Target, Users, MessageCircle, Calendar } from 'lucide-react';
+import { useAnalystNotifications, AnalystNotification } from '../../hooks/useAnalystNotifications';
+import { useRouter } from '../../hooks/useRouter';
 
 const AnalystNotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { notifications, unreadCount, markAsRead } = useAnalystNotifications();
+  const { navigate } = useRouter();
+
+  const handleNotificationClick = (notification: AnalystNotification) => {
+    // Marcar como lida se ainda não foi lida
+    if (!notification.read) {
+      markAsRead(notification.id);
+    }
+
+    // Navegar baseado no tipo de notificação
+    switch (notification.type) {
+      case 'new_opportunity':
+        navigate('/analysts/opportunities');
+        break;
+      case 'new_application':
+        navigate('/analysts/opportunities');
+        break;
+      case 'application_approved':
+      case 'application_rejected':
+        navigate('/analysts/opportunities');
+        break;
+      case 'new_message':
+        navigate('/analysts/messages');
+        break;
+      case 'new_deliverable':
+        // Para analista, navegar para gerenciamento de deliverables
+        navigate('/analysts/deliverables');
+        break;
+      default:
+        navigate('/analysts/overview');
+        break;
+    }
+
+    // Fechar o dropdown
+    setIsOpen(false);
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -18,6 +54,8 @@ const AnalystNotificationDropdown: React.FC = () => {
         return <X className="h-4 w-4 text-red-600" />;
       case 'new_message':
         return <MessageCircle className="h-4 w-4 text-blue-600" />;
+      case 'new_deliverable':
+        return <Calendar className="h-4 w-4 text-orange-600" />;
       default:
         return <Bell className="h-4 w-4 text-gray-600" />;
     }
@@ -74,11 +112,7 @@ const AnalystNotificationDropdown: React.FC = () => {
                     className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
                       !notification.read ? 'bg-purple-50' : ''
                     }`}
-                    onClick={() => {
-                      if (!notification.read) {
-                        markAsRead(notification.id);
-                      }
-                    }}
+                    onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0 mt-1">

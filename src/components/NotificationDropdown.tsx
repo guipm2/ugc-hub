@@ -1,10 +1,46 @@
 import React, { useState } from 'react';
-import { Bell, X, Check, Target, Users, MessageCircle } from 'lucide-react';
-import { useNotifications } from '../hooks/useNotifications';
+import { Bell, X, Check, Target, Users, MessageCircle, Calendar } from 'lucide-react';
+import { useNotifications, Notification } from '../hooks/useNotifications';
+import { useRouter } from '../hooks/useRouter';
 
 const NotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
   const { notifications, unreadCount, markAsRead, markAllAsRead } = useNotifications();
+  const { navigate } = useRouter();
+
+  const handleNotificationClick = (notification: Notification) => {
+    // Marcar como lida se ainda não foi lida
+    if (!notification.read) {
+      markAsRead(notification.id);
+    }
+
+    // Navegar baseado no tipo de notificação
+    switch (notification.type) {
+      case 'new_opportunity':
+        navigate('/creators/opportunities');
+        break;
+      case 'new_application':
+      case 'application_approved':
+      case 'application_rejected':
+        navigate('/creators/opportunities');
+        break;
+      case 'new_message':
+        // Se tiver conversation_id, pode navegar direto para a conversa
+        navigate('/creators/messages');
+        break;
+      case 'new_deliverable':
+        // Navegar para a tela de projetos
+        navigate('/creators/projects');
+        break;
+      default:
+        // Navegação padrão
+        navigate('/creators/dashboard');
+        break;
+    }
+
+    // Fechar o dropdown
+    setIsOpen(false);
+  };
 
   const getNotificationIcon = (type: string) => {
     switch (type) {
@@ -18,6 +54,8 @@ const NotificationDropdown: React.FC = () => {
         return <X className="h-4 w-4 text-red-600" />;
       case 'new_message':
         return <MessageCircle className="h-4 w-4 text-purple-600" />;
+      case 'new_deliverable':
+        return <Calendar className="h-4 w-4 text-orange-600" />;
       default:
         return <Bell className="h-4 w-4 text-gray-600" />;
     }
@@ -82,11 +120,7 @@ const NotificationDropdown: React.FC = () => {
                     className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
                       !notification.read ? 'bg-blue-50' : ''
                     }`}
-                    onClick={() => {
-                      if (!notification.read) {
-                        markAsRead(notification.id);
-                      }
-                    }}
+                    onClick={() => handleNotificationClick(notification)}
                   >
                     <div className="flex items-start space-x-3">
                       <div className="flex-shrink-0 mt-1">
