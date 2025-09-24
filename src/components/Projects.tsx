@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, Download, Eye, Plus, X, Grid3X3, List, Filter, EyeOff } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, Eye, X, Grid3X3, List, Filter, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -14,7 +14,8 @@ interface Project {
   content_type: string;
   budget: string;
   conversation_id: string;
-  deliverables: Deliverable[];
+  deliverables: Deliverable[]; // Deliverables padrão baseados no tipo de conteúdo
+  customDeliverables?: Deliverable[]; // Deliverables customizados criados pelo analista
   created_at: string;
 }
 
@@ -24,13 +25,19 @@ interface ProjectsProps {
 
 interface Deliverable {
   id: string;
-  project_id: string;
+  project_id?: string; // Para compatibilidade com deliverables locais
+  application_id?: string; // ID da candidatura para deliverables do banco
   title: string;
   description: string;
   due_date: string;
-  status: 'pendente' | 'entregue' | 'aprovado' | 'rejeitado';
+  priority?: number;
+  status: 'pending' | 'in_progress' | 'submitted' | 'approved' | 'rejected' | 'pendente' | 'entregue';
+  analyst_feedback?: string;
+  reviewed_at?: string;
   files: ProjectFile[];
   feedback?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 interface ProjectFile {
@@ -53,13 +60,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
   const [hideCompleted, setHideCompleted] = useState(false);
   const { user } = useAuth();
 
-  useEffect(() => {
-    if (user) {
-      fetchProjects();
-    }
-  }, [user]);
-
-  const fetchProjects = async () => {
+  const fetchProjects = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -90,31 +91,64 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         return;
       }
 
-      // Buscar conversas para cada candidatura aprovada
+      // Buscar conversas e deliverables para cada candidatura aprovada
       const projectsData = [];
       
       for (const app of applications || []) {
+        const opportunity = Array.isArray(app.opportunity) ? app.opportunity[0] : app.opportunity;
+        
         // Buscar conversa relacionada
         const { data: conversation } = await supabase
           .from('conversations')
           .select('id')
           .eq('opportunity_id', app.opportunity_id)
           .eq('creator_id', user.id)
-          .eq('analyst_id', app.opportunity.created_by)
+          .eq('analyst_id', opportunity.created_by)
           .single();
+
+        // Buscar deliverables customizados do banco para esta candidatura
+        const { data: customDeliverables, error: deliverablesError } = await supabase
+          .from('project_deliverables')
+          .select('*')
+          .eq('application_id', app.id)
+          .order('priority', { ascending: true });
+
+        if (deliverablesError) {
+          console.error('Erro ao buscar deliverables:', deliverablesError);
+        }
+
+        // Sempre gerar deliverables padrão baseados no tipo de conteúdo
+        const standardDeliverables = generateDeliverables(opportunity.content_type, opportunity.deadline, app.id);
+        
+        // Mapear deliverables customizados para a interface local
+        const mappedCustomDeliverables: Deliverable[] = customDeliverables ? customDeliverables.map(d => ({
+          id: d.id,
+          application_id: d.application_id,
+          title: d.title,
+          description: d.description || '',
+          due_date: d.due_date,
+          priority: d.priority,
+          status: d.status,
+          analyst_feedback: d.analyst_feedback,
+          reviewed_at: d.reviewed_at,
+          files: [], // TODO: Implementar arquivos se necessário
+          created_at: d.created_at,
+          updated_at: d.updated_at
+        })) : [];
 
         projectsData.push({
           id: app.id,
           opportunity_id: app.opportunity_id,
-          title: app.opportunity.title,
-          company: app.opportunity.company,
-          description: app.opportunity.description,
-          deadline: app.opportunity.deadline,
-          status: getProjectStatus(app.opportunity.deadline),
-          content_type: app.opportunity.content_type,
-          budget: `R$ ${app.opportunity.budget_min} - R$ ${app.opportunity.budget_max}`,
+          title: opportunity.title,
+          company: opportunity.company,
+          description: opportunity.description,
+          deadline: opportunity.deadline,
+          status: getProjectStatus(opportunity.deadline),
+          content_type: opportunity.content_type,
+          budget: `R$ ${opportunity.budget_min} - R$ ${opportunity.budget_max}`,
           conversation_id: conversation?.id || '',
-          deliverables: generateDeliverables(app.opportunity.content_type, app.opportunity.deadline),
+          deliverables: standardDeliverables, // Sempre usar deliverables padrão
+          customDeliverables: mappedCustomDeliverables, // Adicionar deliverables customizados separadamente
           created_at: new Date().toISOString()
         });
       }
@@ -125,7 +159,13 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchProjects();
+    }
+  }, [user, fetchProjects]);
 
   const getProjectStatus = (deadline: string): 'em_andamento' | 'entregue' | 'aprovado' | 'atrasado' => {
     const deadlineDate = new Date(deadline);
@@ -137,14 +177,16 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
     return 'em_andamento';
   };
 
-  const generateDeliverables = (contentType: string, deadline: string): Deliverable[] => {
+  const generateDeliverables = (contentType: string, deadline: string, applicationId?: string): Deliverable[] => {
     const baseDeliverables = [
       {
-        id: '1',
+        id: `std_1_${applicationId || Date.now()}`,
         project_id: '',
+        application_id: applicationId,
         title: 'Briefing e Conceito',
         description: 'Apresentar o conceito criativo e briefing do conteúdo',
         due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        priority: 1,
         status: 'pendente' as const,
         files: []
       }
@@ -152,22 +194,26 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
 
     if (contentType.toLowerCase().includes('reel') || contentType.toLowerCase().includes('video')) {
       baseDeliverables.push({
-        id: '2',
+        id: `std_2_${applicationId || Date.now()}`,
         project_id: '',
+        application_id: applicationId,
         title: 'Roteiro e Storyboard',
         description: 'Roteiro detalhado e storyboard do vídeo',
         due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        priority: 2,
         status: 'pendente' as const,
         files: []
       });
     }
 
     baseDeliverables.push({
-      id: '3',
+      id: `std_3_${applicationId || Date.now()}`,
       project_id: '',
+      application_id: applicationId,
       title: 'Conteúdo Final',
       description: `Entrega do ${contentType} finalizado`,
       due_date: deadline,
+      priority: 3,
       status: 'pendente' as const,
       files: []
     });
@@ -181,11 +227,16 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
       entregue: { color: 'bg-yellow-100 text-yellow-700', label: 'Entregue', icon: Upload },
       aprovado: { color: 'bg-green-100 text-green-700', label: 'Aprovado', icon: CheckCircle },
       atrasado: { color: 'bg-red-100 text-red-700', label: 'Atrasado', icon: AlertCircle },
+      pending: { color: 'bg-gray-100 text-gray-700', label: 'Pendente', icon: Clock },
       pendente: { color: 'bg-gray-100 text-gray-700', label: 'Pendente', icon: Clock },
+      in_progress: { color: 'bg-blue-100 text-blue-700', label: 'Em Progresso', icon: Clock },
+      submitted: { color: 'bg-yellow-100 text-yellow-700', label: 'Enviado', icon: Upload },
+      approved: { color: 'bg-green-100 text-green-700', label: 'Aprovado', icon: CheckCircle },
+      rejected: { color: 'bg-red-100 text-red-700', label: 'Rejeitado', icon: X },
       rejeitado: { color: 'bg-red-100 text-red-700', label: 'Rejeitado', icon: X }
     };
 
-    const config = statusConfig[status as keyof typeof statusConfig];
+    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
     const Icon = config.icon;
 
     return (
@@ -215,7 +266,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         ...selectedProject,
         deliverables: selectedProject.deliverables.map(d =>
           d.id === deliverableId
-            ? { ...d, files: [...d.files, ...newFiles], status: 'entregue' as const }
+            ? { ...d, files: [...d.files, ...newFiles], status: 'submitted' as const }
             : d
         )
       };
@@ -332,64 +383,145 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         {/* Entregas */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Cronograma de Entregas</h3>
-          <div className="space-y-6">
-            {selectedProject.deliverables.map((deliverable) => (
-              <div key={deliverable.id} className="border border-gray-200 rounded-lg p-4">
-                <div className="flex items-center justify-between mb-3">
-                  <div>
-                    <h4 className="font-medium text-gray-900">{deliverable.title}</h4>
-                    <p className="text-sm text-gray-600">{deliverable.description}</p>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <span className="text-sm text-gray-500">
-                      Prazo: {formatDate(deliverable.due_date)}
-                    </span>
-                    {getStatusBadge(deliverable.status)}
-                  </div>
-                </div>
-
-                {/* Arquivos */}
-                {deliverable.files.length > 0 && (
-                  <div className="mb-4">
-                    <p className="text-sm font-medium text-gray-700 mb-2">Arquivos Enviados:</p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
-                      {deliverable.files.map((file) => (
-                        <div key={file.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded border">
-                          <FileText className="h-4 w-4 text-gray-400" />
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
-                            <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
-                          </div>
-                          <button className="p-1 hover:bg-gray-200 rounded">
-                            <Eye className="h-4 w-4 text-gray-400" />
-                          </button>
-                        </div>
-                      ))}
+          
+          {/* Deliverables Padrão */}
+          <div className="mb-8">
+            <h4 className="text-md font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Clock className="h-4 w-4 text-blue-600" />
+              Entregas Padrão do Projeto
+            </h4>
+            <div className="space-y-4">
+              {selectedProject.deliverables.map((deliverable) => (
+                <div key={deliverable.id} className="border border-gray-200 rounded-lg p-4 bg-blue-50/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h5 className="font-medium text-gray-900">{deliverable.title}</h5>
+                      <p className="text-sm text-gray-600">{deliverable.description}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-500">
+                        Prazo: {formatDate(deliverable.due_date)}
+                      </span>
+                      {getStatusBadge(deliverable.status)}
                     </div>
                   </div>
-                )}
 
-                {/* Botão de Upload */}
-                {deliverable.status === 'pendente' && (
-                  <button
-                    onClick={() => setShowUploadModal(deliverable.id)}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                  >
-                    <Upload className="h-4 w-4" />
-                    Enviar Arquivos
-                  </button>
-                )}
+                  {/* Arquivos */}
+                  {deliverable.files.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Arquivos Enviados:</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {deliverable.files.map((file) => (
+                          <div key={file.id} className="flex items-center gap-2 p-2 bg-white rounded border">
+                            <FileText className="h-4 w-4 text-gray-400" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                              <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                            </div>
+                            <button className="p-1 hover:bg-gray-200 rounded">
+                              <Eye className="h-4 w-4 text-gray-400" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
 
-                {/* Feedback */}
-                {deliverable.feedback && (
-                  <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                    <p className="text-sm font-medium text-yellow-800">Feedback do Analista:</p>
-                    <p className="text-sm text-yellow-700">{deliverable.feedback}</p>
-                  </div>
-                )}
-              </div>
-            ))}
+                  {/* Botão de Upload */}
+                  {(deliverable.status === 'pendente' || deliverable.status === 'pending') && (
+                    <button
+                      onClick={() => setShowUploadModal(deliverable.id)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Enviar Arquivos
+                    </button>
+                  )}
+
+                  {/* Feedback */}
+                  {deliverable.feedback && (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                      <p className="text-sm font-medium text-yellow-800">Feedback do Analista:</p>
+                      <p className="text-sm text-yellow-700">{deliverable.feedback}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
           </div>
+
+          {/* Deliverables Customizados */}
+          {selectedProject.customDeliverables && selectedProject.customDeliverables.length > 0 && (
+            <div>
+              <h4 className="text-md font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                <AlertCircle className="h-4 w-4 text-purple-600" />
+                Entregas Específicas do Analista
+              </h4>
+              <div className="space-y-4">
+                {selectedProject.customDeliverables.map((deliverable) => (
+                  <div key={deliverable.id} className="border border-purple-200 rounded-lg p-4 bg-purple-50/30">
+                    <div className="flex items-center justify-between mb-3">
+                      <div>
+                        <h5 className="font-medium text-gray-900">{deliverable.title}</h5>
+                        <p className="text-sm text-gray-600">{deliverable.description}</p>
+                        {deliverable.priority && (
+                          <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                            Prioridade: {deliverable.priority}
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-3">
+                        <span className="text-sm text-gray-500">
+                          Prazo: {formatDate(deliverable.due_date)}
+                        </span>
+                        {getStatusBadge(deliverable.status)}
+                      </div>
+                    </div>
+
+                    {/* Arquivos */}
+                    {deliverable.files.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-sm font-medium text-gray-700 mb-2">Arquivos Enviados:</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                          {deliverable.files.map((file) => (
+                            <div key={file.id} className="flex items-center gap-2 p-2 bg-white rounded border">
+                              <FileText className="h-4 w-4 text-gray-400" />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                                <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                              </div>
+                              <button className="p-1 hover:bg-gray-200 rounded">
+                                <Eye className="h-4 w-4 text-gray-400" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Botão de Upload */}
+                    {(deliverable.status === 'pending') && (
+                      <button
+                        onClick={() => setShowUploadModal(deliverable.id)}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                      >
+                        <Upload className="h-4 w-4" />
+                        Enviar Arquivos
+                      </button>
+                    )}
+
+                    {/* Feedback do Analista */}
+                    {deliverable.analyst_feedback && (
+                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                        <p className="text-sm font-medium text-yellow-800">Feedback do Analista:</p>
+                        <p className="text-sm text-yellow-700">{deliverable.analyst_feedback}</p>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Modal de Upload */}
@@ -548,8 +680,12 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                   <div className="text-right">
                     <div className="text-sm text-gray-600 mb-1">Progresso</div>
                     <div className="text-sm font-medium text-gray-900">
-                      {project.deliverables.filter(d => d.status === 'entregue' || d.status === 'aprovado').length}/
-                      {project.deliverables.length}
+                      {(() => {
+                        const standardCompleted = project.deliverables.filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                        const customCompleted = (project.customDeliverables || []).filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                        const totalDeliverables = project.deliverables.length + (project.customDeliverables?.length || 0);
+                        return `${standardCompleted + customCompleted}/${totalDeliverables}`;
+                      })()}
                     </div>
                   </div>
                   <button
@@ -598,15 +734,24 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                   <div className="flex items-center justify-between text-sm mb-2">
                     <span className="text-gray-600">Progresso</span>
                     <span className="text-gray-900 font-medium">
-                      {project.deliverables.filter(d => d.status === 'entregue' || d.status === 'aprovado').length}/
-                      {project.deliverables.length}
+                      {(() => {
+                        const standardCompleted = project.deliverables.filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                        const customCompleted = (project.customDeliverables || []).filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                        const totalDeliverables = project.deliverables.length + (project.customDeliverables?.length || 0);
+                        return `${standardCompleted + customCompleted}/${totalDeliverables}`;
+                      })()}
                     </span>
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
                       className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                       style={{
-                        width: `${(project.deliverables.filter(d => d.status === 'entregue' || d.status === 'aprovado').length / project.deliverables.length) * 100}%`
+                        width: `${(() => {
+                          const standardCompleted = project.deliverables.filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                          const customCompleted = (project.customDeliverables || []).filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                          const totalDeliverables = project.deliverables.length + (project.customDeliverables?.length || 0);
+                          return totalDeliverables > 0 ? ((standardCompleted + customCompleted) / totalDeliverables) * 100 : 0;
+                        })()}%`
                       }}
                     ></div>
                   </div>
