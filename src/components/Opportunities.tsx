@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Search, Filter, Clock, MapPin, DollarSign, Users, Eye, Heart, Send, X, Grid3X3, List, ChevronDown, ExternalLink, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
+import { useRouter } from '../hooks/useRouter';
 
 interface Opportunity {
   id: string;
@@ -37,6 +38,7 @@ const Opportunities = () => {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const { user } = useAuth();
+  const { navigate } = useRouter();
 
   const filters = ['Todos', 'Reel', 'Vídeo', 'Post', 'Stories', 'TikTok'];
   const statusFilters = ['Todos', 'Novo', 'Urgente'];
@@ -368,7 +370,7 @@ const Opportunities = () => {
             className={`bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer ${
               viewMode === 'list' ? 'p-4' : 'p-6'
             }`}
-            onClick={() => setSelectedOpportunity(opportunity)}
+            onClick={() => navigate(`/creators/opportunities/${opportunity.id}`)}
           >
             {viewMode === 'list' ? (
               /* List View */
@@ -549,7 +551,7 @@ const Opportunities = () => {
                     <button 
                       onClick={(e) => {
                         e.stopPropagation();
-                        setSelectedOpportunity(opportunity);
+                        navigate(`/creators/opportunities/${opportunity.id}`);
                       }}
                       className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
                     >

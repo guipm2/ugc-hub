@@ -2,6 +2,7 @@ import React from 'react';
 import { useRouter } from '../../hooks/useRouter';
 import Dashboard from '../Dashboard';
 import Opportunities from '../Opportunities';
+import OpportunityDetailsPage from '../OpportunityDetailsPage';
 import Projects from '../Projects';
 import Messages from '../Messages';
 import Training from '../Training';
@@ -24,6 +25,12 @@ const CreatorRouter: React.FC<CreatorRouterProps> = ({
 
   // Extract the route from the path (remove /creators prefix)
   const route = currentPath.replace('/creators', '') || '/opportunities';
+
+  // Handle opportunity details route with ID parameter
+  if (route.startsWith('/opportunities/') && route !== '/opportunities') {
+    const opportunityId = route.split('/')[2];
+    return <OpportunityDetailsPage opportunityId={opportunityId} />;
+  }
 
   switch (route) {
     case '/dashboard':

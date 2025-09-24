@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { LayoutDashboard, Target, MessageCircle, GraduationCap, User, HelpCircle, Lock, Folder } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { AnalystAuthProvider, useAnalystAuth } from './contexts/AnalystAuthContext';
 import { useRouter } from './hooks/useRouter';
+import { supabase } from './lib/supabase';
 import CreatorRouter from './components/creator/CreatorRouter';
 import GlobalSearch from './components/GlobalSearch';
 import NotificationDropdown from './components/NotificationDropdown';
@@ -60,6 +61,7 @@ function CreatorApp() {
   const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [opportunitiesCount, setOpportunitiesCount] = useState(0);
   const { user, loading, signOut, profile } = useAuth();
   const { currentPath, navigate } = useRouter();
 
@@ -72,12 +74,39 @@ function CreatorApp() {
     setSelectedConversationId(null);
   };
 
+  // Fetch opportunities count
+  const fetchOpportunitiesCount = useCallback(async () => {
+    if (!user) return;
+    
+    try {
+      const { count, error } = await supabase
+        .from('opportunities')
+        .select('*', { count: 'exact', head: true })
+        .eq('status', 'ativo');
+
+      if (error) {
+        console.error('Erro ao buscar contagem de oportunidades:', error);
+      } else {
+        setOpportunitiesCount(count || 0);
+      }
+    } catch (err) {
+      console.error('Erro ao buscar contagem de oportunidades:', err);
+    }
+  }, [user]);
+
   // Redirect to /creators/opportunities if on root creators path
   useEffect(() => {
     if (currentPath === '/creators') {
       navigate('/creators/opportunities');
     }
   }, [currentPath, navigate]);
+
+  // Fetch opportunities count when user loads
+  useEffect(() => {
+    if (user) {
+      fetchOpportunitiesCount();
+    }
+  }, [user, fetchOpportunitiesCount]);
 
   // Se ainda está carregando, mostra loading
   if (loading) {
@@ -107,7 +136,7 @@ function CreatorApp() {
 
   const menuItems = [
     { path: '/creators/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-    { path: '/creators/opportunities', label: 'Oportunidades', icon: Target, badge: 2 },
+    { path: '/creators/opportunities', label: 'Oportunidades', icon: Target, badge: opportunitiesCount > 0 ? opportunitiesCount : undefined },
     { path: '/creators/projects', label: 'Projetos', icon: Folder },
     { path: '/creators/messages', label: 'Mensagens', icon: MessageCircle },
     { path: '/creators/training', label: 'Treinamentos', icon: GraduationCap, locked: true },

@@ -17,12 +17,22 @@ const NotificationDropdown: React.FC = () => {
     // Navegar baseado no tipo de notificação
     switch (notification.type) {
       case 'new_opportunity':
-        navigate('/creators/opportunities');
+        // Se tiver opportunity_id, ir para a página específica da oportunidade
+        if (notification.data.opportunity_id) {
+          navigate(`/creators/opportunities/${notification.data.opportunity_id}`);
+        } else {
+          navigate('/creators/opportunities');
+        }
         break;
       case 'new_application':
       case 'application_approved':
       case 'application_rejected':
-        navigate('/creators/opportunities');
+        // Se tiver opportunity_id, ir para a página específica da oportunidade
+        if (notification.data.opportunity_id) {
+          navigate(`/creators/opportunities/${notification.data.opportunity_id}`);
+        } else {
+          navigate('/creators/opportunities');
+        }
         break;
       case 'new_message':
         // Se tiver conversation_id, pode navegar direto para a conversa
