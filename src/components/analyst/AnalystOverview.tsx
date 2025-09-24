@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { Target, Users, TrendingUp, Eye } from 'lucide-react';
+import { Target, Users, TrendingUp, Eye, ArrowRight, Calendar, Folder } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
+import { useRouter } from '../../hooks/useRouter';
 import ViewOpportunityModal from './ViewOpportunityModal';
 
 interface DashboardStats {
@@ -27,8 +28,18 @@ interface RecentOpportunity {
   created_at: string;
 }
 
+interface UpcomingProject {
+  id: string;
+  title: string;
+  company: string;
+  creator_name: string;
+  deadline: string;
+  status: string;
+}
+
 const AnalystOverview: React.FC = () => {
   const { user } = useAnalystAuth();
+  const { navigate } = useRouter();
   const [stats, setStats] = useState<DashboardStats>({
     activeOpportunities: 0,
     totalOpportunities: 0,
@@ -36,7 +47,9 @@ const AnalystOverview: React.FC = () => {
     totalApplications: 0,
   });
   const [recentOpportunities, setRecentOpportunities] = useState<RecentOpportunity[]>([]);
+  const [upcomingProjects, setUpcomingProjects] = useState<UpcomingProject[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingProjects, setLoadingProjects] = useState(true);
   const [selectedOpportunity, setSelectedOpportunity] = useState<RecentOpportunity | null>(null);
   const [showViewModal, setShowViewModal] = useState(false);
 
@@ -108,8 +121,64 @@ const AnalystOverview: React.FC = () => {
       }
     };
 
+    const fetchUpcomingProjects = async () => {
+      try {
+        setLoadingProjects(true);
+        
+        // Buscar projetos aprovados (candidaturas aprovadas) com prazos próximos
+        const thirtyDaysFromNow = new Date();
+        thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+        
+        const { data: applications, error } = await supabase
+          .from('opportunity_applications')
+          .select(`
+            id,
+            opportunity:opportunities (
+              id,
+              title,
+              company,
+              deadline
+            ),
+            creator:profiles!creator_id (
+              name
+            )
+          `)
+          .eq('status', 'approved')
+          .in('opportunity.created_by', [user?.id])
+          .gte('opportunity.deadline', new Date().toISOString().split('T')[0])
+          .lte('opportunity.deadline', thirtyDaysFromNow.toISOString().split('T')[0])
+          .order('opportunity.deadline', { ascending: true })
+          .limit(3);
+
+        if (error) {
+          console.error('Erro ao buscar projetos próximos:', error);
+        } else {
+          const upcomingProjectsData = applications?.map(app => {
+            const opportunity = Array.isArray(app.opportunity) ? app.opportunity[0] : app.opportunity;
+            const creator = Array.isArray(app.creator) ? app.creator[0] : app.creator;
+            
+            return {
+              id: app.id,
+              title: opportunity?.title || 'Projeto',
+              company: opportunity?.company || 'Empresa',
+              creator_name: creator?.name || 'Creator',
+              deadline: opportunity?.deadline || '',
+              status: 'active'
+            };
+          }).filter(Boolean) as UpcomingProject[];
+          
+          setUpcomingProjects(upcomingProjectsData || []);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar projetos próximos:', error);
+      } finally {
+        setLoadingProjects(false);
+      }
+    };
+
     if (user) {
       fetchDashboardData();
+      fetchUpcomingProjects();
     }
   }, [user]);
 
@@ -174,36 +243,84 @@ const AnalystOverview: React.FC = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Visão Geral</h1>
-        <p className="text-gray-600 mt-1">Acompanhe suas campanhas e métricas</p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Visão Geral</h1>
+          <p className="text-gray-600 mt-1">Acompanhe suas campanhas e métricas</p>
+        </div>
+        <div className="flex gap-3">
+          <button 
+            onClick={() => navigate('/analysts/opportunities')}
+            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+          >
+            <Target className="h-4 w-4" />
+            Criar Oportunidade
+          </button>
+          <button 
+            onClick={() => navigate('/analysts/projects')}
+            className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+          >
+            <Eye className="h-4 w-4" />
+            Ver Projetos
+          </button>
+        </div>
       </div>
 
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {dashboardStats.map((stat, index) => {
           const Icon = stat.icon;
+          const getNavigationPath = () => {
+            switch(stat.label) {
+              case 'Oportunidades Ativas':
+                return '/analysts/opportunities';
+              case 'Total de Candidaturas':
+                return '/analysts/creators';
+              case 'Campanhas Concluídas':
+                return '/analysts/opportunities';
+              case 'Total de Oportunidades':
+                return '/analysts/opportunities';
+              default:
+                return '/analysts/overview';
+            }
+          };
+          
           return (
-            <div key={index} className="bg-white rounded-xl border border-gray-200 p-6">
-              <div className="flex items-center">
-                <div className={`p-3 rounded-lg ${stat.bg}`}>
-                  <Icon className={`h-6 w-6 ${stat.color}`} />
+            <div 
+              key={index} 
+              className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all duration-200 cursor-pointer group hover:border-purple-200"
+              onClick={() => navigate(getNavigationPath())}
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center">
+                  <div className={`p-3 rounded-lg ${stat.bg} group-hover:scale-105 transition-transform`}>
+                    <Icon className={`h-6 w-6 ${stat.color}`} />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">{stat.label}</p>
+                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                  </div>
                 </div>
-                <div className="ml-4">
-                  <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                  <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                </div>
+                <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-purple-500 transition-colors" />
               </div>
             </div>
           );
         })}
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
         {/* Recent Opportunities */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Oportunidades Recentes</h3>
-          <div className="space-y-4">
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Oportunidades Recentes</h3>
+            <button 
+              onClick={() => navigate('/analysts/opportunities')}
+              className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+            >
+              Ver todas <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
+          <div className="space-y-4 max-h-80 overflow-y-auto">
             {loading ? (
               <div className="text-center py-8">
                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
@@ -221,18 +338,26 @@ const AnalystOverview: React.FC = () => {
                 return (
                   <div 
                     key={opportunity.id} 
-                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-colors"
+                    className="flex items-center justify-between p-4 bg-gray-50 rounded-lg hover:bg-gray-100 cursor-pointer transition-all duration-200 hover:shadow-sm border border-transparent hover:border-gray-200"
                     onClick={() => handleViewOpportunity(opportunity)}
                   >
-                    <div>
-                      <h4 className="font-medium text-gray-900">{opportunity.title}</h4>
-                      <p className="text-sm text-gray-600">
-                        {opportunity.candidates_count || 0} candidatos • {formatTimeAgo(opportunity.created_at)}
-                      </p>
+                    <div className="flex items-center gap-3 min-w-0 flex-1">
+                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Target className="h-5 w-5 text-purple-600" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <h4 className="font-medium text-gray-900 hover:text-purple-600 transition-colors truncate">{opportunity.title}</h4>
+                        <p className="text-sm text-gray-600 truncate">
+                          {opportunity.candidates_count || 0} candidatos • {formatTimeAgo(opportunity.created_at)}
+                        </p>
+                      </div>
                     </div>
-                    <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusDisplay.class}`}>
-                      {statusDisplay.text}
-                    </span>
+                    <div className="flex items-center gap-2 flex-shrink-0">
+                      <span className={`px-3 py-1 text-xs font-medium rounded-full ${statusDisplay.class}`}>
+                        {statusDisplay.text}
+                      </span>
+                      <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-purple-500 transition-colors" />
+                    </div>
                   </div>
                 );
               })
@@ -240,17 +365,97 @@ const AnalystOverview: React.FC = () => {
           </div>
         </div>
 
-        {/* Performance Chart Placeholder */}
+        {/* Active Projects */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Performance das Campanhas</h3>
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-lg font-semibold text-gray-900">Projetos Ativos</h3>
+            <button 
+              onClick={() => navigate('/analysts/projects')}
+              className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+            >
+              Ver todos <ArrowRight className="w-4 h-4" />
+            </button>
+          </div>
           <div className="h-64 bg-gray-50 rounded-lg flex items-center justify-center">
             <div className="text-center">
               <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-              <p className="text-gray-600">Gráfico de performance</p>
+              <p className="text-gray-600">Projetos em andamento</p>
               <p className="text-sm text-gray-500">Em breve</p>
             </div>
           </div>
         </div>
+      </div>
+
+      {/* Upcoming Deadlines */}
+      <div className="bg-white rounded-xl border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-lg font-semibold text-gray-900">Próximos Prazos</h3>
+          <button 
+            onClick={() => navigate('/analysts/projects')}
+            className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+          >
+            Ver todos <ArrowRight className="w-4 h-4" />
+          </button>
+        </div>
+        
+        {loadingProjects ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+          </div>
+        ) : upcomingProjects.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {upcomingProjects.map((project) => {
+              const deadlineDate = new Date(project.deadline);
+              const today = new Date();
+              const daysLeft = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+              
+              // Cor baseada na urgência
+              const getUrgencyColor = (days: number) => {
+                if (days <= 3) return { border: 'border-red-200', bg: 'bg-red-50', text: 'text-red-800', icon: 'text-red-600', hover: 'hover:border-red-300' };
+                if (days <= 7) return { border: 'border-orange-200', bg: 'bg-orange-50', text: 'text-orange-800', icon: 'text-orange-600', hover: 'hover:border-orange-300' };
+                return { border: 'border-purple-200', bg: 'bg-purple-50', text: 'text-purple-800', icon: 'text-purple-600', hover: 'hover:border-purple-300' };
+              };
+              
+              const colors = getUrgencyColor(daysLeft);
+              
+              return (
+                <div 
+                  key={project.id}
+                  className={`border ${colors.border} ${colors.bg} rounded-lg p-4 hover:shadow-sm transition-all cursor-pointer ${colors.hover}`}
+                  onClick={() => navigate('/analysts/projects')}
+                >
+                  <div className="flex items-center mb-2">
+                    <Calendar className={`h-4 w-4 ${colors.icon} mr-2`} />
+                    <span className={`text-sm font-medium ${colors.text}`}>
+                      {deadlineDate.toLocaleDateString('pt-BR')}
+                      {daysLeft <= 7 && (
+                        <span className="ml-2 text-xs">
+                          ({daysLeft === 0 ? 'Hoje' : daysLeft === 1 ? 'Amanhã' : `${daysLeft} dias`})
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                  <div className="flex items-start gap-2 mb-2">
+                    <Folder className={`h-4 w-4 ${colors.icon} mt-0.5 flex-shrink-0`} />
+                    <div>
+                      <p className="font-semibold text-gray-900 text-sm">{project.title}</p>
+                      <p className="text-xs text-gray-600">{project.company}</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                    <span>Creator: {project.creator_name}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="text-center py-8 text-gray-500">
+            <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
+            <p className="text-sm">Nenhum prazo próximo encontrado</p>
+            <p className="text-xs text-gray-400 mt-1">Projetos com prazos aparecerão aqui</p>
+          </div>
+        )}
       </div>
 
       {/* View Opportunity Modal */}
