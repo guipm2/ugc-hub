@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Folder, Calendar, User, CheckCircle, Clock, AlertCircle, MessageCircle, Filter, Eye, FileText } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
+import { useRouter } from '../../hooks/useRouter';
 
 interface Project {
   id: string;
@@ -50,12 +51,87 @@ interface DeliverableUpdate {
   reviewed_at?: string;
 }
 
-const ProjectManagement: React.FC = () => {
+interface ProjectManagementProps {
+  onOpenConversation?: (conversationId: string) => void;
+}
+
+const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversation }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'overdue'>('all');
   const { user } = useAnalystAuth();
+  const { navigate } = useRouter();
+  const openConversation = async (project: Project) => {
+    console.log('🚀 Iniciando openConversation para projeto:', project);
+    console.log('📋 Dados do projeto:', {
+      id: project.id,
+      opportunity_id: project.opportunity_id,
+      creator_id: project.creator_id,
+      opportunity_title: project.opportunity_title
+    });
+    
+    try {
+      // Primeiro, tenta encontrar uma conversa existente para este projeto
+      console.log('🔍 Buscando conversa existente...');
+      const { data: existingConversation, error: searchError } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('opportunity_id', project.opportunity_id)
+        .eq('creator_id', project.creator_id)
+        .eq('analyst_id', user?.id)
+        .maybeSingle();
+
+      console.log('📊 Resultado da busca:', existingConversation);
+      console.log('❌ Erro da busca:', searchError);
+
+      if (searchError && searchError.code !== 'PGRST116') {
+        console.error('Erro ao buscar conversa:', searchError);
+        return;
+      }
+
+      let conversationId = existingConversation?.id;
+
+      // Se não existe conversa, cria uma nova
+      if (!conversationId) {
+        console.log('🆕 Criando nova conversa...');
+        const { data: newConversation, error: createError } = await supabase
+          .from('conversations')
+          .insert({
+            opportunity_id: project.opportunity_id,
+            creator_id: project.creator_id,
+            analyst_id: user?.id,
+            last_message_at: new Date().toISOString()
+          })
+          .select('id')
+          .single();
+
+        console.log('📊 Nova conversa criada:', newConversation);
+        console.log('❌ Erro ao criar:', createError);
+
+        if (createError) {
+          console.error('Erro ao criar conversa:', createError);
+          return;
+        }
+
+        conversationId = newConversation.id;
+      }
+
+      console.log('💬 ID da conversa final:', conversationId);
+      console.log('🧭 Navegando para messages...');
+      
+      // Navega para a página de mensagens
+      navigate('/analysts/messages');
+      
+      // Chama o callback para abrir a conversa específica
+      console.log('📞 Chamando onOpenConversation com ID:', conversationId);
+      if (onOpenConversation) {
+        onOpenConversation(conversationId);
+      }
+    } catch (error) {
+      console.error('💥 Erro ao abrir conversa:', error);
+    }
+  };
 
   const fetchProjects = useCallback(async () => {
     if (!user) {
@@ -329,15 +405,6 @@ const ProjectManagement: React.FC = () => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const openConversation = (conversationId?: string) => {
-    if (conversationId) {
-      // TODO: Implementar abertura da conversa
-      alert('Funcionalidade de conversa será implementada');
-    } else {
-      alert('Conversa não encontrada para este projeto');
-    }
-  };
-
   if (loading) {
     return (
       <div className="space-y-6">
@@ -377,7 +444,7 @@ const ProjectManagement: React.FC = () => {
               Progresso: {progress.completed}/{progress.total}
             </span>
             <button
-              onClick={() => openConversation(selectedProject.conversation_id)}
+              onClick={() => openConversation(selectedProject)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             >
               <MessageCircle className="h-4 w-4" />
@@ -678,7 +745,7 @@ const ProjectManagement: React.FC = () => {
                       <button
                         onClick={(e) => {
                           e.stopPropagation();
-                          openConversation(project.conversation_id);
+                          openConversation(project);
                         }}
                         className="flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-colors text-sm"
                       >

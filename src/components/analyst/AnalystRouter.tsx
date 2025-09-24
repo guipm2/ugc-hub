@@ -34,7 +34,7 @@ const AnalystRouter: React.FC<AnalystRouterProps> = ({
     case '/stages':
       return <OpportunityStagesManagement />;
     case '/projects':
-      return <ProjectManagement />;
+      return <ProjectManagement onOpenConversation={onOpenConversation} />;
     case '/deliverables':
     case '/prazos':
       return <DeliverableManagement />;
