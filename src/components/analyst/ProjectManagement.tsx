@@ -58,7 +58,12 @@ const ProjectManagement: React.FC = () => {
   const { user } = useAnalystAuth();
 
   const fetchProjects = useCallback(async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('❌ Usuário não encontrado');
+      return;
+    }
+
+    console.log('🔍 Iniciando busca de projetos para o analista:', user.id);
 
     try {
       // Buscar candidaturas aprovadas para oportunidades do analista
@@ -68,6 +73,7 @@ const ProjectManagement: React.FC = () => {
           id,
           opportunity_id,
           creator_id,
+          status,
           created_at,
           opportunity:opportunities (
             id,
@@ -77,68 +83,56 @@ const ProjectManagement: React.FC = () => {
             deadline,
             content_type,
             budget_min,
-            budget_max
+            budget_max,
+            created_by
           ),
           creator:profiles!creator_id (
             name,
             email
           )
         `)
-        .eq('status', 'approved')
-        .eq('opportunity.created_by', user.id)
-        .order('created_at', { ascending: false });
+        .eq('status', 'approved');
+
+      console.log('✅ Todas as candidaturas aprovadas:', applications);
 
       if (error) {
-        console.error('Erro ao buscar projetos:', error);
+        console.error('❌ Erro ao buscar candidaturas:', error);
+        setProjects([]);
         return;
       }
+
+      if (!applications || applications.length === 0) {
+        console.log('📭 Nenhuma candidatura aprovada encontrada');
+        setProjects([]);
+        return;
+      }
+
+      // Filtrar apenas as oportunidades criadas pelo analista atual
+      const filteredApplications = applications.filter(app => {
+        const opportunity = Array.isArray(app.opportunity) ? app.opportunity[0] : app.opportunity;
+        const isFromAnalyst = opportunity && opportunity.created_by === user.id;
+        console.log(`🔍 Verificando oportunidade ${opportunity?.title}: criada por ${opportunity?.created_by}, analista atual: ${user.id}, match: ${isFromAnalyst}`);
+        return isFromAnalyst;
+      });
+
+      console.log('🎯 Candidaturas filtradas para o analista:', filteredApplications);
 
       // Processar cada candidatura aprovada
       const projectsData: Project[] = [];
       
-      for (const app of applications || []) {
+      for (const app of filteredApplications) {
         const opportunity = Array.isArray(app.opportunity) ? app.opportunity[0] : app.opportunity;
         const creator = Array.isArray(app.creator) ? app.creator[0] : app.creator;
         
-        if (!opportunity || !creator) continue;
-
-        // Buscar deliverables customizados
-        const { data: customDeliverables, error: deliverablesError } = await supabase
-          .from('project_deliverables')
-          .select('*')
-          .eq('application_id', app.id)
-          .order('priority', { ascending: true });
-
-        if (deliverablesError) {
-          console.error('Erro ao buscar deliverables customizados:', deliverablesError);
+        if (!opportunity || !creator) {
+          console.warn('⚠️ Dados incompletos para a candidatura:', app.id);
+          continue;
         }
 
-        // Buscar conversa relacionada
-        const { data: conversation } = await supabase
-          .from('conversations')
-          .select('id')
-          .eq('opportunity_id', app.opportunity_id)
-          .eq('creator_id', app.creator_id)
-          .eq('analyst_id', user.id)
-          .single();
+        console.log('🔄 Processando projeto:', opportunity.title, 'para', creator.name);
 
         // Gerar deliverables padrão
         const standardDeliverables = generateStandardDeliverables(opportunity.content_type, opportunity.deadline, app.id);
-        
-        // Mapear deliverables customizados
-        const mappedCustomDeliverables: ProjectDeliverable[] = customDeliverables ? customDeliverables.map(d => ({
-          id: d.id,
-          title: d.title,
-          description: d.description || '',
-          due_date: d.due_date,
-          priority: d.priority,
-          status: d.status,
-          analyst_feedback: d.analyst_feedback,
-          reviewed_at: d.reviewed_at,
-          files: [], // TODO: Implementar arquivos se necessário
-          created_at: d.created_at,
-          updated_at: d.updated_at
-        })) : [];
 
         projectsData.push({
           id: app.id,
@@ -152,15 +146,17 @@ const ProjectManagement: React.FC = () => {
           creator_name: creator.name || 'Nome não informado',
           creator_email: creator.email || '',
           standardDeliverables,
-          customDeliverables: mappedCustomDeliverables,
-          conversation_id: conversation?.id,
+          customDeliverables: [],
+          conversation_id: undefined,
           created_at: app.created_at
         });
       }
 
+      console.log('📦 Projetos finais processados:', projectsData);
       setProjects(projectsData);
     } catch (error) {
-      console.error('Erro ao buscar projetos:', error);
+      console.error('❌ Erro ao buscar projetos:', error);
+      setProjects([]);
     } finally {
       setLoading(false);
     }
@@ -291,7 +287,6 @@ const ProjectManagement: React.FC = () => {
       // Se for um deliverable customizado (do banco), atualizar no banco
       if (deliverableId.startsWith('std_')) {
         // Para deliverables padrão, apenas atualizar localmente por enquanto
-        // TODO: Implementar sistema de arquivos para deliverables padrão
         alert('Funcionalidade de aprovação para deliverables padrão será implementada em breve');
         return;
       }
@@ -599,6 +594,12 @@ const ProjectManagement: React.FC = () => {
                 : 'Nenhum projeto corresponde ao filtro selecionado'
               }
             </p>
+            <div className="mt-4 text-left bg-gray-50 p-4 rounded-lg">
+              <p className="text-sm text-gray-600 mb-2">🔍 Debug Information:</p>
+              <p className="text-xs text-gray-500">Total de projetos carregados: {projects.length}</p>
+              <p className="text-xs text-gray-500">Usuário analista ID: {user?.id}</p>
+              <p className="text-xs text-gray-500">Filtro atual: {statusFilter}</p>
+            </div>
           </div>
         ) : (
           filteredProjects.map((project) => {
