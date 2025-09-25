@@ -72,33 +72,32 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
     });
     
     try {
-      // Primeiro, tenta encontrar uma conversa existente para este projeto
-      console.log('🔍 Buscando conversa existente...');
+      // Buscar conversa única entre analista e criador (independente do projeto)
+      console.log('🔍 Buscando conversa única entre analista e criador...');
       const { data: existingConversation, error: searchError } = await supabase
         .from('conversations')
         .select('id')
-        .eq('opportunity_id', project.opportunity_id)
         .eq('creator_id', project.creator_id)
         .eq('analyst_id', user?.id)
         .maybeSingle();
 
-      console.log('📊 Resultado da busca:', existingConversation);
+      console.log('📊 Resultado da busca (conversa única):', existingConversation);
       console.log('❌ Erro da busca:', searchError);
 
       if (searchError && searchError.code !== 'PGRST116') {
-        console.error('Erro ao buscar conversa:', searchError);
+        console.error('Erro ao buscar conversa única:', searchError);
         return;
       }
 
       let conversationId = existingConversation?.id;
 
-      // Se não existe conversa, cria uma nova
+      // Se não existe conversa única, cria uma nova
       if (!conversationId) {
-        console.log('🆕 Criando nova conversa...');
+        console.log('🆕 Criando nova conversa única entre analista e criador...');
         const { data: newConversation, error: createError } = await supabase
           .from('conversations')
           .insert({
-            opportunity_id: project.opportunity_id,
+            opportunity_id: null, // Conversa geral, não específica de projeto
             creator_id: project.creator_id,
             analyst_id: user?.id,
             last_message_at: new Date().toISOString()
@@ -106,30 +105,30 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
           .select('id')
           .single();
 
-        console.log('📊 Nova conversa criada:', newConversation);
+        console.log('📊 Nova conversa única criada:', newConversation);
         console.log('❌ Erro ao criar:', createError);
 
         if (createError) {
-          console.error('Erro ao criar conversa:', createError);
+          console.error('Erro ao criar conversa única:', createError);
           return;
         }
 
         conversationId = newConversation.id;
       }
 
-      console.log('💬 ID da conversa final:', conversationId);
+      console.log('💬 ID da conversa única final:', conversationId);
       console.log('🧭 Navegando para messages...');
       
       // Navega para a página de mensagens
       navigate('/analysts/messages');
       
-      // Chama o callback para abrir a conversa específica
-      console.log('📞 Chamando onOpenConversation com ID:', conversationId);
+      // Chama o callback para abrir a conversa única específica
+      console.log('📞 Chamando onOpenConversation com ID da conversa única:', conversationId);
       if (onOpenConversation) {
         onOpenConversation(conversationId);
       }
     } catch (error) {
-      console.error('💥 Erro ao abrir conversa:', error);
+      console.error('❌ Erro geral ao gerenciar conversa única:', error);
     }
   };
 

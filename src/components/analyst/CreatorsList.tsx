@@ -89,7 +89,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
     setContactingCreator(creatorId);
     
     try {
-      // Verificar se já existe uma conversa
+      // Buscar conversa única entre este analista e criador (independente de projeto/oportunidade)
       const { data: existingConversation } = await supabase
         .from('conversations')
         .select('id')
@@ -98,37 +98,39 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
         .maybeSingle();
 
       if (existingConversation) {
-        // Redirecionar para conversa existente
+        // Redirecionar para conversa existente única
         if (onOpenConversation) {
           onOpenConversation(existingConversation.id);
         }
         setShowContactModal(null);
+        setContactingCreator(null);
         return;
       }
 
-      // Criar uma conversa direta sem oportunidade específica
+      // Criar conversa única entre analista e criador (não vinculada a projeto específico)
       const { data: newConversation, error } = await supabase
         .from('conversations')
         .insert({
           analyst_id: analyst.id,
           creator_id: creatorId,
-          opportunity_id: null // Conversa direta sem oportunidade específica
+          opportunity_id: null, // Conversa geral entre analista e criador
+          last_message_at: new Date().toISOString()
         })
         .select('id')
         .single();
 
       if (error) {
-        console.error('Erro ao criar conversa:', error);
+        console.error('Erro ao criar conversa única:', error);
         alert('Erro ao criar conversa. Tente novamente.');
       } else {
-        // Redirecionar para nova conversa
+        // Redirecionar para nova conversa única
         if (onOpenConversation && newConversation) {
           onOpenConversation(newConversation.id);
         }
         setShowContactModal(null);
       }
     } catch (err) {
-      console.error('Erro ao criar conversa:', err);
+      console.error('Erro ao criar conversa única:', err);
       alert('Erro ao criar conversa. Tente novamente.');
     } finally {
       setContactingCreator(null);

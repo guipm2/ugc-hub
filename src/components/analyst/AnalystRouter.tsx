@@ -2,7 +2,7 @@ import React from 'react';
 import { useRouter } from '../../hooks/useRouter';
 import AnalystOverview from './AnalystOverview';
 import OpportunityManagement from './OpportunityManagement';
-import OpportunityStagesManagement from './OpportunityStagesManagement';
+import OpportunityStagesManagementWrapper from './OpportunityStagesManagementWrapper';
 import DeliverableManagement from './DeliverableManagement';
 import ProjectManagement from './ProjectManagement';
 import CreatorsList from './CreatorsList';
@@ -32,7 +32,7 @@ const AnalystRouter: React.FC<AnalystRouterProps> = ({
     case '/opportunities':
       return <OpportunityManagement />;
     case '/stages':
-      return <OpportunityStagesManagement />;
+      return <OpportunityStagesManagementWrapper />;
     case '/projects':
       return <ProjectManagement onOpenConversation={onOpenConversation} />;
     case '/deliverables':
