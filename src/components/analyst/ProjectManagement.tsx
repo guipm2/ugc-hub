@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Folder, Calendar, User, CheckCircle, Clock, AlertCircle, MessageCircle, Filter, Eye, FileText, X } from 'lucide-react';
+import { Folder, Calendar, User, CheckCircle, Clock, AlertCircle, MessageCircle, Filter, Eye, FileText } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRouter } from '../../hooks/useRouter';
@@ -53,9 +53,10 @@ interface DeliverableUpdate {
 
 interface ProjectManagementProps {
   onOpenConversation?: (conversationId: string) => void;
+  selectedProjectId?: string;
 }
 
-const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversation }) => {
+const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversation, selectedProjectId }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
@@ -65,7 +66,8 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
     title: '',
     description: '',
     due_date: '',
-    priority: 1
+    priority: 1,
+    status: 'pending' as 'pending' | 'in_progress' | 'submitted' | 'approved' | 'rejected'
   });
   const { user } = useAnalystAuth();
   const { navigate } = useRouter();
@@ -101,7 +103,13 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
 
       // Fechar modal e resetar form
       setShowCreateDeliverableModal(false);
-      setDeliverableForm({ title: '', description: '', due_date: '', priority: 1 });
+      setDeliverableForm({ 
+        title: '', 
+        description: '', 
+        due_date: '', 
+        priority: 1, 
+        status: 'pending' 
+      });
       
       // Recarregar projetos para atualizar a lista
       fetchProjects();
@@ -357,6 +365,16 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
     }
   }, [user, fetchProjects]);
 
+  // Quando houver selectedProjectId da URL, definir o projeto selecionado
+  useEffect(() => {
+    if (selectedProjectId && projects.length > 0) {
+      const project = projects.find(p => p.id === selectedProjectId);
+      setSelectedProject(project || null);
+    } else if (!selectedProjectId) {
+      setSelectedProject(null);
+    }
+  }, [selectedProjectId, projects]);
+
   // Debug useEffect para monitorar o estado do modal
   useEffect(() => {
     console.log('🔍 Estado do modal mudou para:', showCreateDeliverableModal);
@@ -480,6 +498,117 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
+  const renderModal = () => {
+    if (!showCreateDeliverableModal || !selectedProject) return null;
+    
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+        <div className="bg-white rounded-xl p-6 w-full max-w-md mx-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-xl font-semibold text-gray-800">Nova Entrega</h2>
+            <button
+              onClick={() => setShowCreateDeliverableModal(false)}
+              className="text-gray-400 hover:text-gray-600"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <form onSubmit={createCustomDeliverable}>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Título
+                </label>
+                <input
+                  type="text"
+                  value={deliverableForm.title}
+                  onChange={(e) => setDeliverableForm(prev => ({
+                    ...prev,
+                    title: e.target.value
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Ex: Roteiro do vídeo"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Descrição
+                </label>
+                <textarea
+                  rows={3}
+                  value={deliverableForm.description}
+                  onChange={(e) => setDeliverableForm(prev => ({
+                    ...prev,
+                    description: e.target.value
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Descreva o que precisa ser entregue..."
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Prazo
+                </label>
+                <input
+                  type="date"
+                  value={deliverableForm.due_date}
+                  onChange={(e) => setDeliverableForm(prev => ({
+                    ...prev,
+                    due_date: e.target.value
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Status
+                </label>
+                <select 
+                  value={deliverableForm.status}
+                  onChange={(e) => setDeliverableForm(prev => ({
+                    ...prev,
+                    status: e.target.value as 'pending' | 'in_progress' | 'submitted' | 'approved' | 'rejected'
+                  }))}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="pending">Pendente</option>
+                  <option value="in_progress">Em Progresso</option>
+                  <option value="completed">Concluída</option>
+                  <option value="overdue">Atrasada</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setShowCreateDeliverableModal(false)}
+                className="flex-1 px-4 py-2 text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200"
+              >
+                Cancelar
+              </button>
+              <button
+                type="submit"
+                className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+              >
+                Criar Entrega
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -494,17 +623,19 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
     );
   }
 
-  if (selectedProject) {
+  if (selectedProjectId && selectedProject) {
     const progress = getProjectProgress(selectedProject);
     const allDeliverables = [...selectedProject.standardDeliverables, ...selectedProject.customDeliverables];
     
     return (
-      <div className="space-y-6">
+      <div>
+        {renderModal()}
+        <div className="space-y-6">
         {/* Header do Projeto */}
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setSelectedProject(null)}
+              onClick={() => navigate('/analysts/projects')}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               ←
@@ -695,12 +826,15 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
             )}
           </div>
         </div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div>
+      {renderModal()}
+      <div className="space-y-6">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-semibold text-gray-900">Administração de Projetos</h1>
@@ -775,7 +909,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
               <div
                 key={project.id}
                 className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200 cursor-pointer"
-                onClick={() => setSelectedProject(project)}
+                onClick={() => navigate(`/analysts/projects/${project.id}`)}
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
@@ -858,91 +992,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
           })
         )}
       </div>
-
-      {/* Modal para Criar Deliverable */}
-      {showCreateDeliverableModal && (
-        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md relative transform transition-all">
-            <div className="flex justify-between items-center p-6 border-b">
-              <h3 className="text-lg font-semibold">Criar Nova Entrega</h3>
-              <button
-                onClick={() => setShowCreateDeliverableModal(false)}
-                className="text-gray-400 hover:text-gray-600 transition-colors"
-              >
-                <X className="h-5 w-5" />
-              </button>
-            </div>
-            
-            <form onSubmit={createCustomDeliverable} className="p-6 space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Título da Entrega
-                </label>
-                <input
-                  type="text"
-                  value={deliverableForm.title}
-                  onChange={(e) => setDeliverableForm(prev => ({
-                    ...prev,
-                    title: e.target.value
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  placeholder="Ex: Arte para Instagram"
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Descrição
-                </label>
-                <textarea
-                  value={deliverableForm.description}
-                  onChange={(e) => setDeliverableForm(prev => ({
-                    ...prev,
-                    description: e.target.value
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  rows={3}
-                  placeholder="Descreva a entrega esperada..."
-                  required
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Data de Entrega
-                </label>
-                <input
-                  type="date"
-                  value={deliverableForm.due_date}
-                  onChange={(e) => setDeliverableForm(prev => ({
-                    ...prev,
-                    due_date: e.target.value
-                  }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                  required
-                />
-              </div>
-              
-              <div className="flex justify-end gap-3 pt-4 border-t">
-                <button
-                  type="button"
-                  onClick={() => setShowCreateDeliverableModal(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-md transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md transition-colors"
-                >
-                  Criar Entrega
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 };

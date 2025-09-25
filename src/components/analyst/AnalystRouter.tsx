@@ -24,6 +24,11 @@ const AnalystRouter: React.FC<AnalystRouterProps> = ({
   // Extract the route from the path (remove /analysts prefix)
   const route = currentPath.replace('/analysts', '');
 
+  // Handle project details route with ID parameter
+  if (route.startsWith('/projects/') && route !== '/projects') {
+    const projectId = route.split('/')[2];
+    return <ProjectManagement onOpenConversation={onOpenConversation} selectedProjectId={projectId} />;
+  }
   
   switch (route) {
     case '/overview':
