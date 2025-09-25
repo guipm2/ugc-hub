@@ -357,6 +357,11 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
     }
   }, [user, fetchProjects]);
 
+  // Debug useEffect para monitorar o estado do modal
+  useEffect(() => {
+    console.log('🔍 Estado do modal mudou para:', showCreateDeliverableModal);
+  }, [showCreateDeliverableModal]);
+
   const getStatusBadge = (status: string, dueDate: string) => {
     const isOverdue = new Date(dueDate) < new Date() && status !== 'approved';
     
@@ -514,7 +519,14 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
               Progresso: {progress.completed}/{progress.total}
             </span>
             <button
-              onClick={() => setShowCreateDeliverableModal(true)}
+              onClick={() => {
+                console.log('🔥 Botão Nova Entrega clicado!');
+                console.log('🔥 Estado atual do modal:', showCreateDeliverableModal);
+                setShowCreateDeliverableModal(true);
+                setTimeout(() => {
+                  console.log('🔥 Estado do modal após timeout:', showCreateDeliverableModal);
+                }, 100);
+              }}
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             >
               <FileText className="h-4 w-4" />
@@ -733,10 +745,19 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
             <p className="text-gray-500">Nenhum projeto encontrado</p>
             <p className="text-gray-400 text-sm mt-1">
               {statusFilter === 'all' 
-                ? 'Você ainda não possui projetos aprovados'
+                ? 'Para testar a funcionalidade de deliverables, primeiro crie uma oportunidade e aprove uma candidatura'
                 : 'Nenhum projeto corresponde ao filtro selecionado'
               }
             </p>
+            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+              <p className="text-sm text-blue-800 font-medium mb-2">💡 Como testar deliverables:</p>
+              <ol className="text-sm text-blue-700 space-y-1">
+                <li>1. Vá para <strong>Oportunidades</strong> e crie uma nova oportunidade</li>
+                <li>2. Com outro usuário (criador), candidate-se à oportunidade</li>
+                <li>3. Volte aqui e aprove a candidatura</li>
+                <li>4. Clique no projeto aprovado para ver o botão <strong>"Nova Entrega"</strong></li>
+              </ol>
+            </div>
             <div className="mt-4 text-left bg-gray-50 p-4 rounded-lg">
               <p className="text-sm text-gray-600 mb-2">🔍 Debug Information:</p>
               <p className="text-xs text-gray-500">Total de projetos carregados: {projects.length}</p>
@@ -840,8 +861,8 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
 
       {/* Modal para Criar Deliverable */}
       {showCreateDeliverableModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black bg-opacity-60 backdrop-blur-sm">
+          <div className="bg-white rounded-lg shadow-2xl w-full max-w-md relative transform transition-all">
             <div className="flex justify-between items-center p-6 border-b">
               <h3 className="text-lg font-semibold">Criar Nova Entrega</h3>
               <button
