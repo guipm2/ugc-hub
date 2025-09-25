@@ -30,8 +30,8 @@ const AnalystNotificationDropdown: React.FC = () => {
         navigate('/analysts/messages');
         break;
       case 'new_deliverable':
-        // Para analista, navegar para gerenciamento de deliverables
-        navigate('/analysts/deliverables');
+        // Para analista, navegar para projetos onde pode gerenciar deliverables
+        navigate('/analysts/projects');
         break;
       default:
         navigate('/analysts/overview');
