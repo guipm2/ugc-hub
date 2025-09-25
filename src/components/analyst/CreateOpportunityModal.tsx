@@ -3,19 +3,35 @@ import { X, Plus, Minus } from 'lucide-react';
 
 interface CreateOpportunityModalProps {
   onClose: () => void;
-  onSubmit: (data: any) => void;
+  onSubmit: (data: OpportunityData) => void;
+}
+
+interface OpportunityData {
+  title: string;
+  company: string;
+  company_link?: string;
+  description: string;
+  budget_min: number;
+  budget_max: number;
+  location: string;
+  content_type: string;
+  requirements: string[];
+  deadline: string;
+  status: string;
+  age_range: string;
+  gender: string;
 }
 
 const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
     title: '',
     company: '',
+    company_link: '',
     description: '',
     contract_value: '',
     payment_type: '',
     custom_budget: '',
     creators_count: '1',
-    location: 'Remoto',
     content_type: '',
     niche: '',
     deadline: '',
@@ -71,12 +87,14 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
     switch (formData.payment_type) {
       case 'permuta':
         return { min: 0, max: 0 };
-      case 'percentage':
+      case 'percentage': {
         const percentage = (contractValue * 0.15) / creatorsCount;
         return { min: percentage, max: percentage };
-      case 'custom':
+      }
+      case 'custom': {
         const customValue = (parseFloat(formData.custom_budget) || 0) / creatorsCount;
         return { min: customValue, max: customValue };
+      }
       default:
         return { min: 0, max: 0 };
     }
@@ -91,10 +109,11 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
     const opportunityData = {
       title: formData.title,
       company: formData.company || 'Empresa não informada',
+      company_link: formData.company_link,
       description: formData.description,
       budget_min: budget.min,
       budget_max: budget.max,
-      location: formData.location,
+      location: 'Remoto', // Sempre remoto por padrão
       content_type: formData.content_type,
       requirements: filteredRequirements,
       deadline: formData.deadline,
@@ -167,6 +186,23 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
               placeholder="Ex: Beauty Corp"
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Instagram ou Site da Empresa
+            </label>
+            <input
+              type="url"
+              name="company_link"
+              value={formData.company_link}
+              onChange={handleInputChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              placeholder="Ex: https://instagram.com/empresa ou https://empresa.com.br"
+            />
+            <p className="text-sm text-gray-500 mt-1">
+              Link do perfil do Instagram ou website da empresa
+            </p>
           </div>
 
           <div>
@@ -274,53 +310,22 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Localização *
-              </label>
-              <select
-                name="location"
-                value={formData.location}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="Remoto">Remoto</option>
-                <option value="São Paulo">São Paulo</option>
-                <option value="Rio de Janeiro">Rio de Janeiro</option>
-                <option value="Belo Horizonte">Belo Horizonte</option>
-                <option value="Brasília">Brasília</option>
-                <option value="Salvador">Salvador</option>
-                <option value="Fortaleza">Fortaleza</option>
-                <option value="Recife">Recife</option>
-                <option value="Porto Alegre">Porto Alegre</option>
-                <option value="Curitiba">Curitiba</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Tipo de Conteúdo *
-              </label>
-              <select
-                name="content_type"
-                value={formData.content_type}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">Selecione o tipo</option>
-                <option value="Reel + Stories">Reel + Stories</option>
-                <option value="Vídeo YouTube">Vídeo YouTube</option>
-                <option value="Post Instagram">Post Instagram</option>
-                <option value="Stories">Stories</option>
-                <option value="TikTok">TikTok</option>
-                <option value="Reels">Reels</option>
-                <option value="IGTV">IGTV</option>
-                <option value="Feed + Stories">Feed + Stories</option>
-              </select>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Tipo de Conteúdo *
+            </label>
+            <select
+              name="content_type"
+              value={formData.content_type}
+              onChange={handleInputChange}
+              required
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            >
+              <option value="">Selecione o tipo</option>
+              <option value="Foto">Foto</option>
+              <option value="Foto + Video">Foto + Video</option>
+              <option value="Video">Video</option>
+            </select>
           </div>
 
           <div>
