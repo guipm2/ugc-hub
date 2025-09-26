@@ -66,6 +66,44 @@ interface Application {
 // Templates padrão por tipo de conteúdo
 const DEFAULT_TEMPLATES: Omit<DeliverableTemplate, 'id' | 'created_at'>[] = [
   {
+    name: 'Template Genérico',
+    description: 'Template básico que funciona para qualquer tipo de projeto',
+    content_types: ['generic', 'universal', 'all'],
+    deliverables: [
+      {
+        title: 'Briefing e Alinhamento',
+        description: 'Definir objetivos, público-alvo e diretrizes do projeto',
+        days_from_start: 1,
+        priority: 1,
+        estimated_hours: 2
+      },
+      {
+        title: 'Primeira Proposta',
+        description: 'Apresentar a primeira versão do trabalho para aprovação',
+        days_from_start: 3,
+        priority: 2,
+        estimated_hours: 4,
+        depends_on_index: 0
+      },
+      {
+        title: 'Ajustes e Revisão',
+        description: 'Implementar feedback e fazer ajustes necessários',
+        days_from_start: 5,
+        priority: 3,
+        estimated_hours: 3,
+        depends_on_index: 1
+      },
+      {
+        title: 'Entrega Final',
+        description: 'Versão final aprovada e pronta para publicação',
+        days_from_start: 7,
+        priority: 4,
+        estimated_hours: 1,
+        depends_on_index: 2
+      }
+    ]
+  },
+  {
     name: 'Post/Carousel Instagram',
     description: 'Template padrão para posts e carousels do Instagram',
     content_types: ['post', 'carousel', 'instagram'],
@@ -197,6 +235,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
   
   // Estados de UI
   const [showTemplateModal, setShowTemplateModal] = useState(false);
+  const [showCustomModal, setShowCustomModal] = useState(false);
   const [selectedDeliverables, setSelectedDeliverables] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
   
@@ -209,6 +248,14 @@ const EnhancedDeliverableManagement: React.FC = () => {
   // Estados de formulário
   const [selectedApplication, setSelectedApplication] = useState<string>('');
   const [selectedTemplate, setSelectedTemplate] = useState<string>('');
+  const [customForm, setCustomForm] = useState({
+    title: '',
+    description: '',
+    due_date: '',
+    priority: 1,
+    estimated_hours: 0,
+    tags: '' as string
+  });
 
   const { user } = useAnalystAuth();
 
@@ -278,17 +325,34 @@ const EnhancedDeliverableManagement: React.FC = () => {
 
   // Create deliverable from template
   const createDeliverablesFromTemplate = async (applicationId: string, templateName: string) => {
+    console.log('🚀 Iniciando criação de deliverables do template:', { applicationId, templateName });
+    
     const template = DEFAULT_TEMPLATES.find(t => t.name === templateName);
-    if (!template) return;
+    if (!template) {
+      console.error('❌ Template não encontrado:', templateName);
+      alert('Template não encontrado');
+      return;
+    }
 
     const application = applications.find(app => app.id === applicationId);
-    if (!application) return;
+    if (!application) {
+      console.error('❌ Application não encontrada:', applicationId);
+      alert('Projeto não encontrado');
+      return;
+    }
 
-    if (!user?.id) return;
+    if (!user?.id) {
+      console.error('❌ Usuário não identificado');
+      alert('Erro de autenticação');
+      return;
+    }
 
     try {
       const baseDate = new Date();
       const createdDeliverables: ProjectDeliverable[] = [];
+
+      console.log('📋 Template encontrado:', template);
+      console.log('🏢 Application encontrada:', application);
 
       // Create deliverables in order to handle dependencies
       for (let i = 0; i < template.deliverables.length; i++) {
@@ -297,9 +361,15 @@ const EnhancedDeliverableManagement: React.FC = () => {
         dueDate.setDate(baseDate.getDate() + templateDeliverable.days_from_start);
 
         let dependsOn = null;
-        if (templateDeliverable.depends_on_index !== undefined) {
+        if (templateDeliverable.depends_on_index !== undefined && templateDeliverable.depends_on_index < createdDeliverables.length) {
           dependsOn = createdDeliverables[templateDeliverable.depends_on_index]?.id;
         }
+
+        console.log(`📝 Criando deliverable ${i + 1}/${template.deliverables.length}:`, {
+          title: templateDeliverable.title,
+          due_date: dueDate.toISOString().split('T')[0],
+          depends_on: dependsOn
+        });
 
         const { data, error } = await supabase
           .from('project_deliverables')
@@ -315,27 +385,114 @@ const EnhancedDeliverableManagement: React.FC = () => {
             estimated_hours: templateDeliverable.estimated_hours || 0,
             depends_on: dependsOn,
             template_id: template.name,
-            tags: [template.name.toLowerCase().replace(/\s+/g, '-')]
+            tags: [template.name.toLowerCase().replace(/\s+/g, '-')],
+            status: 'pending'
           })
           .select()
           .single();
 
         if (error) {
-          console.error('Erro ao criar deliverable:', error);
+          console.error(`❌ Erro ao criar deliverable ${i + 1}:`, error);
           throw error;
         }
 
+        console.log(`✅ Deliverable ${i + 1} criado com sucesso:`, data);
         createdDeliverables.push(data);
       }
 
+      console.log('🎉 Todos os deliverables criados com sucesso!');
+      
       await fetchDeliverables();
       setShowTemplateModal(false);
+      
       // Reset form
       setSelectedApplication('');
       setSelectedTemplate('');
+      
+      alert(`✅ ${createdDeliverables.length} deliverables criados com sucesso!`);
     } catch (error) {
-      console.error('Erro ao criar deliverables do template:', error);
-      alert('Erro ao criar deliverables do template');
+      console.error('❌ Erro ao criar deliverables do template:', error);
+      alert('❌ Erro ao criar deliverables do template: ' + (error as Error).message);
+    }
+  };
+
+  // Create custom deliverable
+  const createCustomDeliverable = async () => {
+    console.log('🚀 Iniciando criação de deliverable customizado:', { selectedApplication, customForm });
+    
+    if (!selectedApplication || !customForm.title || !customForm.due_date) {
+      alert('❌ Por favor, preencha todos os campos obrigatórios');
+      return;
+    }
+
+    const application = applications.find(app => app.id === selectedApplication);
+    if (!application) {
+      console.error('❌ Application não encontrada:', selectedApplication);
+      alert('Projeto não encontrado');
+      return;
+    }
+
+    if (!user?.id) {
+      console.error('❌ Usuário não identificado');
+      alert('Erro de autenticação');
+      return;
+    }
+
+    try {
+      const tags = customForm.tags ? customForm.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
+      
+      console.log('📝 Criando deliverable customizado:', {
+        application_id: selectedApplication,
+        opportunity_id: application.opportunity_id,
+        creator_id: application.creator_id,
+        analyst_id: user.id,
+        ...customForm,
+        tags
+      });
+
+      const { data, error } = await supabase
+        .from('project_deliverables')
+        .insert({
+          application_id: selectedApplication,
+          opportunity_id: application.opportunity_id,
+          creator_id: application.creator_id,
+          analyst_id: user.id,
+          title: customForm.title,
+          description: customForm.description,
+          due_date: customForm.due_date,
+          priority: customForm.priority,
+          estimated_hours: customForm.estimated_hours || 0,
+          tags,
+          status: 'pending'
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('❌ Erro ao criar deliverable:', error);
+        throw error;
+      }
+
+      console.log('✅ Deliverable customizado criado com sucesso:', data);
+      
+      await fetchDeliverables();
+      setShowCustomModal(false);
+      
+      // Reset form
+      setSelectedApplication('');
+      setCustomForm({
+        title: '',
+        description: '',
+        due_date: '',
+        priority: 1,
+        estimated_hours: 0,
+        tags: ''
+      });
+      
+      alert('✅ Deliverable criado com sucesso!');
+    } catch (error) {
+      console.error('❌ Erro ao criar deliverable customizado:', error);
+      alert('❌ Erro ao criar deliverable: ' + (error as Error).message);
     }
   };
 
@@ -512,7 +669,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
             </button>
             
             <button
-              onClick={() => setShowTemplateModal(true)}
+              onClick={() => setShowCustomModal(true)}
               className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
             >
               <Plus className="h-4 w-4" />
@@ -993,9 +1150,13 @@ const EnhancedDeliverableManagement: React.FC = () => {
                   <div className="space-y-3">
                     {DEFAULT_TEMPLATES.map((template) => {
                       const selectedApp = applications.find(app => app.id === selectedApplication);
-                      const isCompatible = !selectedApp || template.content_types.some(type => 
-                        selectedApp.opportunity.content_type.toLowerCase().includes(type)
-                      );
+                      // Sempre permitir template genérico, ou verificar compatibilidade
+                      const isCompatible = template.name === 'Template Genérico' || !selectedApp || 
+                        template.content_types.some(type => 
+                          selectedApp.opportunity.content_type.toLowerCase().includes(type)
+                        ) ||
+                        template.content_types.includes('multi') || 
+                        template.content_types.includes('campaign');
                       
                       return (
                         <div
@@ -1079,6 +1240,149 @@ const EnhancedDeliverableManagement: React.FC = () => {
                 className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Criar Deliverables
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Custom Deliverable Modal */}
+      {showCustomModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto">
+            <h3 className="text-lg font-semibold mb-4">Criar Deliverable Personalizado</h3>
+            
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Selecionar Projeto Aprovado *
+                </label>
+                <select
+                  value={selectedApplication}
+                  onChange={(e) => setSelectedApplication(e.target.value)}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">Selecione um projeto...</option>
+                  {applications.map((app) => (
+                    <option key={app.id} value={app.id}>
+                      {app.creator.name} - {app.opportunity.title} ({app.opportunity.company})
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Título do Deliverable *
+                </label>
+                <input
+                  type="text"
+                  value={customForm.title}
+                  onChange={(e) => setCustomForm({...customForm, title: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Ex: Briefing e Conceito Creative"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Descrição
+                </label>
+                <textarea
+                  value={customForm.description}
+                  onChange={(e) => setCustomForm({...customForm, description: e.target.value})}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  placeholder="Descreva o que deve ser entregue..."
+                  rows={3}
+                />
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Data de Entrega *
+                  </label>
+                  <input
+                    type="date"
+                    value={customForm.due_date}
+                    onChange={(e) => setCustomForm({...customForm, due_date: e.target.value})}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Prioridade
+                  </label>
+                  <select
+                    value={customForm.priority}
+                    onChange={(e) => setCustomForm({...customForm, priority: parseInt(e.target.value)})}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value={1}>1 - Mais Alta</option>
+                    <option value={2}>2 - Alta</option>
+                    <option value={3}>3 - Média</option>
+                    <option value={4}>4 - Baixa</option>
+                    <option value={5}>5 - Mais Baixa</option>
+                  </select>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Horas Estimadas
+                  </label>
+                  <input
+                    type="number"
+                    value={customForm.estimated_hours}
+                    onChange={(e) => setCustomForm({...customForm, estimated_hours: parseInt(e.target.value) || 0})}
+                    min="0"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="0"
+                  />
+                </div>
+                
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Tags (separadas por vírgula)
+                  </label>
+                  <input
+                    type="text"
+                    value={customForm.tags}
+                    onChange={(e) => setCustomForm({...customForm, tags: e.target.value})}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="design, conceito, briefing"
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={() => {
+                  setShowCustomModal(false);
+                  setSelectedApplication('');
+                  setCustomForm({
+                    title: '',
+                    description: '',
+                    due_date: '',
+                    priority: 1,
+                    estimated_hours: 0,
+                    tags: ''
+                  });
+                }}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={createCustomDeliverable}
+                disabled={!selectedApplication || !customForm.title || !customForm.due_date}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Criar Deliverable
               </button>
             </div>
           </div>

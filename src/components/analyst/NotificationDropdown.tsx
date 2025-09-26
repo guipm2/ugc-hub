@@ -5,7 +5,7 @@ import { useRouter } from '../../hooks/useRouter';
 
 const AnalystNotificationDropdown: React.FC = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { notifications, unreadCount, markAsRead } = useAnalystNotifications();
+  const { notifications, unreadCount, markAsRead, markAllAsRead } = useAnalystNotifications();
   const { navigate } = useRouter();
 
   const handleNotificationClick = (notification: AnalystNotification) => {
@@ -96,6 +96,14 @@ const AnalystNotificationDropdown: React.FC = () => {
             <div className="p-4 border-b border-gray-200">
               <div className="flex items-center justify-between">
                 <h3 className="font-semibold text-gray-900">Notificações</h3>
+                {unreadCount > 0 && (
+                  <button
+                    onClick={markAllAsRead}
+                    className="text-xs text-purple-600 hover:text-purple-700 font-medium"
+                  >
+                    Marcar todas como lidas
+                  </button>
+                )}
               </div>
             </div>
 

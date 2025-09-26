@@ -34,35 +34,51 @@ export const useAnalystNotifications = () => {
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
+    console.log('🔔 Fetching notifications for analyst:', user.id);
+
     try {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
+        .eq('analyst_id', user.id) // ✅ Filtrar por analista específico
         .order('created_at', { ascending: false })
         .limit(50);
 
       if (error) {
-        console.error('Erro ao buscar notificações:', error);
+        console.error('❌ Erro ao buscar notificações:', error);
+        setNotifications([]);
+        setUnreadCount(0);
       } else {
+        console.log('📊 Notificações encontradas:', data?.length || 0);
         setNotifications(data || []);
         setUnreadCount(data?.filter(n => !n.read).length || 0);
       }
     } catch (err) {
-      console.error('Erro ao buscar notificações:', err);
+      console.error('❌ Erro geral ao buscar notificações:', err);
+      setNotifications([]);
+      setUnreadCount(0);
     } finally {
       setLoading(false);
     }
   }, [user]);
 
-  const markAsRead = async (notificationId: string) => {
+  const markAsRead = useCallback(async (notificationId: string) => {
+    if (!user) return;
+
+    console.log('📖 Marking notification as read:', notificationId);
+
     try {
-      const { error } = await supabase.rpc('mark_notification_as_read', {
-        notification_id: notificationId
-      });
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('id', notificationId)
+        .eq('analyst_id', user.id); // ✅ Garantir que só modifica notificações do analista
 
       if (error) {
-        console.error('Erro ao marcar notificação como lida:', error);
+        console.error('❌ Erro ao marcar notificação como lida:', error);
       } else {
+        console.log('✅ Notificação marcada como lida');
+        // Atualizar estado local
         setNotifications(prev => 
           prev.map(n => 
             n.id === notificationId ? { ...n, read: true } : n
@@ -71,9 +87,36 @@ export const useAnalystNotifications = () => {
         setUnreadCount(prev => Math.max(0, prev - 1));
       }
     } catch (err) {
-      console.error('Erro ao marcar notificação como lida:', err);
+      console.error('❌ Erro geral ao marcar notificação:', err);
     }
-  };
+  }, [user]);
+
+  const markAllAsRead = useCallback(async () => {
+    if (!user) return;
+
+    console.log('📖 Marking all notifications as read for analyst:', user.id);
+
+    try {
+      const { error } = await supabase
+        .from('notifications')
+        .update({ read: true })
+        .eq('analyst_id', user.id) // ✅ Só marcar notificações do analista
+        .eq('read', false);
+
+      if (error) {
+        console.error('❌ Erro ao marcar todas as notificações como lidas:', error);
+      } else {
+        console.log('✅ Todas as notificações marcadas como lidas');
+        // Atualizar estado local
+        setNotifications(prev => 
+          prev.map(n => ({ ...n, read: true }))
+        );
+        setUnreadCount(0);
+      }
+    } catch (err) {
+      console.error('❌ Erro geral ao marcar todas as notificações:', err);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (user) {
@@ -88,12 +131,36 @@ export const useAnalystNotifications = () => {
             event: 'INSERT',
             schema: 'public',
             table: 'notifications',
-            filter: `user_id=eq.${user.id}`
+            filter: `analyst_id=eq.${user.id}` // ✅ Corrigido: analyst_id ao invés de user_id
           },
           (payload) => {
+            console.log('🔔 Nova notificação real-time:', payload);
             const newNotification = payload.new as AnalystNotification;
             setNotifications(prev => [newNotification, ...prev]);
-            setUnreadCount(prev => prev + 1);
+            if (!newNotification.read) {
+              setUnreadCount(prev => prev + 1);
+            }
+          }
+        )
+        .on(
+          'postgres_changes',
+          {
+            event: 'UPDATE',
+            schema: 'public',
+            table: 'notifications',
+            filter: `analyst_id=eq.${user.id}` // ✅ Filtro para updates também
+          },
+          (payload) => {
+            console.log('📝 Notificação atualizada real-time:', payload);
+            const updatedNotification = payload.new as AnalystNotification;
+            setNotifications(prev => 
+              prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
+            );
+            
+            // Atualizar contador se mudou de não lida para lida
+            if (payload.old && !(payload.old as AnalystNotification).read && updatedNotification.read) {
+              setUnreadCount(prev => Math.max(0, prev - 1));
+            }
           }
         )
         .subscribe();
@@ -109,6 +176,7 @@ export const useAnalystNotifications = () => {
     unreadCount,
     loading,
     markAsRead,
+    markAllAsRead,
     refetch: fetchNotifications
   };
 };
