@@ -326,7 +326,7 @@ function CreatorApp() {
 function App() {
   const { currentPath } = useRouter();
 
-  console.log('Current path:', currentPath); // Debug log
+  console.log('Current path:', currentPath);
 
   // Handle login routes first (more specific)
   if (currentPath === '/login/creators') {

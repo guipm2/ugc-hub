@@ -72,14 +72,14 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
 
       if (error) {
         console.error('Erro ao atualizar oportunidade:', error);
-        alert('Erro ao atualizar oportunidade');
+        // REMOVIDO: alert('Erro ao atualizar oportunidade');
       } else {
         onSubmit(formData);
-        alert('Oportunidade atualizada com sucesso!');
+        // REMOVIDO: alert('Oportunidade atualizada com sucesso!');
       }
     } catch (err) {
       console.error('Erro ao atualizar oportunidade:', err);
-      alert('Erro ao atualizar oportunidade');
+      // REMOVIDO: alert('Erro ao atualizar oportunidade');
     } finally {
       setLoading(false);
     }

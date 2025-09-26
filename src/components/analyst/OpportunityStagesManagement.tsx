@@ -327,15 +327,15 @@ const OpportunityStagesManagement: React.FC = () => {
 
       if (error) {
         console.error('Erro ao atualizar etapa:', error);
-        alert('Erro ao atualizar etapa');
+        // REMOVIDO: alert('Erro ao atualizar etapa');
       } else {
         await fetchStages();
         await fetchOpportunitiesWithCreators();
-        alert('Etapa atualizada com sucesso!');
+        // REMOVIDO: alert('Etapa atualizada com sucesso!');
       }
     } catch (err) {
       console.error('Erro ao atualizar etapa:', err);
-      alert('Erro ao atualizar etapa');
+      // REMOVIDO: alert('Erro ao atualizar etapa');
     } finally {
       setUpdating(null);
     }
@@ -343,7 +343,7 @@ const OpportunityStagesManagement: React.FC = () => {
 
   const handleTrackingSubmit = async (stageId: string) => {
     if (!trackingCode.trim()) {
-      alert('Por favor, insira o código de rastreio');
+      // REMOVIDO: alert('Por favor, insira o código de rastreio');
       return;
     }
 
@@ -355,7 +355,7 @@ const OpportunityStagesManagement: React.FC = () => {
 
   const handleCreatorTrackingSubmit = async () => {
     if (!showCreatorTrackingModal || !showCreatorTrackingModal.trackingCode.trim()) {
-      alert('Por favor, insira o código de rastreio');
+      // REMOVIDO: alert('Por favor, insira o código de rastreio');
       return;
     }
 
@@ -409,7 +409,7 @@ const OpportunityStagesManagement: React.FC = () => {
     const targetIndex = stageConfigs.findIndex(config => config.key === targetStage);
 
     if (targetIndex < currentIndex) {
-      alert('Não é possível voltar etapas. Use os botões de ação para fazer alterações específicas.');
+      // REMOVIDO: alert('Não é possível voltar etapas. Use os botões de ação para fazer alterações específicas.');
       setDraggedStage(null);
       return;
     }

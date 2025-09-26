@@ -85,7 +85,7 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
 
       if (error) {
         console.error('Erro ao atualizar candidatura:', error);
-        alert('Erro ao atualizar candidatura');
+        // REMOVIDO: alert('Erro ao atualizar candidatura');
       } else {
         setApplications(prev =>
           prev.map(app =>
@@ -94,11 +94,11 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
               : app
           )
         );
-        alert(`Candidatura ${status === 'approved' ? 'aprovada' : 'rejeitada'} com sucesso! O criador será notificado.`);
+        // REMOVIDO: alert(`Candidatura ${status === 'approved' ? 'aprovada' : 'rejeitada'} com sucesso! O criador será notificado.`);
       }
     } catch (err) {
       console.error('Erro ao atualizar candidatura:', err);
-      alert('Erro ao atualizar candidatura');
+      // REMOVIDO: alert('Erro ao atualizar candidatura');
     } finally {
       setUpdating(null);
     }

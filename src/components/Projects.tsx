@@ -277,7 +277,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
 
     setShowUploadModal(null);
     setUploadFiles(null);
-    alert('Arquivos enviados com sucesso!');
+    // REMOVIDO: alert('Arquivos enviados com sucesso!');
   };
 
   const formatFileSize = (bytes: number) => {
@@ -296,7 +296,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
     if (conversationId) {
       onOpenConversation(conversationId);
     } else {
-      alert('Conversa não encontrada para este projeto');
+      // REMOVIDO: alert('Conversa não encontrada para este projeto');
     }
   };
 

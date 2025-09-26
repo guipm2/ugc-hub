@@ -251,7 +251,6 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
       if (conversationError || !newConversation) {
         console.error('Erro ao criar conversa:', conversationError);
-        alert('Erro ao criar conversa');
         return;
       }
 
@@ -276,7 +275,6 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
       if (error) {
         console.error('Erro ao enviar mensagem:', error);
-        alert('Erro ao enviar mensagem');
       } else {
         // Adicionar a mensagem imediatamente à lista local
         if (data) {
@@ -286,7 +284,6 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
       }
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
-      alert('Erro ao enviar mensagem');
     } finally {
       setSendingMessage(false);
     }
@@ -308,7 +305,6 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
       if (messagesError) {
         console.error('Erro ao deletar mensagens:', messagesError);
-        alert('Erro ao deletar mensagens');
         return;
       }
 
@@ -320,7 +316,6 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
       if (conversationError) {
         console.error('Erro ao deletar conversa:', conversationError);
-        alert('Erro ao deletar conversa');
         return;
       }
 
@@ -330,7 +325,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
       fetchProjectChats(); // Refresh the list
     } catch (err) {
       console.error('Erro ao deletar chat:', err);
-      alert('Erro ao deletar chat');
+      console.error('Erro ao deletar chat:', err);
     }
   };
 

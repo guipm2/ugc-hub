@@ -138,7 +138,7 @@ const DeliverableManagement: React.FC = () => {
 
   const handleCreateDeliverable = async () => {
     if (!selectedApplication || !formData.title || !formData.due_date || !user) {
-      alert('Por favor, preencha todos os campos obrigatórios');
+      // REMOVIDO: alert('Por favor, preencha todos os campos obrigatórios');
       return;
     }
 
@@ -162,7 +162,7 @@ const DeliverableManagement: React.FC = () => {
 
       if (error) {
         console.error('Erro ao criar deliverable:', error);
-        alert('Erro ao criar deliverable');
+        // REMOVIDO: alert('Erro ao criar deliverable');
         return;
       }
 
@@ -170,10 +170,10 @@ const DeliverableManagement: React.FC = () => {
       setFormData({ title: '', description: '', due_date: '', priority: 1 });
       setSelectedApplication('');
       fetchDeliverables();
-      alert('Deliverable criado com sucesso!');
+      // REMOVIDO: alert('Deliverable criado com sucesso!');
     } catch (error) {
       console.error('Erro ao criar deliverable:', error);
-      alert('Erro ao criar deliverable');
+      // REMOVIDO: alert('Erro ao criar deliverable');
     }
   };
 
@@ -192,17 +192,17 @@ const DeliverableManagement: React.FC = () => {
 
       if (error) {
         console.error('Erro ao atualizar deliverable:', error);
-        alert('Erro ao atualizar deliverable');
+        // REMOVIDO: alert('Erro ao atualizar deliverable');
         return;
       }
 
       setShowEditModal(null);
       setFormData({ title: '', description: '', due_date: '', priority: 1 });
       fetchDeliverables();
-      alert('Deliverable atualizado com sucesso!');
+      // REMOVIDO: alert('Deliverable atualizado com sucesso!');
     } catch (error) {
       console.error('Erro ao atualizar deliverable:', error);
-      alert('Erro ao atualizar deliverable');
+      // REMOVIDO: alert('Erro ao atualizar deliverable');
     }
   };
 
@@ -217,15 +217,15 @@ const DeliverableManagement: React.FC = () => {
 
       if (error) {
         console.error('Erro ao deletar deliverable:', error);
-        alert('Erro ao deletar deliverable');
+        // REMOVIDO: alert('Erro ao deletar deliverable');
         return;
       }
 
       fetchDeliverables();
-      alert('Deliverable deletado com sucesso!');
+      // REMOVIDO: alert('Deliverable deletado com sucesso!');
     } catch (error) {
       console.error('Erro ao deletar deliverable:', error);
-      alert('Erro ao deletar deliverable');
+      // REMOVIDO: alert('Erro ao deletar deliverable');
     }
   };
 
@@ -248,14 +248,14 @@ const DeliverableManagement: React.FC = () => {
 
       if (error) {
         console.error('Erro ao atualizar status:', error);
-        alert('Erro ao atualizar status');
+        // REMOVIDO: alert('Erro ao atualizar status');
         return;
       }
 
       fetchDeliverables();
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
-      alert('Erro ao atualizar status');
+      // REMOVIDO: alert('Erro ao atualizar status');
     }
   };
 

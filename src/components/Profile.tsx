@@ -143,15 +143,15 @@ const Profile = () => {
 
       if (error) {
         console.error('Erro ao salvar perfil:', error);
-        alert('Erro ao salvar perfil. Tente novamente.');
+        // REMOVIDO: alert('Erro ao salvar perfil. Tente novamente.');
         return;
       }
 
       setIsEditing(false);
-      alert('Perfil salvo com sucesso!');
+      // REMOVIDO: alert('Perfil salvo com sucesso!');
     } catch (err) {
       console.error('Erro ao salvar perfil:', err);
-      alert('Erro ao salvar perfil. Tente novamente.');
+      // REMOVIDO: alert('Erro ao salvar perfil. Tente novamente.');
     } finally {
       setLoading(false);
     }

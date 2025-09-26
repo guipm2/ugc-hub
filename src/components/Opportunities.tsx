@@ -196,10 +196,10 @@ const Opportunities = () => {
 
       if (insertError) {
         if (insertError.code === '23505') { // Unique constraint violation
-          alert('Você já se candidatou para esta oportunidade!');
+          // REMOVIDO: alert('Você já se candidatou para esta oportunidade!');
         } else {
           console.error('Erro ao se candidatar:', insertError);
-          alert('Erro ao se candidatar. Tente novamente.');
+          // REMOVIDO: alert('Erro ao se candidatar. Tente novamente.');
         }
         return;
       }
@@ -220,12 +220,12 @@ const Opportunities = () => {
         }
       }
 
-      alert('Candidatura enviada com sucesso!');
+      // REMOVIDO: alert('Candidatura enviada com sucesso!');
       // Refresh opportunities to update application status
       fetchOpportunities();
     } catch (err) {
       console.error('Erro ao se candidatar:', err);
-      alert('Erro ao se candidatar. Tente novamente.');
+      // REMOVIDO: alert('Erro ao se candidatar. Tente novamente.');
     } finally {
       setActionLoading(null);
     }
@@ -248,18 +248,18 @@ const Opportunities = () => {
       if (error) {
         console.error('Erro ao cancelar candidatura:', error);
         if (error.code === '42501') {
-          alert('Você não tem permissão para cancelar esta candidatura.');
+          // REMOVIDO: alert('Você não tem permissão para cancelar esta candidatura.');
         } else {
-          alert('Erro ao cancelar candidatura. Tente novamente.');
+          // REMOVIDO: alert('Erro ao cancelar candidatura. Tente novamente.');
         }
       } else {
-        alert('Candidatura cancelada com sucesso!');
+        // REMOVIDO: alert('Candidatura cancelada com sucesso!');
         // Refresh opportunities to update application status
         fetchOpportunities();
       }
     } catch (err) {
       console.error('Erro ao cancelar candidatura:', err);
-      alert('Erro ao cancelar candidatura. Tente novamente.');
+      // REMOVIDO: alert('Erro ao cancelar candidatura. Tente novamente.');
     } finally {
       setActionLoading(null);
     }

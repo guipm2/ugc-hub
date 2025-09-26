@@ -76,7 +76,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
     e.preventDefault();
     
     if (!selectedProject || !user || !deliverableForm.title || !deliverableForm.due_date) {
-      alert('Por favor, preencha todos os campos obrigatórios');
+      // REMOVIDO: alert('Por favor, preencha todos os campos obrigatórios');
       return;
     }
 
@@ -97,7 +97,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
 
       if (error) {
         console.error('Erro ao criar deliverable:', error);
-        alert('Erro ao criar deliverable');
+        // REMOVIDO: alert('Erro ao criar deliverable');
         return;
       }
 
@@ -114,10 +114,10 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
       // Recarregar projetos para atualizar a lista
       fetchProjects();
       
-      alert('Deliverable criado com sucesso!');
+      // REMOVIDO: alert('Deliverable criado com sucesso!');
     } catch (error) {
       console.error('Erro ao criar deliverable:', error);
-      alert('Erro ao criar deliverable');
+      // REMOVIDO: alert('Erro ao criar deliverable');
     }
   };
   const openConversation = async (project: Project) => {
@@ -455,7 +455,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
       // Se for um deliverable customizado (do banco), atualizar no banco
       if (deliverableId.startsWith('std_')) {
         // Para deliverables padrão, apenas atualizar localmente por enquanto
-        alert('Funcionalidade de aprovação para deliverables padrão será implementada em breve');
+        // REMOVIDO: alert('Funcionalidade de aprovação para deliverables padrão será implementada em breve');
         return;
       }
 
@@ -466,16 +466,16 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
 
       if (error) {
         console.error('Erro ao atualizar status:', error);
-        alert('Erro ao atualizar status');
+        // REMOVIDO: alert('Erro ao atualizar status');
         return;
       }
 
       // Recarregar projetos
       fetchProjects();
-      alert(status === 'approved' ? 'Deliverable aprovado!' : 'Deliverable rejeitado!');
+      // REMOVIDO: alert(status === 'approved' ? 'Deliverable aprovado!' : 'Deliverable rejeitado!');
     } catch (error) {
       console.error('Erro ao atualizar status:', error);
-      alert('Erro ao atualizar status');
+      // REMOVIDO: alert('Erro ao atualizar status');
     }
   };
 
@@ -891,12 +891,6 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
                 <li>3. Volte aqui e aprove a candidatura</li>
                 <li>4. Clique no projeto aprovado para ver o botão <strong>"Nova Entrega"</strong></li>
               </ol>
-            </div>
-            <div className="mt-4 text-left bg-gray-50 p-4 rounded-lg">
-              <p className="text-sm text-gray-600 mb-2">🔍 Debug Information:</p>
-              <p className="text-xs text-gray-500">Total de projetos carregados: {projects.length}</p>
-              <p className="text-xs text-gray-500">Usuário analista ID: {user?.id}</p>
-              <p className="text-xs text-gray-500">Filtro atual: {statusFilter}</p>
             </div>
           </div>
         ) : (

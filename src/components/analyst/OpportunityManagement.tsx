@@ -100,15 +100,15 @@ const OpportunityManagement: React.FC = () => {
 
       if (error) {
         console.error('Erro ao criar oportunidade:', error);
-        alert('Erro ao criar oportunidade');
+        // REMOVIDO: alert('Erro ao criar oportunidade');
       } else {
         setOpportunities([data, ...opportunities]);
         setShowCreateModal(false);
-        alert('Oportunidade criada com sucesso!');
+        // REMOVIDO: alert('Oportunidade criada com sucesso!');
       }
     } catch (err) {
       console.error('Erro ao criar oportunidade:', err);
-      alert('Erro ao criar oportunidade');
+      // REMOVIDO: alert('Erro ao criar oportunidade');
     }
   };
 
@@ -123,14 +123,14 @@ const OpportunityManagement: React.FC = () => {
 
       if (error) {
         console.error('Erro ao excluir oportunidade:', error);
-        alert('Erro ao excluir oportunidade');
+        // REMOVIDO: alert('Erro ao excluir oportunidade');
       } else {
         setOpportunities(opportunities.filter(opp => opp.id !== id));
-        alert('Oportunidade excluída com sucesso!');
+        // REMOVIDO: alert('Oportunidade excluída com sucesso!');
       }
     } catch (err) {
       console.error('Erro ao excluir oportunidade:', err);
-      alert('Erro ao excluir oportunidade');
+      // REMOVIDO: alert('Erro ao excluir oportunidade');
     }
   };
 

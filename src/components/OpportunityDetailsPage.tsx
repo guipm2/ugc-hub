@@ -116,7 +116,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
 
       if (insertError) {
         console.error('Erro ao enviar candidatura:', insertError);
-        alert('Erro ao enviar candidatura. Tente novamente.');
+        // REMOVIDO: alert('Erro ao enviar candidatura. Tente novamente.');
         return;
       }
 
@@ -134,14 +134,14 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
         // Não interromper o fluxo, pois a candidatura já foi criada
       }
 
-      alert('Candidatura enviada com sucesso!');
+      // REMOVIDO: alert('Candidatura enviada com sucesso!');
       setShowApplicationForm(false);
       setApplicationMessage('');
       // Recarregar dados para mostrar a nova candidatura
       fetchOpportunityDetails();
     } catch (error) {
       console.error('Erro ao enviar candidatura:', error);
-      alert('Erro ao enviar candidatura. Tente novamente.');
+      // REMOVIDO: alert('Erro ao enviar candidatura. Tente novamente.');
     } finally {
       setApplying(false);
     }

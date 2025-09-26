@@ -121,7 +121,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
 
       if (error) {
         console.error('Erro ao criar conversa única:', error);
-        alert('Erro ao criar conversa. Tente novamente.');
+        // REMOVIDO: alert('Erro ao criar conversa. Tente novamente.');
       } else {
         // Redirecionar para nova conversa única
         if (onOpenConversation && newConversation) {
@@ -131,7 +131,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
       }
     } catch (err) {
       console.error('Erro ao criar conversa única:', err);
-      alert('Erro ao criar conversa. Tente novamente.');
+      // REMOVIDO: alert('Erro ao criar conversa. Tente novamente.');
     } finally {
       setContactingCreator(null);
     }

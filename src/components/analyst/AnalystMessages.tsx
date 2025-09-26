@@ -197,7 +197,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({ selectedConversationI
 
       if (error) {
         console.error('Erro ao enviar mensagem:', error);
-        alert('Erro ao enviar mensagem');
+        // REMOVIDO: alert('Erro ao enviar mensagem');
       } else {
         // Adicionar a mensagem imediatamente à lista local
         if (data) {
@@ -207,7 +207,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({ selectedConversationI
       }
     } catch (err) {
       console.error('Erro ao enviar mensagem:', err);
-      alert('Erro ao enviar mensagem');
+      // REMOVIDO: alert('Erro ao enviar mensagem');
     } finally {
       setSendingMessage(false);
     }

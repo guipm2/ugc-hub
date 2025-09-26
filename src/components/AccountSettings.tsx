@@ -47,15 +47,15 @@ const AccountSettings = () => {
   };
 
   const handleSaveProfile = () => {
-    alert('Configurações de perfil salvas com sucesso!');
+    // REMOVIDO: alert('Configurações de perfil salvas com sucesso!');
   };
 
   const handleChangePassword = () => {
     if (profileData.newPassword !== profileData.confirmPassword) {
-      alert('As senhas não coincidem');
+      // REMOVIDO: alert('As senhas não coincidem');
       return;
     }
-    alert('Senha alterada com sucesso!');
+    // REMOVIDO: alert('Senha alterada com sucesso!');
     setProfileData({
       ...profileData,
       currentPassword: '',
@@ -65,16 +65,16 @@ const AccountSettings = () => {
   };
 
   const handleSaveNotifications = () => {
-    alert('Configurações de notificação salvas com sucesso!');
+    // REMOVIDO: alert('Configurações de notificação salvas com sucesso!');
   };
 
   const handleExportData = () => {
-    alert('Seus dados serão exportados e enviados por email em breve.');
+    // REMOVIDO: alert('Seus dados serão exportados e enviados por email em breve.');
   };
 
   const handleDeleteAccount = () => {
     if (confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
-      alert('Funcionalidade de exclusão de conta será implementada em breve.');
+      // REMOVIDO: alert('Funcionalidade de exclusão de conta será implementada em breve.');
     }
   };
 
