@@ -40,7 +40,7 @@ export const useAnalystNotifications = () => {
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
-        .eq('analyst_id', user.id) // ✅ Filtrar por analista específico
+        .eq('user_id', user.id) // ✅ Usar user_id temporariamente até migration ser aplicada
         .order('created_at', { ascending: false })
         .limit(50);
 
