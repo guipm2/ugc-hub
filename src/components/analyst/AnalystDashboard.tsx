@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { LayoutDashboard, Target, Users, MessageCircle, Package, FolderOpen } from 'lucide-react';
+import { LayoutDashboard, Target, Users, MessageCircle, Package, FolderOpen, CheckSquare } from 'lucide-react';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRouter } from '../../hooks/useRouter';
 import AnalystGlobalSearch from './AnalystGlobalSearch';
@@ -28,6 +28,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
     { path: '/analysts/opportunities', label: 'Oportunidades', icon: Target },
     { path: '/analysts/stages', label: 'Gerenciar Etapas', icon: Package },
     { path: '/analysts/projects', label: 'Projetos', icon: FolderOpen },
+    { path: '/analysts/deliverables', label: 'Deliverables', icon: CheckSquare },
     { path: '/analysts/creators', label: 'Criadores', icon: Users },
     { path: '/analysts/messages', label: 'Mensagens', icon: MessageCircle }
   ];

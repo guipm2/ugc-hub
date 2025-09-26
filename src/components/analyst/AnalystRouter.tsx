@@ -7,6 +7,7 @@ import ProjectManagement from './ProjectManagement';
 import CreatorsList from './CreatorsList';
 import AnalystMessages from './AnalystMessages';
 import AnalystAccountSettings from './AnalystAccountSettings';
+import EnhancedDeliverableManagement from './EnhancedDeliverableManagement';
 
 interface AnalystRouterProps {
   onOpenConversation: (conversationId: string) => void;
@@ -39,6 +40,8 @@ const AnalystRouter: React.FC<AnalystRouterProps> = ({
       return <OpportunityStagesManagementWrapper />;
     case '/projects':
       return <ProjectManagement onOpenConversation={onOpenConversation} />;
+    case '/deliverables':
+      return <EnhancedDeliverableManagement />;
     case '/creators':
       return <CreatorsList onOpenConversation={onOpenConversation} />;
     case '/messages':
