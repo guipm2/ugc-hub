@@ -25,6 +25,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
   
   const menuItems = [
     { path: '/analysts/overview', label: 'Dashboard', icon: LayoutDashboard },
+    { path: '/analysts/project-dashboard', label: 'Dashboard Projetos', icon: LayoutDashboard },
     { path: '/analysts/opportunities', label: 'Oportunidades', icon: Target },
     { path: '/analysts/stages', label: 'Gerenciar Etapas', icon: Package },
     { path: '/analysts/projects', label: 'Projetos', icon: FolderOpen },

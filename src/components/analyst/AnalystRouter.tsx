@@ -8,6 +8,7 @@ import CreatorsList from './CreatorsList';
 import AnalystMessages from './AnalystMessages';
 import AnalystAccountSettings from './AnalystAccountSettings';
 import EnhancedDeliverableManagement from './EnhancedDeliverableManagement';
+import EnhancedProjectDashboard from './EnhancedProjectDashboard';
 
 interface AnalystRouterProps {
   onOpenConversation: (conversationId: string) => void;
@@ -34,6 +35,8 @@ const AnalystRouter: React.FC<AnalystRouterProps> = ({
   switch (route) {
     case '/overview':
       return <AnalystOverview />;
+    case '/project-dashboard':
+      return <EnhancedProjectDashboard />;
     case '/opportunities':
       return <OpportunityManagement />;
     case '/stages':
