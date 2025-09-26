@@ -5,6 +5,7 @@ import { useRouter } from '../../hooks/useRouter';
 import AnalystGlobalSearch from './AnalystGlobalSearch';
 import AnalystRouter from './AnalystRouter';
 import AnalystNotificationDropdown from './NotificationDropdown';
+import BasicCollaborationHub from '../collaboration/BasicCollaborationHub';
 
 interface AnalystDashboardProps {
   onOpenConversation: (conversationId: string) => void;
@@ -252,11 +253,21 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
 
         {/* Page Content */}
         <main className="p-6 mt-16">
-          <AnalystRouter 
-            onOpenConversation={onOpenConversation}
-            selectedConversationId={selectedConversationId}
-            onBackToList={onBackToList}
-          />
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+            {/* Main content */}
+            <div className="lg:col-span-3">
+              <AnalystRouter 
+                onOpenConversation={onOpenConversation}
+                selectedConversationId={selectedConversationId}
+                onBackToList={onBackToList}
+              />
+            </div>
+            
+            {/* Collaboration sidebar */}
+            <div className="lg:col-span-1">
+              <BasicCollaborationHub className="sticky top-24" />
+            </div>
+          </div>
         </main>
       </div>
     </div>
