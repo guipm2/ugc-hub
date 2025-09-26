@@ -1,6 +1,7 @@
-import React, { useState, useEffect } from 'react';
-import { X, User, Mail, MapPin, Users, Check, XIcon, Clock, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useCallback } from 'react';
+import { X, Users, Check, XIcon, ExternalLink, MapPin } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 
 interface Application {
   id: string;
@@ -34,12 +35,9 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const { analyst } = useAnalystAuth();
 
-  useEffect(() => {
-    fetchApplications();
-  }, [opportunityId]);
-
-  const fetchApplications = async () => {
+  const fetchApplications = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('opportunity_applications')
@@ -69,12 +67,23 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [opportunityId]);
+
+  useEffect(() => {
+    fetchApplications();
+  }, [fetchApplications]);
 
   const updateApplicationStatus = async (applicationId: string, status: 'approved' | 'rejected') => {
     setUpdating(applicationId);
 
     try {
+      // Get the application details before updating
+      const application = applications.find(app => app.id === applicationId);
+      if (!application) {
+        console.error('Application not found');
+        return;
+      }
+
       const { error } = await supabase
         .from('opportunity_applications')
         .update({
@@ -87,6 +96,11 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
         console.error('Erro ao atualizar candidatura:', error);
         // REMOVIDO: alert('Erro ao atualizar candidatura');
       } else {
+        // If approved, create a conversation for the project
+        if (status === 'approved') {
+          await createProjectConversation(opportunityId, application.creator_id);
+        }
+
         setApplications(prev =>
           prev.map(app =>
             app.id === applicationId
@@ -101,6 +115,41 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
       // REMOVIDO: alert('Erro ao atualizar candidatura');
     } finally {
       setUpdating(null);
+    }
+  };
+
+  const createProjectConversation = async (opportunityId: string, creatorId: string) => {
+    try {
+      // Check if conversation already exists for this project and creator
+      const { data: existingConversation } = await supabase
+        .from('conversations')
+        .select('id')
+        .eq('opportunity_id', opportunityId)
+        .eq('creator_id', creatorId)
+        .maybeSingle();
+
+      if (existingConversation) {
+        console.log('Conversation already exists for this project');
+        return;
+      }
+
+      // Create new project conversation
+      const { error: conversationError } = await supabase
+        .from('conversations')
+        .insert({
+          opportunity_id: opportunityId,
+          analyst_id: analyst?.id,
+          creator_id: creatorId,
+          last_message_at: new Date().toISOString()
+        });
+
+      if (conversationError) {
+        console.error('Erro ao criar conversa do projeto:', conversationError);
+      } else {
+        console.log('Conversa do projeto criada com sucesso');
+      }
+    } catch (error) {
+      console.error('Erro ao criar conversa do projeto:', error);
     }
   };
 
