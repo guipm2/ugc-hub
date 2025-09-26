@@ -30,19 +30,19 @@ const RealTimeCollaborationHub: React.FC<RealTimeCollaborationHubProps> = ({
   
   const {
     activityFeed,
-    userPresence,
+    // userPresence,
     loading,
     error,
     markActivityAsRead,
     clearActivityFeed,
     getUnreadActivityCount,
     getHighPriorityActivities,
-    updatePresence,
+    // updatePresence,
     getOnlineUsers,
     createCollaborativeSession,
     uploadSharedFile,
-    updateNotificationPreferences,
-    notificationPreferences
+    // updateNotificationPreferences,
+    // notificationPreferences
   } = useRealTimeCollaboration({
     enableActivityFeed: showActivityFeed,
     enablePresence: showPresence,

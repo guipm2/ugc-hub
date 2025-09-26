@@ -63,14 +63,14 @@ CREATE TABLE IF NOT EXISTS activity_feed (
   entity_id UUID,
   read BOOLEAN DEFAULT FALSE,
   priority INTEGER DEFAULT 3 CHECK (priority BETWEEN 1 AND 5), -- 1=highest, 5=lowest
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  
-  -- Indexes for performance
-  INDEX idx_activity_feed_user_id (user_id),
-  INDEX idx_activity_feed_created_at (created_at DESC),
-  INDEX idx_activity_feed_entity (entity_type, entity_id),
-  INDEX idx_activity_feed_unread (user_id, read) WHERE read = FALSE
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Create indexes for activity_feed
+CREATE INDEX IF NOT EXISTS idx_activity_feed_user_id ON activity_feed (user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_feed_created_at ON activity_feed (created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_activity_feed_entity ON activity_feed (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_activity_feed_unread ON activity_feed (user_id, read) WHERE read = FALSE;
 
 -- Enable RLS
 ALTER TABLE activity_feed ENABLE ROW LEVEL SECURITY;
@@ -139,13 +139,13 @@ CREATE TABLE IF NOT EXISTS collaborative_sessions (
   settings JSONB DEFAULT '{}', -- session settings like permissions, features
   created_at TIMESTAMPTZ DEFAULT NOW(),
   updated_at TIMESTAMPTZ DEFAULT NOW(),
-  ends_at TIMESTAMPTZ,
-  
-  -- Indexes
-  INDEX idx_collaborative_sessions_entity (entity_type, entity_id),
-  INDEX idx_collaborative_sessions_host (host_id),
-  INDEX idx_collaborative_sessions_status (status)
+  ends_at TIMESTAMPTZ
 );
+
+-- Create indexes for collaborative_sessions
+CREATE INDEX IF NOT EXISTS idx_collaborative_sessions_entity ON collaborative_sessions (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_collaborative_sessions_host ON collaborative_sessions (host_id);
+CREATE INDEX IF NOT EXISTS idx_collaborative_sessions_status ON collaborative_sessions (status);
 
 -- Collaborative session participants
 CREATE TABLE IF NOT EXISTS collaborative_session_participants (
@@ -208,13 +208,13 @@ CREATE TABLE IF NOT EXISTS shared_files (
   permissions JSONB DEFAULT '{"can_download": true, "can_delete": false, "can_share": false}',
   metadata JSONB DEFAULT '{}', -- file metadata like dimensions, duration, etc
   created_at TIMESTAMPTZ DEFAULT NOW(),
-  expires_at TIMESTAMPTZ,
-  
-  -- Indexes
-  INDEX idx_shared_files_entity (entity_type, entity_id),
-  INDEX idx_shared_files_uploader (uploaded_by),
-  INDEX idx_shared_files_created (created_at DESC)
+  expires_at TIMESTAMPTZ
 );
+
+-- Create indexes for shared_files
+CREATE INDEX IF NOT EXISTS idx_shared_files_entity ON shared_files (entity_type, entity_id);
+CREATE INDEX IF NOT EXISTS idx_shared_files_uploader ON shared_files (uploaded_by);
+CREATE INDEX IF NOT EXISTS idx_shared_files_created ON shared_files (created_at DESC);
 
 -- File access log
 CREATE TABLE IF NOT EXISTS file_access_log (
@@ -224,13 +224,13 @@ CREATE TABLE IF NOT EXISTS file_access_log (
   action TEXT NOT NULL CHECK (action IN ('view', 'download', 'share', 'delete')),
   ip_address INET,
   user_agent TEXT,
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  
-  -- Indexes
-  INDEX idx_file_access_log_file (file_id),
-  INDEX idx_file_access_log_user (user_id),
-  INDEX idx_file_access_log_action (action)
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Create indexes for file_access_log
+CREATE INDEX IF NOT EXISTS idx_file_access_log_file ON file_access_log (file_id);
+CREATE INDEX IF NOT EXISTS idx_file_access_log_user ON file_access_log (user_id);
+CREATE INDEX IF NOT EXISTS idx_file_access_log_action ON file_access_log (action);
 
 -- Enable RLS
 ALTER TABLE shared_files ENABLE ROW LEVEL SECURITY;
@@ -695,14 +695,14 @@ CREATE TABLE IF NOT EXISTS collaboration_analytics (
   period_start TIMESTAMPTZ NOT NULL,
   period_end TIMESTAMPTZ NOT NULL,
   metadata JSONB DEFAULT '{}',
-  created_at TIMESTAMPTZ DEFAULT NOW(),
-  
-  -- Indexes
-  INDEX idx_collaboration_analytics_period (period_start, period_end),
-  INDEX idx_collaboration_analytics_analyst (analyst_id),
-  INDEX idx_collaboration_analytics_creator (creator_id),
-  INDEX idx_collaboration_analytics_metric (metric_type)
+  created_at TIMESTAMPTZ DEFAULT NOW()
 );
+
+-- Create indexes for collaboration_analytics
+CREATE INDEX IF NOT EXISTS idx_collaboration_analytics_period ON collaboration_analytics (period_start, period_end);
+CREATE INDEX IF NOT EXISTS idx_collaboration_analytics_analyst ON collaboration_analytics (analyst_id);
+CREATE INDEX IF NOT EXISTS idx_collaboration_analytics_creator ON collaboration_analytics (creator_id);
+CREATE INDEX IF NOT EXISTS idx_collaboration_analytics_metric ON collaboration_analytics (metric_type);
 
 -- Enable RLS
 ALTER TABLE collaboration_analytics ENABLE ROW LEVEL SECURITY;

@@ -4,36 +4,28 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAnalystAuth } from '../contexts/AnalystAuthContext';
 
 // Types for real-time collaboration
-export interface ActivityFeedItem {
+interface ActivityFeedItem {
   id: string;
   user_id: string;
   actor_id: string;
   activity_type: string;
   title: string;
   description?: string;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   entity_type?: string;
   entity_id?: string;
   read: boolean;
-  priority: number; // 1=highest, 5=lowest
+  priority: number;
   created_at: string;
-  actor?: {
-    name: string;
-    email?: string;
-    avatar_url?: string;
-  };
 }
 
-export interface UserPresence {
+interface UserPresence {
   user_id: string;
   status: 'online' | 'away' | 'busy' | 'offline';
   last_seen: string;
   current_activity?: string;
-  activity_context: Record<string, any>;
-  user?: {
-    name: string;
-    avatar_url?: string;
-  };
+  activity_context: Record<string, unknown>;
+  updated_at: string;
 }
 
 export interface MessageStatus {
@@ -52,7 +44,7 @@ export interface CollaborativeSession {
   entity_id?: string;
   host_id: string;
   status: 'active' | 'paused' | 'completed' | 'cancelled';
-  settings: Record<string, any>;
+  settings: Record<string, unknown>;
   participants: CollaborativeSessionParticipant[];
   created_at: string;
   updated_at: string;
@@ -86,7 +78,7 @@ export interface SharedFile {
   entity_id?: string;
   access_level: 'private' | 'shared' | 'public';
   permissions: Record<string, boolean>;
-  metadata: Record<string, any>;
+  metadata: Record<string, unknown>;
   created_at: string;
   expires_at?: string;
   uploader?: {
@@ -130,15 +122,15 @@ export const useRealTimeCollaboration = (options: UseRealTimeCollaborationOption
   const [activityFeed, setActivityFeed] = useState<ActivityFeedItem[]>([]);
   const [userPresence, setUserPresence] = useState<Map<string, UserPresence>>(new Map());
   const [messageStatuses, setMessageStatuses] = useState<Map<string, MessageStatus>>(new Map());
-  const [collaborativeSessions, setCollaborativeSessions] = useState<CollaborativeSession[]>([]);
-  const [sharedFiles, setSharedFiles] = useState<SharedFile[]>([]);
+  // const [collaborativeSessions, setCollaborativeSessions] = useState<CollaborativeSession[]>([]);
+  // const [sharedFiles, setSharedFiles] = useState<SharedFile[]>([]);
   const [notificationPreferences, setNotificationPreferences] = useState<NotificationPreferences | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   // Refs for cleanup
-  const channelsRef = useRef<any[]>([]);
+  const channelsRef = useRef<unknown[]>([]);
   const presenceIntervalRef = useRef<NodeJS.Timeout>();
 
   // ===========================
@@ -750,8 +742,8 @@ export const useRealTimeCollaboration = (options: UseRealTimeCollaborationOption
     activityFeed,
     userPresence: userPresence,
     messageStatuses,
-    collaborativeSessions,
-    sharedFiles,
+    // collaborativeSessions,
+    // sharedFiles,
     notificationPreferences,
     loading,
     error,
