@@ -58,20 +58,20 @@ function AnalystApp() {
 }
 
 function CreatorApp() {
-  const [selectedConversationId, setSelectedConversationId] = useState<string | null>(null);
+  const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null); // Changed from selectedConversationId
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [opportunitiesCount, setOpportunitiesCount] = useState(0);
   const { user, loading, signOut, profile } = useAuth();
   const { currentPath, navigate } = useRouter();
 
-  const handleOpenConversation = (conversationId: string) => {
-    setSelectedConversationId(conversationId);
-    navigate('/creators/messages');
+  const handleOpenConversation = (projectId: string) => { // Changed parameter name for clarity
+    setSelectedProjectId(projectId);
+    navigate(`/creators/messages/${projectId}`); // Navigate directly to project chat
   };
 
   const handleBackToMessagesList = () => {
-    setSelectedConversationId(null);
+    setSelectedProjectId(null);
   };
 
   // Fetch opportunities count
@@ -314,7 +314,7 @@ function CreatorApp() {
         <main className="p-6 mt-16">
           <CreatorRouter 
             onOpenConversation={handleOpenConversation}
-            selectedConversationId={selectedConversationId}
+            selectedConversationId={selectedProjectId} // Will be renamed in CreatorRouter interface
             onBackToList={handleBackToMessagesList}
           />
         </main>

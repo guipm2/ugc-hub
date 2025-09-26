@@ -11,8 +11,8 @@ import Help from '../Help';
 import AccountSettings from '../AccountSettings';
 
 interface CreatorRouterProps {
-  onOpenConversation: (conversationId: string) => void;
-  selectedConversationId: string | null;
+  onOpenConversation: (projectId: string) => void; // Changed for clarity
+  selectedConversationId: string | null; // Will receive projectId but keeping prop name for compatibility
   onBackToList: () => void;
 }
 
@@ -32,6 +32,12 @@ const CreatorRouter: React.FC<CreatorRouterProps> = ({
     return <OpportunityDetailsPage opportunityId={opportunityId} />;
   }
 
+  // Handle messages with project ID parameter
+  if (route.startsWith('/messages/') && route !== '/messages') {
+    const projectId = route.split('/')[2];
+    return <Messages selectedProjectId={projectId} onBackToList={onBackToList} />;
+  }
+
   switch (route) {
     case '/dashboard':
       return <Dashboard />;
@@ -40,7 +46,7 @@ const CreatorRouter: React.FC<CreatorRouterProps> = ({
     case '/projects':
       return <Projects onOpenConversation={onOpenConversation} />;
     case '/messages':
-      return <Messages selectedConversationId={selectedConversationId} onBackToList={onBackToList} />;
+      return <Messages selectedProjectId={selectedConversationId} onBackToList={onBackToList} />;
     case '/training':
       return <Training />;
     case '/profile':

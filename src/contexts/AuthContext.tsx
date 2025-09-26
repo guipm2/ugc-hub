@@ -46,49 +46,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for existing session - usando a mesma estrutura simples do AnalystAuthContext
-    const getSession = async () => {
+    // Check for existing session and set up auth state listener
+    const getInitialSession = async () => {
       try {
         const { data: { session } } = await supabase.auth.getSession();
         
         if (session?.user) {
-          setUser(session.user);
-          setSession(session);
-          // Busca perfil do usuário
-          let { data: userProfile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .maybeSingle();
-
-          // Se não existe perfil, cria automaticamente
-          if (!userProfile) {
-            const { error: profileError } = await supabase
-              .from('profiles')
-              .insert({
-                id: session.user.id,
-                email: session.user.email || '',
-                name: session.user.user_metadata?.name || null,
-                role: 'creator',
-                terms_accepted: true,
-                terms_accepted_at: new Date().toISOString(),
-                terms_version: '1.0',
-              });
-            
-            if (!profileError) {
-              await new Promise(res => setTimeout(res, 300));
-              const { data: newProfile } = await supabase
-                .from('profiles')
-                .select('*')
-                .eq('id', session.user.id)
-                .maybeSingle();
-              userProfile = newProfile;
-            } else {
-              console.error('❌ Profile creation failed:', profileError);
-            }
-          }
-          
-          setProfile(userProfile ?? null);
+          await handleUserSession(session);
         } else {
           setProfile(null);
           setUser(null);
@@ -104,8 +68,69 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setLoading(false);
     };
 
-    getSession();
+    // Set up auth state change listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔄 Auth state changed:', event, session?.user?.id);
+      
+      if (event === 'SIGNED_IN' && session?.user) {
+        await handleUserSession(session);
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        setUser(null);
+        setSession(null);
+      }
+    });
+
+    getInitialSession();
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
+
+  const handleUserSession = async (session: Session) => {
+    setUser(session.user);
+    setSession(session);
+    
+    // Busca perfil do usuário
+    let { data: userProfile } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', session.user.id)
+      .maybeSingle();
+
+    // Se não existe perfil, cria automaticamente
+    if (!userProfile) {
+      console.log('👤 Creating new profile for user:', session.user.id);
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .insert({
+          id: session.user.id,
+          email: session.user.email || '',
+          name: session.user.user_metadata?.name || null,
+          role: 'creator',
+          terms_accepted: true,
+          terms_accepted_at: new Date().toISOString(),
+          terms_version: '1.0',
+        });
+      
+      if (!profileError) {
+        await new Promise(res => setTimeout(res, 300));
+        const { data: newProfile } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('id', session.user.id)
+          .maybeSingle();
+        userProfile = newProfile;
+        console.log('✅ Profile created successfully:', userProfile?.id);
+      } else {
+        console.error('❌ Profile creation failed:', profileError);
+      }
+    }
+    
+    setProfile(userProfile ?? null);
+  };
 
   const signUp = async (email: string, password: string, userData?: { 
     name?: string;

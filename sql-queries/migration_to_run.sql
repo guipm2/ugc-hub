@@ -50,5 +50,12 @@ CREATE POLICY "Analysts can insert own data" ON analysts
 CREATE POLICY "Allow system insert for new users" ON analysts
   FOR INSERT WITH CHECK (true);
 
--- 7. Verificar se funcionou
-SELECT 'Tabela analysts criada com sucesso!' as status;
+-- 7. Adicionar coluna company_link na tabela opportunities (necessária para criação de oportunidades)
+ALTER TABLE opportunities 
+ADD COLUMN IF NOT EXISTS company_link TEXT;
+
+-- Comentário para documentação
+COMMENT ON COLUMN opportunities.company_link IS 'Link to company website or social media profile';
+
+-- 8. Verificar se funcionou
+SELECT 'Tabela analysts criada com sucesso e company_link adicionada!' as status;

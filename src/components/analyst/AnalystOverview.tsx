@@ -129,46 +129,71 @@ const AnalystOverview: React.FC = () => {
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
         
-        const { data: applications, error } = await supabase
+        // Primeiro, buscar as oportunidades do analista com deadline próximo
+        const { data: opportunities, error: opportunitiesError } = await supabase
+          .from('opportunities')
+          .select(`
+            id,
+            title,
+            company,
+            deadline,
+            created_by
+          `)
+          .eq('created_by', user?.id)
+          .gte('deadline', new Date().toISOString().split('T')[0])
+          .lte('deadline', thirtyDaysFromNow.toISOString().split('T')[0])
+          .order('deadline', { ascending: true })
+          .limit(10); // Buscar mais para filtrar depois
+
+        if (opportunitiesError) {
+          console.error('Erro ao buscar oportunidades:', opportunitiesError);
+          return;
+        }
+
+        if (!opportunities || opportunities.length === 0) {
+          setUpcomingProjects([]);
+          return;
+        }
+
+        // Depois, buscar as applications aprovadas para essas oportunidades
+        const { data: applications, error: applicationsError } = await supabase
           .from('opportunity_applications')
           .select(`
             id,
-            opportunity:opportunities (
-              id,
-              title,
-              company,
-              deadline
-            ),
+            opportunity_id,
             creator:profiles!creator_id (
               name
             )
           `)
           .eq('status', 'approved')
-          .in('opportunity.created_by', [user?.id])
-          .gte('opportunity.deadline', new Date().toISOString().split('T')[0])
-          .lte('opportunity.deadline', thirtyDaysFromNow.toISOString().split('T')[0])
-          .order('opportunity.deadline', { ascending: true })
-          .limit(3);
+          .in('opportunity_id', opportunities.map(opp => opp.id));
 
-        if (error) {
-          console.error('Erro ao buscar projetos próximos:', error);
-        } else {
-          const upcomingProjectsData = applications?.map(app => {
-            const opportunity = Array.isArray(app.opportunity) ? app.opportunity[0] : app.opportunity;
-            const creator = Array.isArray(app.creator) ? app.creator[0] : app.creator;
+        if (applicationsError) {
+          console.error('Erro ao buscar applications:', applicationsError);
+          return;
+        }
+
+        // Combinar os dados e pegar apenas os primeiros 3 com applications aprovadas
+        const upcomingProjectsData = opportunities
+          .map(opportunity => {
+            const application = applications?.find(app => app.opportunity_id === opportunity.id);
+            
+            if (!application) return null; // Só incluir se tiver application aprovada
+            
+            const creator = Array.isArray(application.creator) ? application.creator[0] : application.creator;
             
             return {
-              id: app.id,
-              title: opportunity?.title || 'Projeto',
-              company: opportunity?.company || 'Empresa',
+              id: application.id,
+              title: opportunity.title || 'Projeto',
+              company: opportunity.company || 'Empresa',
               creator_name: creator?.name || 'Creator',
-              deadline: opportunity?.deadline || '',
+              deadline: opportunity.deadline || '',
               status: 'active'
             };
-          }).filter(Boolean) as UpcomingProject[];
+          })
+          .filter(Boolean) as UpcomingProject[];
           
-          setUpcomingProjects(upcomingProjectsData || []);
-        }
+        setUpcomingProjects(upcomingProjectsData.slice(0, 3));
       } catch (error) {
         console.error('Erro ao buscar projetos próximos:', error);
       } finally {

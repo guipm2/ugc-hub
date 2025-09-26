@@ -109,11 +109,38 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
           
           // Buscar dados específicos da tabela analysts
           if (userProfile) {
-            const { data: analystData } = await supabase
+            let { data: analystData } = await supabase
               .from('analysts')
               .select('*')
               .eq('id', session.user.id)
               .maybeSingle();
+            
+            // Se não existe registro na tabela analysts, criar automaticamente
+            if (!analystData && userProfile.role === 'analyst') {
+              console.log('🔧 Creating missing analyst record for existing user');
+              const { error: analystError } = await supabase
+                .from('analysts')
+                .insert({
+                  id: session.user.id,
+                  email: userProfile.email,
+                  name: userProfile.name || '',
+                  company: userProfile.company || '',
+                  role: 'analyst'
+                });
+              
+              if (!analystError) {
+                // Buscar o registro recém-criado
+                const { data: newAnalystData } = await supabase
+                  .from('analysts')
+                  .select('*')
+                  .eq('id', session.user.id)
+                  .maybeSingle();
+                analystData = newAnalystData;
+                console.log('✅ Analyst record created for existing user');
+              } else {
+                console.error('❌ Failed to create analyst record:', analystError);
+              }
+            }
             
             setAnalyst(analystData ?? null);
           }
@@ -172,11 +199,38 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         }
 
         // Buscar dados específicos da tabela analysts
-        const { data: analystData } = await supabase
+        let { data: analystData } = await supabase
           .from('analysts')
           .select('*')
           .eq('id', data.user.id)
           .maybeSingle();
+
+        // Se não existe registro na tabela analysts, criar automaticamente
+        if (!analystData) {
+          console.log('🔧 Creating missing analyst record during login');
+          const { error: analystError } = await supabase
+            .from('analysts')
+            .insert({
+              id: data.user.id,
+              email: userProfile.email,
+              name: userProfile.name || '',
+              company: userProfile.company || '',
+              role: 'analyst'
+            });
+          
+          if (!analystError) {
+            // Buscar o registro recém-criado
+            const { data: newAnalystData } = await supabase
+              .from('analysts')
+              .select('*')
+              .eq('id', data.user.id)
+              .maybeSingle();
+            analystData = newAnalystData;
+            console.log('✅ Analyst record created during login');
+          } else {
+            console.error('❌ Failed to create analyst record during login:', analystError);
+          }
+        }
 
         setUser(data.user);
         setProfile(userProfile);
