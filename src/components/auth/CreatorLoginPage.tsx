@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Eye, EyeOff, User, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useRouter } from '../../hooks/useRouter';
@@ -14,8 +14,15 @@ const CreatorLoginPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, profile } = useAuth();
   const { navigate } = useRouter();
+
+  // Detecta quando login foi bem-sucedido e navega
+  useEffect(() => {
+    if (user && profile && profile.role === 'creator') {
+      navigate('/creators/opportunities');
+    }
+  }, [user, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,7 +36,10 @@ const CreatorLoginPage: React.FC = () => {
         if (error) {
           setError(error.message || 'Erro ao fazer login');
         } else {
-          navigate('/creators/opportunities');
+          // Timeout de segurança para navegação caso o useEffect não funcione
+          setTimeout(() => {
+            navigate('/creators/opportunities');
+          }, 2000);
         }
       } else {
         // Register

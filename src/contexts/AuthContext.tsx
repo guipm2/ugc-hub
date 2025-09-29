@@ -38,11 +38,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [processingSession, setProcessingSession] = useState<string | null>(null);
 
   useEffect(() => {
-    // Timeout de segurança - se não carregar em 15 segundos, força logout
-    const timeoutId = setTimeout(() => {
-      if (loading) {
+    let timeoutId: NodeJS.Timeout | null = null;
+    let isInitializing = true;
+    let hasInitialized = false;
+    
+    // Timeout de segurança - aumentado para 30 segundos para evitar falso positivo
+    timeoutId = setTimeout(() => {
+      if (loading && isInitializing) {
         console.error('⏱️ [AUTH] Loading timeout - forcing logout');
         setProfile(null);
         setUser(null);
@@ -51,49 +56,49 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         // Força logout do Supabase para limpar estado
         supabase.auth.signOut();
       }
-    }, 15000);
+    }, 30000); // Aumentado para 30 segundos
 
     // Check for existing session and set up auth state listener
     const getInitialSession = async () => {
-      console.log('🚀 [AUTH] Getting initial session...');
+      if (hasInitialized) {
+        return;
+      }
+      
+      hasInitialized = true;
       try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('📋 [AUTH] Initial session result:', { 
-          hasSession: !!session, 
-          userId: session?.user?.id,
-          userEmail: session?.user?.email 
-        });
         
         if (session?.user) {
           await handleUserSession(session);
         } else {
-          console.log('❌ [AUTH] No session found, clearing state');
           setProfile(null);
           setUser(null);
           setSession(null);
         }
       } catch (error) {
-        console.error('💥 [AUTH] Error getting session:', error);
+        console.error('[AUTH] Error getting session:', error);
         setProfile(null);
         setUser(null);
         setSession(null);
       }
       
-      console.log('⏹️ [AUTH] Initial session loading complete');
       setLoading(false);
-      clearTimeout(timeoutId); // Cancela timeout se carregou com sucesso
+      isInitializing = false;
+      if (timeoutId) clearTimeout(timeoutId);
     };
 
     // Set up auth state change listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('🔄 Auth state changed:', event, session?.user?.id);
-      
-      if (event === 'SIGNED_IN' && session?.user) {
-        await handleUserSession(session);
-      } else if (event === 'SIGNED_OUT') {
-        setProfile(null);
-        setUser(null);
-        setSession(null);
+      // Se não é a inicialização, processa mudanças de estado
+      if (!isInitializing) {
+        if (event === 'SIGNED_IN' && session?.user) {
+          await handleUserSession(session);
+        } else if (event === 'SIGNED_OUT') {
+          setProfile(null);
+          setUser(null);
+          setSession(null);
+          setLoading(false);
+        }
       }
     });
 
@@ -102,31 +107,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Cleanup subscription
     return () => {
       subscription.unsubscribe();
-      clearTimeout(timeoutId);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleUserSession = async (session: Session) => {
-    console.log('🔄 [AUTH] Handling user session for:', session.user.id);
-    setUser(session.user);
-    setSession(session);
+    const sessionId = session.user.id;
+    
+    // Evita processamento duplo da mesma sessão
+    if (processingSession === sessionId) {
+      return;
+    }
+    
+    setProcessingSession(sessionId);
     
     try {
+      setUser(session.user);
+      setSession(session);
+      
       // Busca perfil do usuário
-      console.log('🔍 [AUTH] Fetching profile for user:', session.user.id);
       const { data: initialProfile, error: fetchError } = await supabase
         .from('profiles')
         .select('*')
-        .eq('id', session.user.id)
+        .eq('id', sessionId)
         .maybeSingle();
 
       if (fetchError) {
-        console.error('❌ [AUTH] Error fetching profile:', fetchError);
+        console.error('[AUTH] Error fetching profile:', fetchError.message);
         // Se falhou por RLS ou permissão, cria perfil de fallback
-        console.log('⚡ [AUTH] Creating fallback profile due to fetch error');
         const fallbackProfile: Profile = {
-          id: session.user.id,
+          id: sessionId,
           email: session.user.email || '',
           name: session.user.user_metadata?.name || 'Creator User',
           role: 'creator',
@@ -136,19 +149,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         };
         setProfile(fallbackProfile);
         return;
-      } else {
-        console.log('📊 [AUTH] Profile fetch result:', { userProfile: initialProfile, exists: !!initialProfile });
       }
 
       let finalProfile = initialProfile;
 
       // Se não existe perfil, cria automaticamente
       if (!finalProfile) {
-        console.log('👤 [AUTH] Creating new profile for user:', session.user.id);
         const { error: profileError } = await supabase
           .from('profiles')
           .insert({
-            id: session.user.id,
+            id: sessionId,
             email: session.user.email || '',
             name: session.user.user_metadata?.name || null,
             role: 'creator',
@@ -158,19 +168,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           });
         
         if (!profileError) {
-          console.log('✅ [AUTH] Profile created, fetching new profile...');
           await new Promise(res => setTimeout(res, 300));
           const { data: newProfile, error: newFetchError } = await supabase
             .from('profiles')
             .select('*')
-            .eq('id', session.user.id)
+            .eq('id', sessionId)
             .maybeSingle();
           
           if (newFetchError) {
-            console.error('❌ [AUTH] Error fetching new profile:', newFetchError);
+            console.error('[AUTH] Error fetching new profile:', newFetchError.message);
             // Se falhou novamente, usa perfil de fallback
             finalProfile = {
-              id: session.user.id,
+              id: sessionId,
               email: session.user.email || '',
               name: session.user.user_metadata?.name || 'Creator User',
               role: 'creator',
@@ -180,13 +189,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             };
           } else {
             finalProfile = newProfile;
-            console.log('✅ [AUTH] Profile created successfully:', finalProfile?.id);
           }
         } else {
-          console.error('❌ [AUTH] Profile creation failed:', profileError);
+          console.error('[AUTH] Profile creation failed:', profileError.message);
           // Se falhou, usa perfil de fallback
           finalProfile = {
-            id: session.user.id,
+            id: sessionId,
             email: session.user.email || '',
             name: session.user.user_metadata?.name || 'Creator User',
             role: 'creator',
@@ -196,16 +204,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           };
         }
       }
+
+      // Valida se o usuário é creator
+      if (finalProfile && finalProfile.role !== 'creator') {
+        await supabase.auth.signOut();
+        return;
+      }
       
-      console.log('🎯 [AUTH] Setting profile:', { id: finalProfile?.id, role: finalProfile?.role });
       setProfile(finalProfile ?? null);
     } catch (error) {
-      console.error('💥 [AUTH] Unexpected error in handleUserSession:', error);
+      console.error('[AUTH] Unexpected error in handleUserSession:', error);
       
       // Em caso de erro, cria perfil básico localmente para destravar
-      console.log('⚡ [AUTH] Creating emergency fallback profile');
       const emergencyProfile: Profile = {
-        id: session.user.id,
+        id: sessionId,
         email: session.user.email || '',
         name: session.user.user_metadata?.name || 'Creator User',
         role: 'creator',
@@ -214,6 +226,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         terms_version: '1.0'
       };
       setProfile(emergencyProfile);
+    } finally {
+      setProcessingSession(null);
     }
   };
 
@@ -255,6 +269,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
+    console.log('🔑 [AUTH] Starting sign in process for:', email);
     try {
       // First check if this email exists as analyst in profiles table
       const { data: analystExists } = await supabase
@@ -267,34 +282,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: { message: 'Este email está cadastrado como analista. Acesse a área de analistas.' } as AuthError };
       }
 
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        console.error('❌ [AUTH] Login error:', error);
         return { error: { message: 'Email ou senha incorretos' } as AuthError };
       }
 
-      if (data.user) {
-        // Busca perfil na tabela profiles
-        const { data: userProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', data.user.id)
-          .maybeSingle();
-
-        if (!userProfile || userProfile.role !== 'creator') {
-          await supabase.auth.signOut();
-          return { error: { message: 'Acesso negado. Esta área é apenas para criadores.' } as AuthError };
-        }
-
-        setUser(data.user);
-        setProfile(userProfile);
-      }
+      console.log('✅ [AUTH] Login successful, user session will be handled by onAuthStateChange');
+      
+      // NÃO fazemos validação aqui - deixa o onAuthStateChange e handleUserSession cuidar
+      // Isso evita dupla validação e conflitos de estado
 
       return { error: null };
-    } catch {
+    } catch (err) {
+      console.error('💥 [AUTH] Unexpected error during login:', err);
       return { error: { message: 'Erro ao fazer login' } as AuthError };
     }
   };

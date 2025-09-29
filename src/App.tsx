@@ -67,13 +67,12 @@ function CreatorApp() {
   const { user, loading, signOut, profile } = useAuth();
   const { currentPath, navigate } = useRouter();
 
-  // Timeout para profile loading
+  // Timeout para profile loading - aumentado para 15 segundos
   useEffect(() => {
     if (user && !profile && !loading) {
       const timeoutId = setTimeout(() => {
-        console.log('⏱️ [CREATOR APP] Profile loading timeout');
         setProfileTimeout(true);
-      }, 8000); // 8 segundos
+      }, 15000); // Aumentado para 15 segundos
 
       return () => clearTimeout(timeoutId);
     } else if (profile) {
@@ -110,10 +109,19 @@ function CreatorApp() {
     }
   }, [user]);
 
+  // Redirect automático após login bem-sucedido
+  useEffect(() => {
+    if (user && profile && profile.role === 'creator') {
+      // Se está numa página de login ou root, redireciona para opportunities
+      if (currentPath === '/creators' || currentPath === '/login/creators' || currentPath === '/') {
+        navigate('/creators/opportunities');
+      }
+    }
+  }, [user, profile, currentPath, navigate]);
+
   // Redirect to /creators/opportunities if on root creators path
   useEffect(() => {
     if (currentPath === '/creators' && user && profile) {
-      console.log('🔄 [CREATOR APP] Redirecting from /creators to /creators/opportunities');
       navigate('/creators/opportunities');
     }
   }, [currentPath, navigate, user, profile]);
@@ -127,7 +135,6 @@ function CreatorApp() {
 
   // Se ainda está carregando, mostra loading
   if (loading) {
-    console.log('⏳ [CREATOR APP] Still loading... user:', !!user, 'profile:', !!profile);
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -141,22 +148,17 @@ function CreatorApp() {
     );
   }
 
-  console.log('🔍 [CREATOR APP] Auth check - user:', !!user, 'profile:', profile, 'role:', profile?.role, 'timeout:', profileTimeout);
-
   // Se não tem usuário ou perfil, mostra tela de login
   // Se profile timeout, força logout
   if (!user || (!profile && !loading && profileTimeout) || (profile && profile.role !== 'creator')) {
     if (profileTimeout) {
-      console.log('⏱️ [CREATOR APP] Profile timeout - forcing logout');
       signOut();
     }
-    console.log('❌ [CREATOR APP] Auth failed - redirecting to login');
     return <AuthPage />;
   }
 
   // Se ainda está carregando profile sem timeout
   if (!profile && !profileTimeout) {
-    console.log('⏳ [CREATOR APP] Still loading profile...');
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-center">
@@ -169,7 +171,6 @@ function CreatorApp() {
           {/* Botão de emergência para forçar logout */}
           <button
             onClick={() => {
-              console.log('🚨 [CREATOR APP] Emergency logout triggered');
               signOut();
             }}
             className="mt-8 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
@@ -180,8 +181,6 @@ function CreatorApp() {
       </div>
     );
   }
-
-  console.log('✅ [CREATOR APP] Auth success - rendering creator interface');
 
   const menuItems = [
     { path: '/creators/dashboard', label: 'Dashboard', icon: LayoutDashboard },
@@ -375,8 +374,6 @@ function CreatorApp() {
 function App() {
   const { currentPath } = useRouter();
 
-  console.log('Current path:', currentPath);
-
   // Handle login routes first (more specific)
   if (currentPath === '/login/creators') {
     return (
@@ -418,7 +415,6 @@ function App() {
   }
 
   // Default fallback to landing page for any unmatched route
-  console.log('Fallback to landing page for path:', currentPath);
   return <LandingPage />;
 }
 
