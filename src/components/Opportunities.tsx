@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { useEffect } from 'react';
-import { Search, Filter, Clock, MapPin, DollarSign, Users, Eye, Heart, Send, X, Grid3X3, List, ChevronDown, ExternalLink, Calendar } from 'lucide-react';
+import { Search, Filter, Clock, MapPin, DollarSign, Users, Eye, Heart, Send, X, Grid3X3, List, ChevronDown, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
 
 interface Opportunity {

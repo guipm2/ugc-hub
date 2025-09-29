@@ -4,7 +4,7 @@ import {
   Check, CheckCheck, Clock, X, MessageCircle
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRealTimeCollaboration } from '../../hooks/useRealTimeCollaboration';
 

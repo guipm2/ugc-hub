@@ -1,7 +1,5 @@
 import React, { useState } from 'react';
 import { Activity, Users, Bell, Settings, ChevronDown, ChevronUp } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
-import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import useRealTimeCollaboration from '../../hooks/useRealTimeCollaboration.simple';
 
 interface RealTimeCollaborationHubProps {
@@ -19,8 +17,7 @@ const RealTimeCollaborationHub: React.FC<RealTimeCollaborationHubProps> = ({
   showPresence = true,
   showQuickActions = true
 }) => {
-  const { user } = useAuth();
-  const { profile: analyst } = useAnalystAuth();
+  // Note: user and analyst variables are available but not used in this simple version
   
   const {
     activityFeed,

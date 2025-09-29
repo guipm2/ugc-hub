@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, Eye, X, Grid3X3, List, EyeOff } from 'lucide-react';
+import { Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, Eye, X, Grid3X3, List, Filter, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
@@ -14,7 +14,7 @@ interface Project {
   content_type: string;
   budget: string;
   conversation_id: string;
-  deliverables: Deliverable[];
+  deliverables: Deliverable[]; // ✅ Lista unificada de deliverables
   created_at: string;
 }
 
@@ -24,8 +24,8 @@ interface ProjectsProps {
 
 interface Deliverable {
   id: string;
-  project_id?: string;
-  application_id?: string;
+  project_id?: string; // Para compatibilidade com deliverables locais
+  application_id?: string; // ID da candidatura para deliverables do banco
   title: string;
   description: string;
   due_date: string;
@@ -63,8 +63,6 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
     if (!user) return;
 
     try {
-      console.log('🔍 [PROJECTS] Fetching projects for user:', user.id);
-
       // Buscar candidaturas aprovadas
       const { data: applications, error } = await supabase
         .from('opportunity_applications')
@@ -88,19 +86,16 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         .eq('status', 'approved');
 
       if (error) {
-        console.error('❌ [PROJECTS] Erro ao buscar projetos:', error);
+        console.error('Erro ao buscar projetos:', error);
         return;
       }
 
-      console.log('📊 [PROJECTS] Candidaturas aprovadas encontradas:', applications?.length || 0);
-
+      // Buscar conversas e deliverables para cada candidatura aprovada
       const projectsData = [];
       
       for (const app of applications || []) {
         const opportunity = Array.isArray(app.opportunity) ? app.opportunity[0] : app.opportunity;
         
-        if (!opportunity) continue;
-
         // Buscar conversa relacionada
         const { data: conversation } = await supabase
           .from('conversations')
@@ -118,10 +113,10 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
           .order('priority', { ascending: true });
 
         if (deliverablesError) {
-          console.error('❌ [PROJECTS] Erro ao buscar deliverables:', deliverablesError);
+          console.error('Erro ao buscar deliverables:', deliverablesError);
         }
 
-        // Gerar deliverables padrão baseados no tipo de conteúdo
+        // Sempre gerar deliverables padrão baseados no tipo de conteúdo
         const standardDeliverables = generateDeliverables(opportunity.content_type, opportunity.deadline, app.id);
         
         // Mapear deliverables customizados para a interface local
@@ -135,12 +130,12 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
           status: d.status,
           analyst_feedback: d.analyst_feedback,
           reviewed_at: d.reviewed_at,
-          files: [],
+          files: [], // TODO: Implementar arquivos se necessário
           created_at: d.created_at,
           updated_at: d.updated_at
         })) : [];
 
-        // ✅ Combinar deliverables padrão e customizados em uma lista unificada
+        // 🔄 MELHORADO: Combinar deliverables padrão e customizados em uma lista unificada
         const allDeliverables = [
           ...standardDeliverables,
           ...mappedCustomDeliverables
@@ -157,15 +152,14 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
           content_type: opportunity.content_type,
           budget: `R$ ${opportunity.budget_min} - R$ ${opportunity.budget_max}`,
           conversation_id: conversation?.id || '',
-          deliverables: allDeliverables,
+          deliverables: allDeliverables, // ✅ Lista unificada
           created_at: new Date().toISOString()
         });
       }
 
-      console.log('✅ [PROJECTS] Projetos processados:', projectsData.length);
       setProjects(projectsData);
     } catch (err) {
-      console.error('❌ [PROJECTS] Erro geral ao buscar projetos:', err);
+      console.error('Erro ao buscar projetos:', err);
     } finally {
       setLoading(false);
     }
@@ -181,6 +175,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
     const deadlineDate = new Date(deadline);
     const today = new Date();
     
+    // ✅ MELHORADO: Considerar status dos deliverables
     if (deliverables) {
       const allApproved = deliverables.every(d => d.status === 'approved' || d.status === 'aprovado');
       const allSubmitted = deliverables.every(d => 
@@ -271,9 +266,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
   const handleFileUpload = async (deliverableId: string) => {
     if (!uploadFiles || uploadFiles.length === 0) return;
 
-    console.log('📤 [PROJECTS] Uploading files for deliverable:', deliverableId);
-
-    // Simular upload de arquivos (TODO: Implementar upload real para Supabase Storage)
+    // Simular upload de arquivos
     const newFiles: ProjectFile[] = Array.from(uploadFiles).map((file, index) => ({
       id: `file_${Date.now()}_${index}`,
       name: file.name,
@@ -300,7 +293,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
 
     setShowUploadModal(null);
     setUploadFiles(null);
-    console.log('✅ [PROJECTS] Files uploaded successfully');
+    // REMOVIDO: alert('Arquivos enviados com sucesso!');
   };
 
   const formatFileSize = (bytes: number) => {
@@ -317,18 +310,19 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
 
   const openConversation = (conversationId: string) => {
     if (conversationId) {
-      console.log('💬 [PROJECTS] Opening conversation:', conversationId);
       onOpenConversation(conversationId);
     } else {
-      console.log('❌ [PROJECTS] No conversation found for this project');
+      // REMOVIDO: alert('Conversa não encontrada para este projeto');
     }
   };
 
   const filteredProjects = projects.filter(project => {
+    // Filtro por status
     if (statusFilter !== 'todos' && project.status !== statusFilter) {
       return false;
     }
     
+    // Ocultar projetos finalizados
     if (hideCompleted && (project.status === 'aprovado' || project.status === 'entregue')) {
       return false;
     }
@@ -350,7 +344,6 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
     );
   }
 
-  // Se projeto selecionado, mostrar detalhes
   if (selectedProject) {
     return (
       <div className="space-y-6">
@@ -403,39 +396,96 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
           </div>
         </div>
 
-        {/* Entregas Unificadas */}
+        {/* Entregas */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Cronograma de Entregas</h3>
           
-          {selectedProject.deliverables.length > 0 ? (
+          {/* Deliverables Padrão */}
+          <div className="mb-8">
+            <h4 className="text-md font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <Clock className="h-4 w-4 text-blue-600" />
+              Entregas Padrão do Projeto
+            </h4>
             <div className="space-y-4">
-              {selectedProject.deliverables.map((deliverable) => {
-                const isCustom = deliverable.application_id && deliverable.id.startsWith('std_') === false;
-                return (
-                  <div 
-                    key={deliverable.id} 
-                    className={`border rounded-lg p-4 ${
-                      isCustom 
-                        ? 'border-purple-200 bg-purple-50/30' 
-                        : 'border-blue-200 bg-blue-50/30'
-                    }`}
-                  >
+              {selectedProject.deliverables.map((deliverable) => (
+                <div key={deliverable.id} className="border border-gray-200 rounded-lg p-4 bg-blue-50/30">
+                  <div className="flex items-center justify-between mb-3">
+                    <div>
+                      <h5 className="font-medium text-gray-900">{deliverable.title}</h5>
+                      <p className="text-sm text-gray-600">{deliverable.description}</p>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      <span className="text-sm text-gray-500">
+                        Prazo: {formatDate(deliverable.due_date)}
+                      </span>
+                      {getStatusBadge(deliverable.status)}
+                    </div>
+                  </div>
+
+                  {/* Arquivos */}
+                  {deliverable.files.length > 0 && (
+                    <div className="mb-4">
+                      <p className="text-sm font-medium text-gray-700 mb-2">Arquivos Enviados:</p>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                        {deliverable.files.map((file) => (
+                          <div key={file.id} className="flex items-center gap-2 p-2 bg-white rounded border">
+                            <FileText className="h-4 w-4 text-gray-400" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                              <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                            </div>
+                            <button className="p-1 hover:bg-gray-200 rounded">
+                              <Eye className="h-4 w-4 text-gray-400" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Botão de Upload */}
+                  {(deliverable.status === 'pendente' || deliverable.status === 'pending') && (
+                    <button
+                      onClick={() => setShowUploadModal(deliverable.id)}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                    >
+                      <Upload className="h-4 w-4" />
+                      Enviar Arquivos
+                    </button>
+                  )}
+
+                  {/* Feedback */}
+                  {deliverable.feedback && (
+                    <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
+                      <p className="text-sm font-medium text-yellow-800">Feedback do Analista:</p>
+                      <p className="text-sm text-yellow-700">{deliverable.feedback}</p>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Deliverables Customizados */}
+          <div>
+            <h4 className="text-md font-semibold text-gray-800 mb-4 flex items-center gap-2">
+              <AlertCircle className="h-4 w-4 text-purple-600" />
+              Entregas Específicas do Analista
+            </h4>
+            
+            {selectedProject.customDeliverables && selectedProject.customDeliverables.length > 0 ? (
+              <div className="space-y-4">
+                {selectedProject.customDeliverables.map((deliverable) => (
+                  <div key={deliverable.id} className="border border-purple-200 rounded-lg p-4 bg-purple-50/30">
                     <div className="flex items-center justify-between mb-3">
                       <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h5 className="font-medium text-gray-900">{deliverable.title}</h5>
-                          {isCustom && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                              Específica
-                            </span>
-                          )}
-                          {deliverable.priority && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
-                              Prioridade {deliverable.priority}
-                            </span>
-                          )}
-                        </div>
+                        <h5 className="font-medium text-gray-900">{deliverable.title}</h5>
                         <p className="text-sm text-gray-600">{deliverable.description}</p>
+                        {deliverable.priority && (
+                          <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                            Prioridade: {deliverable.priority}
+                          </span>
+                        )}
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-500">
@@ -467,14 +517,10 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                     )}
 
                     {/* Botão de Upload */}
-                    {(deliverable.status === 'pending' || deliverable.status === 'pendente') && (
+                    {(deliverable.status === 'pending') && (
                       <button
                         onClick={() => setShowUploadModal(deliverable.id)}
-                        className={`${
-                          isCustom 
-                            ? 'bg-purple-600 hover:bg-purple-700' 
-                            : 'bg-blue-600 hover:bg-blue-700'
-                        } text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2`}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                       >
                         <Upload className="h-4 w-4" />
                         Enviar Arquivos
@@ -489,25 +535,25 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                       </div>
                     )}
                   </div>
-                );
-              })}
-            </div>
-          ) : (
-            <div className="border border-gray-200 rounded-lg p-6 bg-gray-50/20 text-center">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-gray-600" />
-                </div>
-                <div>
-                  <h5 className="font-medium text-gray-900 mb-1">Nenhuma entrega definida</h5>
-                  <p className="text-sm text-gray-600 max-w-md">
-                    As entregas deste projeto ainda não foram definidas. 
-                    Entre em contato com o analista para mais informações.
-                  </p>
+                ))}
+              </div>
+            ) : (
+              <div className="border border-purple-200 rounded-lg p-6 bg-purple-50/20 text-center">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center">
+                    <MessageCircle className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div>
+                    <h5 className="font-medium text-gray-900 mb-1">Nenhuma entrega específica ainda</h5>
+                    <p className="text-sm text-gray-600 max-w-md">
+                      Até o momento, não há entregas específicas criadas pelo analista para este projeto. 
+                      Caso seja necessário, o analista entrará em contato e criará as entregas adicionais.
+                    </p>
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
         {/* Modal de Upload */}
@@ -560,47 +606,25 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
     );
   }
 
-  // Lista de projetos
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Meus Projetos</h1>
-          <p className="text-gray-600 mt-1">{filteredProjects.length} de {projects.length} projetos</p>
-        </div>
-        
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900">Projetos</h1>
+        <p className="text-gray-600 mt-1">{filteredProjects.length} de {projects.length} projetos</p>
+      </div>
+
+      {/* Filters and View Controls */}
+      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="flex items-center gap-3">
-          {/* Filtros */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="todos">Todos os Status</option>
-            <option value="em_andamento">Em Andamento</option>
-            <option value="entregue">Entregue</option>
-            <option value="aprovado">Aprovado</option>
-            <option value="atrasado">Atrasado</option>
-          </select>
-
-          <button
-            onClick={() => setHideCompleted(!hideCompleted)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
-              hideCompleted 
-                ? 'bg-blue-50 border-blue-200 text-blue-700' 
-                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            {hideCompleted ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {hideCompleted ? 'Mostrar Concluídos' : 'Ocultar Concluídos'}
-          </button>
-
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
+          {/* View Mode Toggle */}
+          <div className="flex bg-gray-100 rounded-lg p-1">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-md transition-colors ${
-                viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+                viewMode === 'grid'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               <Grid3X3 className="h-4 w-4" />
@@ -608,99 +632,92 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
             <button
               onClick={() => setViewMode('list')}
               className={`p-2 rounded-md transition-colors ${
-                viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
+                viewMode === 'list'
+                  ? 'bg-white text-blue-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
               <List className="h-4 w-4" />
             </button>
           </div>
+
+          {/* Status Filter */}
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+          >
+            <option value="todos">Todos os status</option>
+            <option value="em_andamento">Em Andamento</option>
+            <option value="entregue">Entregue</option>
+            <option value="aprovado">Aprovado</option>
+            <option value="atrasado">Atrasado</option>
+          </select>
+        </div>
+
+        {/* Hide Completed Toggle */}
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setHideCompleted(!hideCompleted)}
+            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
+              hideCompleted
+                ? 'bg-blue-50 border-blue-200 text-blue-700'
+                : 'bg-white border-gray-300 text-gray-600 hover:bg-gray-50'
+            }`}
+          >
+            <EyeOff className="h-4 w-4" />
+            Ocultar Finalizados
+          </button>
         </div>
       </div>
 
-      {/* Projetos */}
-      {filteredProjects.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Folder className="h-8 w-8 text-gray-400" />
-          </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum projeto encontrado</h3>
-          <p className="text-gray-600 max-w-md mx-auto">
-            {statusFilter !== 'todos' || hideCompleted
-              ? 'Tente ajustar os filtros para ver mais projetos.'
-              : 'Você ainda não tem projetos aprovados. Continue aplicando para oportunidades!'}
-          </p>
-        </div>
-      ) : (
-        <div className={viewMode === 'grid' 
-          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
-          : 'space-y-4'
-        }>
-          {filteredProjects.map((project) => (
-            <div
-              key={project.id}
-              onClick={() => setSelectedProject(project)}
-              className={`bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all cursor-pointer ${
-                viewMode === 'list' ? 'flex items-center justify-between' : ''
-              }`}
-            >
-              {viewMode === 'grid' ? (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900 truncate">{project.title}</h3>
-                    {getStatusBadge(project.status)}
+      {/* Lista de Projetos */}
+      <div className={viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-4'}>
+        {filteredProjects.map((project) => (
+          <div
+            key={project.id}
+            className={`bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer ${
+              viewMode === 'list' ? 'p-4' : 'p-6'
+            }`}
+            onClick={() => setSelectedProject(project)}
+          >
+            {viewMode === 'list' ? (
+              /* List View */
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                    <Folder className="h-5 w-5 text-blue-600" />
                   </div>
-
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      Prazo: {formatDate(project.deadline)}
-                    </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <FileText className="h-4 w-4" />
-                      {project.content_type}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      Entregas: {project.deliverables.filter(d => 
-                        d.status === 'submitted' || d.status === 'approved' || 
-                        d.status === 'entregue' || d.status === 'aprovado'
-                      ).length}/{project.deliverables.length}
-                    </div>
-                    <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        openConversation(project.conversation_id);
-                      }}
-                      className="text-blue-600 hover:text-blue-700 transition-colors"
-                    >
-                      <MessageCircle className="h-4 w-4" />
-                    </button>
-                  </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-2">
-                      <h3 className="font-semibold text-gray-900">{project.title}</h3>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="font-semibold text-gray-900 truncate">{project.title}</h3>
                       {getStatusBadge(project.status)}
                     </div>
-                    <div className="flex items-center gap-6 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
+                    <p className="text-gray-600 text-sm mb-2">{project.company}</p>
+                    <div className="flex items-center gap-4 text-sm text-gray-600">
+                      <div className="flex items-center gap-1">
                         <Calendar className="h-4 w-4" />
-                        {formatDate(project.deadline)}
-                      </span>
-                      <span className="flex items-center gap-1">
+                        Prazo: {formatDate(project.deadline)}
+                      </div>
+                      <div className="flex items-center gap-1">
                         <FileText className="h-4 w-4" />
                         {project.content_type}
-                      </span>
-                      <span>
-                        {project.deliverables.filter(d => 
-                          d.status === 'submitted' || d.status === 'approved' || 
-                          d.status === 'entregue' || d.status === 'aprovado'
-                        ).length}/{project.deliverables.length} entregas
-                      </span>
+                      </div>
+                      <span className="text-sm text-gray-600">{project.budget}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex items-center gap-3 ml-4">
+                  <div className="text-right">
+                    <div className="text-sm text-gray-600 mb-1">Progresso</div>
+                    <div className="text-sm font-medium text-gray-900">
+                      {(() => {
+                        const standardCompleted = project.deliverables.filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                        const customCompleted = (project.customDeliverables || []).filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                        const totalDeliverables = project.deliverables.length + (project.customDeliverables?.length || 0);
+                        return `${standardCompleted + customCompleted}/${totalDeliverables}`;
+                      })()}
                     </div>
                   </div>
                   <button
@@ -708,14 +725,108 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                       e.stopPropagation();
                       openConversation(project.conversation_id);
                     }}
-                    className="text-blue-600 hover:text-blue-700 transition-colors p-2"
+                    className="flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-colors text-sm"
                   >
-                    <MessageCircle className="h-5 w-5" />
+                    <MessageCircle className="h-4 w-4" />
+                    Conversar
                   </button>
-                </>
-              )}
-            </div>
-          ))}
+                </div>
+              </div>
+            ) : (
+              /* Grid View (existing layout) */
+              <>
+                {/* Header do Card */}
+                <div className="flex items-start justify-between mb-4">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <Folder className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="font-semibold text-gray-900">{project.title}</h3>
+                      <p className="text-gray-600 text-sm">{project.company}</p>
+                    </div>
+                  </div>
+                  {getStatusBadge(project.status)}
+                </div>
+
+                {/* Informações */}
+                <div className="space-y-3 mb-4">
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <Calendar className="h-4 w-4" />
+                    Prazo: {formatDate(project.deadline)}
+                  </div>
+                  <div className="flex items-center gap-2 text-sm text-gray-600">
+                    <FileText className="h-4 w-4" />
+                    {project.content_type}
+                  </div>
+                </div>
+
+                {/* Progresso */}
+                <div className="mb-4">
+                  <div className="flex items-center justify-between text-sm mb-2">
+                    <span className="text-gray-600">Progresso</span>
+                    <span className="text-gray-900 font-medium">
+                      {(() => {
+                        const standardCompleted = project.deliverables.filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                        const customCompleted = (project.customDeliverables || []).filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                        const totalDeliverables = project.deliverables.length + (project.customDeliverables?.length || 0);
+                        return `${standardCompleted + customCompleted}/${totalDeliverables}`;
+                      })()}
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2">
+                    <div
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${(() => {
+                          const standardCompleted = project.deliverables.filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                          const customCompleted = (project.customDeliverables || []).filter(d => d.status === 'submitted' || d.status === 'approved').length;
+                          const totalDeliverables = project.deliverables.length + (project.customDeliverables?.length || 0);
+                          return totalDeliverables > 0 ? ((standardCompleted + customCompleted) / totalDeliverables) * 100 : 0;
+                        })()}%`
+                      }}
+                    ></div>
+                  </div>
+                </div>
+
+                {/* Actions */}
+                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
+                  <span className="text-sm text-gray-600">{project.budget}</span>
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      openConversation(project.conversation_id);
+                    }}
+                    className="flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-colors text-sm"
+                  >
+                    <MessageCircle className="h-4 w-4" />
+                    Conversar
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        ))}
+      </div>
+
+      {/* Empty State */}
+      {filteredProjects.length === 0 && projects.length > 0 && (
+        <div className="text-center py-12">
+          <Filter className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-medium text-gray-900 mb-2">Nenhum projeto encontrado</h3>
+          <p className="text-gray-600">
+            Tente ajustar os filtros para ver mais projetos
+          </p>
+        </div>
+      )}
+
+      {projects.length === 0 && (
+        <div className="text-center py-12">
+          <Folder className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-xl font-medium text-gray-900 mb-2">Nenhum projeto ainda</h3>
+          <p className="text-gray-600">
+            Seus projetos aparecerão aqui quando suas candidaturas forem aprovadas
+          </p>
         </div>
       )}
     </div>

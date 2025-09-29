@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
 
@@ -31,13 +31,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const useAuth = () => {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
-  return context;
-};
+export { AuthContext };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
@@ -46,26 +40,48 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Timeout de segurança - se não carregar em 15 segundos, força logout
+    const timeoutId = setTimeout(() => {
+      if (loading) {
+        console.error('⏱️ [AUTH] Loading timeout - forcing logout');
+        setProfile(null);
+        setUser(null);
+        setSession(null);
+        setLoading(false);
+        // Força logout do Supabase para limpar estado
+        supabase.auth.signOut();
+      }
+    }, 15000);
+
     // Check for existing session and set up auth state listener
     const getInitialSession = async () => {
+      console.log('🚀 [AUTH] Getting initial session...');
       try {
         const { data: { session } } = await supabase.auth.getSession();
+        console.log('📋 [AUTH] Initial session result:', { 
+          hasSession: !!session, 
+          userId: session?.user?.id,
+          userEmail: session?.user?.email 
+        });
         
         if (session?.user) {
           await handleUserSession(session);
         } else {
+          console.log('❌ [AUTH] No session found, clearing state');
           setProfile(null);
           setUser(null);
           setSession(null);
         }
       } catch (error) {
-        console.error('💥 Error getting session:', error);
+        console.error('💥 [AUTH] Error getting session:', error);
         setProfile(null);
         setUser(null);
         setSession(null);
       }
       
+      console.log('⏹️ [AUTH] Initial session loading complete');
       setLoading(false);
+      clearTimeout(timeoutId); // Cancela timeout se carregou com sucesso
     };
 
     // Set up auth state change listener
@@ -86,50 +102,119 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Cleanup subscription
     return () => {
       subscription.unsubscribe();
+      clearTimeout(timeoutId);
     };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleUserSession = async (session: Session) => {
+    console.log('🔄 [AUTH] Handling user session for:', session.user.id);
     setUser(session.user);
     setSession(session);
     
-    // Busca perfil do usuário
-    let { data: userProfile } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', session.user.id)
-      .maybeSingle();
-
-    // Se não existe perfil, cria automaticamente
-    if (!userProfile) {
-      console.log('👤 Creating new profile for user:', session.user.id);
-      const { error: profileError } = await supabase
+    try {
+      // Busca perfil do usuário
+      console.log('🔍 [AUTH] Fetching profile for user:', session.user.id);
+      const { data: initialProfile, error: fetchError } = await supabase
         .from('profiles')
-        .insert({
+        .select('*')
+        .eq('id', session.user.id)
+        .maybeSingle();
+
+      if (fetchError) {
+        console.error('❌ [AUTH] Error fetching profile:', fetchError);
+        // Se falhou por RLS ou permissão, cria perfil de fallback
+        console.log('⚡ [AUTH] Creating fallback profile due to fetch error');
+        const fallbackProfile: Profile = {
           id: session.user.id,
           email: session.user.email || '',
-          name: session.user.user_metadata?.name || null,
+          name: session.user.user_metadata?.name || 'Creator User',
           role: 'creator',
           terms_accepted: true,
           terms_accepted_at: new Date().toISOString(),
-          terms_version: '1.0',
-        });
-      
-      if (!profileError) {
-        await new Promise(res => setTimeout(res, 300));
-        const { data: newProfile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .maybeSingle();
-        userProfile = newProfile;
-        console.log('✅ Profile created successfully:', userProfile?.id);
+          terms_version: '1.0'
+        };
+        setProfile(fallbackProfile);
+        return;
       } else {
-        console.error('❌ Profile creation failed:', profileError);
+        console.log('📊 [AUTH] Profile fetch result:', { userProfile: initialProfile, exists: !!initialProfile });
       }
+
+      let finalProfile = initialProfile;
+
+      // Se não existe perfil, cria automaticamente
+      if (!finalProfile) {
+        console.log('👤 [AUTH] Creating new profile for user:', session.user.id);
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .insert({
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.name || null,
+            role: 'creator',
+            terms_accepted: true,
+            terms_accepted_at: new Date().toISOString(),
+            terms_version: '1.0',
+          });
+        
+        if (!profileError) {
+          console.log('✅ [AUTH] Profile created, fetching new profile...');
+          await new Promise(res => setTimeout(res, 300));
+          const { data: newProfile, error: newFetchError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .maybeSingle();
+          
+          if (newFetchError) {
+            console.error('❌ [AUTH] Error fetching new profile:', newFetchError);
+            // Se falhou novamente, usa perfil de fallback
+            finalProfile = {
+              id: session.user.id,
+              email: session.user.email || '',
+              name: session.user.user_metadata?.name || 'Creator User',
+              role: 'creator',
+              terms_accepted: true,
+              terms_accepted_at: new Date().toISOString(),
+              terms_version: '1.0'
+            };
+          } else {
+            finalProfile = newProfile;
+            console.log('✅ [AUTH] Profile created successfully:', finalProfile?.id);
+          }
+        } else {
+          console.error('❌ [AUTH] Profile creation failed:', profileError);
+          // Se falhou, usa perfil de fallback
+          finalProfile = {
+            id: session.user.id,
+            email: session.user.email || '',
+            name: session.user.user_metadata?.name || 'Creator User',
+            role: 'creator',
+            terms_accepted: true,
+            terms_accepted_at: new Date().toISOString(),
+            terms_version: '1.0'
+          };
+        }
+      }
+      
+      console.log('🎯 [AUTH] Setting profile:', { id: finalProfile?.id, role: finalProfile?.role });
+      setProfile(finalProfile ?? null);
+    } catch (error) {
+      console.error('💥 [AUTH] Unexpected error in handleUserSession:', error);
+      
+      // Em caso de erro, cria perfil básico localmente para destravar
+      console.log('⚡ [AUTH] Creating emergency fallback profile');
+      const emergencyProfile: Profile = {
+        id: session.user.id,
+        email: session.user.email || '',
+        name: session.user.user_metadata?.name || 'Creator User',
+        role: 'creator',
+        terms_accepted: true,
+        terms_accepted_at: new Date().toISOString(),
+        terms_version: '1.0'
+      };
+      setProfile(emergencyProfile);
     }
-    
-    setProfile(userProfile ?? null);
   };
 
   const signUp = async (email: string, password: string, userData?: { 

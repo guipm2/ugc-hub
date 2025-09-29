@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { ArrowLeft, MapPin, Calendar, DollarSign, Tag, Users, Building2, Send, Heart, Share2, Check, Clock, Star, Award, Briefcase } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
 
 interface OpportunityDetails {

@@ -6,7 +6,7 @@ import {
   Settings, Plus
 } from 'lucide-react';
 import { useRealTimeCollaboration } from '../../hooks/useRealTimeCollaboration';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 
 interface RealTimeCollaborationHubProps {

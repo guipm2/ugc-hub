@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Eye, Calendar, Award, Target, Clock, ArrowRight } from 'lucide-react';
+import { Eye, Calendar, Award, Target, Clock, ArrowRight, TrendingUp, DollarSign, AlertCircle } from 'lucide-react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
 
 interface Application {
@@ -18,6 +18,21 @@ interface Application {
   };
 }
 
+interface Deliverable {
+  id: string;
+  title: string;
+  description: string;
+  due_date: string;
+  priority: number;
+  status: 'pending' | 'in_progress' | 'completed' | 'overdue';
+  opportunity: {
+    title: string;
+    company: string;
+    budget_min?: number;
+    budget_max?: number;
+  };
+}
+
 interface UpcomingDeadline {
   id: string;
   title: string;
@@ -28,9 +43,11 @@ interface UpcomingDeadline {
 
 const Dashboard = () => {
   const [applications, setApplications] = useState<Application[]>([]);
+  const [deliverables, setDeliverables] = useState<Deliverable[]>([]);
   const [upcomingDeadlines, setUpcomingDeadlines] = useState<UpcomingDeadline[]>([]);
   const [loadingApplications, setLoadingApplications] = useState(true);
   const [loadingDeadlines, setLoadingDeadlines] = useState(true);
+  const [totalEarnings, setTotalEarnings] = useState(0);
   const { user } = useAuth();
   const { navigate } = useRouter();
 
@@ -98,34 +115,59 @@ const Dashboard = () => {
             status,
             opportunity:opportunities(
               title,
-              company
+              company,
+              budget_min,
+              budget_max
             )
           `)
           .eq('creator_id', user.id)
-          .in('status', ['pending', 'in_progress'])
-          .gte('due_date', new Date().toISOString().split('T')[0])
-          .lte('due_date', thirtyDaysFromNow.toISOString().split('T')[0])
-          .order('due_date', { ascending: true })
-          .limit(3);
+          .order('due_date', { ascending: true });
 
         if (error) {
           console.error('Erro ao buscar deliverables:', error);
           // Fallback para busca por oportunidades se a tabela não existir ainda
           await fetchUpcomingDeadlinesFallback();
         } else {
-          const upcomingDeadlinesData = data?.map(deliverable => {
+          // Separar deliverables por status e calcular earnings
+          const allDeliverables = data?.map(deliverable => {
             const opportunity = Array.isArray(deliverable.opportunity) 
               ? deliverable.opportunity[0] 
               : deliverable.opportunity;
             
             return {
+              ...deliverable,
+              opportunity: opportunity || { title: 'Projeto', company: 'Empresa', budget_min: 0, budget_max: 0 }
+            };
+          }) as Deliverable[];
+          
+          setDeliverables(allDeliverables || []);
+          
+          // Calcular earnings estimados baseado em projetos aprovados
+          const completedDeliverables = allDeliverables?.filter(d => d.status === 'completed') || [];
+          const estimatedEarnings = completedDeliverables.reduce((total, deliverable) => {
+            const budgetMin = deliverable.opportunity.budget_min || 0;
+            const budgetMax = deliverable.opportunity.budget_max || 0;
+            const avgBudget = budgetMin && budgetMax ? (budgetMin + budgetMax) / 2 : 0;
+            return total + avgBudget;
+          }, 0);
+          setTotalEarnings(estimatedEarnings);
+
+          // Filtrar apenas próximos prazos para a seção de deadlines
+          const upcomingDeadlinesData = allDeliverables
+            ?.filter(deliverable => {
+              const dueDate = new Date(deliverable.due_date);
+              return dueDate >= new Date() && 
+                     dueDate <= thirtyDaysFromNow && 
+                     ['pending', 'in_progress'].includes(deliverable.status);
+            })
+            .slice(0, 3)
+            .map(deliverable => ({
               id: deliverable.id,
               title: deliverable.title,
-              company: opportunity?.company || 'Empresa',
+              company: deliverable.opportunity?.company || 'Empresa',
               deadline: deliverable.due_date,
               description: deliverable.description || `${deliverable.title} - Prioridade: ${getPriorityLabel(deliverable.priority)}`
-            };
-          }) as UpcomingDeadline[];
+            })) as UpcomingDeadline[];
           
           setUpcomingDeadlines(upcomingDeadlinesData || []);
         }
@@ -190,21 +232,57 @@ const Dashboard = () => {
       value: applications.length.toString(), 
       icon: Target, 
       color: 'text-blue-600', 
-      bg: 'bg-blue-100' 
+      bg: 'bg-blue-100',
+      description: 'Total de candidaturas enviadas'
     },
     { 
       label: 'Propostas Aceitas', 
       value: applications.filter(app => app.status === 'approved').length.toString(), 
       icon: Award, 
       color: 'text-green-600', 
-      bg: 'bg-green-100' 
+      bg: 'bg-green-100',
+      description: 'Projetos aprovados ativos'
     },
     { 
       label: 'Candidaturas Pendentes', 
       value: applications.filter(app => app.status === 'pending').length.toString(), 
       icon: Clock, 
       color: 'text-yellow-600', 
-      bg: 'bg-yellow-100' 
+      bg: 'bg-yellow-100',
+      description: 'Aguardando análise'
+    },
+    { 
+      label: 'Earnings Estimados', 
+      value: totalEarnings > 0 ? `R$ ${(totalEarnings / 1000).toFixed(1)}k` : 'R$ 0', 
+      icon: DollarSign, 
+      color: 'text-emerald-600', 
+      bg: 'bg-emerald-100',
+      description: 'Baseado em projetos completados'
+    },
+    { 
+      label: 'Tarefas Ativas', 
+      value: deliverables.filter(d => ['pending', 'in_progress'].includes(d.status)).length.toString(), 
+      icon: TrendingUp, 
+      color: 'text-purple-600', 
+      bg: 'bg-purple-100',
+      description: 'Deliverables em andamento'
+    },
+    { 
+      label: 'Prazos Urgentes', 
+      value: (() => {
+        const today = new Date();
+        const threeDaysFromNow = new Date();
+        threeDaysFromNow.setDate(today.getDate() + 3);
+        return deliverables.filter(d => {
+          if (!['pending', 'in_progress'].includes(d.status)) return false;
+          const dueDate = new Date(d.due_date);
+          return dueDate <= threeDaysFromNow;
+        }).length.toString();
+      })(), 
+      icon: AlertCircle, 
+      color: 'text-red-600', 
+      bg: 'bg-red-100',
+      description: 'Entrega em até 3 dias'
     }
   ];
 
@@ -235,7 +313,7 @@ const Dashboard = () => {
       </div>
 
       {/* Stats Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
         {stats.map((stat, index) => {
           const Icon = stat.icon;
           const getNavigationPath = () => {
@@ -244,6 +322,9 @@ const Dashboard = () => {
               case 'Candidaturas Pendentes':
                 return '/creators/opportunities';
               case 'Propostas Aceitas':
+              case 'Earnings Estimados':
+              case 'Tarefas Ativas':
+              case 'Prazos Urgentes':
                 return '/creators/projects';
               default:
                 return '/creators/dashboard';
@@ -253,20 +334,19 @@ const Dashboard = () => {
           return (
             <div 
               key={index} 
-              className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all duration-200 cursor-pointer group hover:border-blue-200"
+              className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-all duration-200 cursor-pointer group hover:border-blue-200"
               onClick={() => navigate(getNavigationPath())}
             >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <div className={`p-3 rounded-lg ${stat.bg} group-hover:scale-105 transition-transform`}>
-                    <Icon className={`h-6 w-6 ${stat.color}`} />
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">{stat.label}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                  </div>
+              <div className="flex items-center justify-between mb-3">
+                <div className={`p-2.5 rounded-lg ${stat.bg} group-hover:scale-105 transition-transform`}>
+                  <Icon className={`h-5 w-5 ${stat.color}`} />
                 </div>
                 <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+              </div>
+              <div>
+                <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
+                <p className="text-sm font-medium text-gray-600 mb-1">{stat.label}</p>
+                <p className="text-xs text-gray-500">{stat.description}</p>
               </div>
             </div>
           );
@@ -433,6 +513,80 @@ const Dashboard = () => {
           </div>
         )}
       </div>
+
+      {/* Creator Performance Insights */}
+      {applications.length > 0 && (
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <h3 className="text-lg font-semibold text-gray-900 mb-6">Insights de Performance</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {/* Success Rate */}
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-3">
+                <TrendingUp className="h-8 w-8 text-green-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {applications.length > 0 
+                  ? `${Math.round((applications.filter(app => app.status === 'approved').length / applications.length) * 100)}%`
+                  : '0%'
+                }
+              </div>
+              <div className="text-sm font-medium text-gray-600">Taxa de Aprovação</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {applications.filter(app => app.status === 'approved').length} de {applications.length} candidaturas
+              </div>
+            </div>
+
+            {/* Active Projects */}
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-3">
+                <Target className="h-8 w-8 text-blue-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {applications.filter(app => app.status === 'approved').length}
+              </div>
+              <div className="text-sm font-medium text-gray-600">Projetos Ativos</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {deliverables.filter(d => d.status === 'completed').length} deliverables concluídos
+              </div>
+            </div>
+
+            {/* Response Time */}
+            <div className="text-center">
+              <div className="mx-auto w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mb-3">
+                <Clock className="h-8 w-8 text-purple-600" />
+              </div>
+              <div className="text-2xl font-bold text-gray-900">
+                {(() => {
+                  const urgentTasks = deliverables.filter(d => {
+                    if (!['pending', 'in_progress'].includes(d.status)) return false;
+                    const today = new Date();
+                    const dueDate = new Date(d.due_date);
+                    const daysLeft = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                    return daysLeft <= 3;
+                  }).length;
+                  
+                  if (urgentTasks > 0) return `${urgentTasks}`;
+                  return '✓';
+                })()}
+              </div>
+              <div className="text-sm font-medium text-gray-600">Prazos Urgentes</div>
+              <div className="text-xs text-gray-500 mt-1">
+                {(() => {
+                  const urgentTasks = deliverables.filter(d => {
+                    if (!['pending', 'in_progress'].includes(d.status)) return false;
+                    const today = new Date();
+                    const dueDate = new Date(d.due_date);
+                    const daysLeft = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+                    return daysLeft <= 3;
+                  }).length;
+                  
+                  return urgentTasks > 0 ? 'Requer atenção imediata' : 'Todos os prazos em dia';
+                })()}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

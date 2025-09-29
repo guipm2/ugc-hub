@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useRouter } from '../../hooks/useRouter';
 import { Eye, EyeOff, Mail, Lock, Loader2 } from 'lucide-react';
-import { useAuth } from '../../contexts/AuthContext';
+import { useAuth } from '../../hooks/useAuth';
 import { supabase } from '../../lib/supabase';
 import AuthLayout from './AuthLayout';
 

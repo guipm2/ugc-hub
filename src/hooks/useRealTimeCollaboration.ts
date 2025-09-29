@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { supabase } from '../lib/supabase';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import { useAnalystAuth } from '../contexts/AnalystAuthContext';
 
 // Types for real-time collaboration
@@ -434,7 +434,7 @@ export const useRealTimeCollaboration = (options: UseRealTimeCollaborationOption
     try {
       // Upload file to Supabase Storage
       const fileName = `${Date.now()}_${file.name}`;
-      const { data: uploadData, error: uploadError } = await supabase.storage
+      const { error: uploadError } = await supabase.storage
         .from('shared-files')
         .upload(fileName, file);
 

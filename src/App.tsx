@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { LayoutDashboard, Target, MessageCircle, GraduationCap, User, HelpCircle, Lock, Folder } from 'lucide-react';
-import { AuthProvider, useAuth } from './contexts/AuthContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { useAuth } from './hooks/useAuth';
 import { AnalystAuthProvider, useAnalystAuth } from './contexts/AnalystAuthContext';
 import { useRouter } from './hooks/useRouter';
 import { supabase } from './lib/supabase';
@@ -62,8 +63,23 @@ function CreatorApp() {
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [opportunitiesCount, setOpportunitiesCount] = useState(0);
+  const [profileTimeout, setProfileTimeout] = useState(false);
   const { user, loading, signOut, profile } = useAuth();
   const { currentPath, navigate } = useRouter();
+
+  // Timeout para profile loading
+  useEffect(() => {
+    if (user && !profile && !loading) {
+      const timeoutId = setTimeout(() => {
+        console.log('⏱️ [CREATOR APP] Profile loading timeout');
+        setProfileTimeout(true);
+      }, 8000); // 8 segundos
+
+      return () => clearTimeout(timeoutId);
+    } else if (profile) {
+      setProfileTimeout(false);
+    }
+  }, [user, profile, loading]);
 
   const handleOpenConversation = (projectId: string) => { // Changed parameter name for clarity
     setSelectedProjectId(projectId);
@@ -96,10 +112,11 @@ function CreatorApp() {
 
   // Redirect to /creators/opportunities if on root creators path
   useEffect(() => {
-    if (currentPath === '/creators') {
+    if (currentPath === '/creators' && user && profile) {
+      console.log('🔄 [CREATOR APP] Redirecting from /creators to /creators/opportunities');
       navigate('/creators/opportunities');
     }
-  }, [currentPath, navigate]);
+  }, [currentPath, navigate, user, profile]);
 
   // Fetch opportunities count when user loads
   useEffect(() => {
@@ -124,12 +141,44 @@ function CreatorApp() {
     );
   }
 
-  console.log('🔍 [CREATOR APP] Auth check - user:', !!user, 'profile:', profile, 'role:', profile?.role);
+  console.log('🔍 [CREATOR APP] Auth check - user:', !!user, 'profile:', profile, 'role:', profile?.role, 'timeout:', profileTimeout);
 
   // Se não tem usuário ou perfil, mostra tela de login
-  if (!user || !profile || profile.role !== 'creator') {
+  // Se profile timeout, força logout
+  if (!user || (!profile && !loading && profileTimeout) || (profile && profile.role !== 'creator')) {
+    if (profileTimeout) {
+      console.log('⏱️ [CREATOR APP] Profile timeout - forcing logout');
+      signOut();
+    }
     console.log('❌ [CREATOR APP] Auth failed - redirecting to login');
     return <AuthPage />;
+  }
+
+  // Se ainda está carregando profile sem timeout
+  if (!profile && !profileTimeout) {
+    console.log('⏳ [CREATOR APP] Still loading profile...');
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl mb-4 mx-auto">
+            UGC
+          </div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 mt-4">Carregando perfil...</p>
+          
+          {/* Botão de emergência para forçar logout */}
+          <button
+            onClick={() => {
+              console.log('🚨 [CREATOR APP] Emergency logout triggered');
+              signOut();
+            }}
+            className="mt-8 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+          >
+            Forçar Logout (Caso Esteja Travado)
+          </button>
+        </div>
+      </div>
+    );
   }
 
   console.log('✅ [CREATOR APP] Auth success - rendering creator interface');

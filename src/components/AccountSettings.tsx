@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Save, Eye, EyeOff, Shield, Bell, User, Mail, Lock, Trash2, Download } from 'lucide-react';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 
 const AccountSettings = () => {
   const [activeTab, setActiveTab] = useState('profile');
