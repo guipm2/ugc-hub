@@ -326,13 +326,10 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
     return new Date(dateString).toLocaleDateString('pt-BR');
   };
 
-  const openConversation = (conversationId: string) => {
-    if (conversationId) {
-      console.log('💬 [PROJECTS] Abrindo conversa:', conversationId);
-      onOpenConversation(conversationId);
-    } else {
-      console.log('❌ [PROJECTS] Nenhuma conversa encontrada para este projeto');
-    }
+  const openConversation = (project: Project) => {
+    // Usar o ID do projeto (application_id) para navegar para o chat
+    console.log('💬 [PROJECTS] Abrindo conversa para projeto:', project.id);
+    onOpenConversation(project.id);
   };
 
   const filteredProjects = projects.filter(project => {
@@ -382,7 +379,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
           <div className="flex items-center gap-3">
             {getStatusBadge(selectedProject.status)}
             <button
-              onClick={() => openConversation(selectedProject.conversation_id)}
+              onClick={() => openConversation(selectedProject)}
               className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             >
               <MessageCircle className="h-4 w-4" />
@@ -682,7 +679,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        openConversation(project.conversation_id);
+                        openConversation(project);
                       }}
                       className="text-blue-600 hover:text-blue-700 transition-colors"
                     >
@@ -717,7 +714,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
-                      openConversation(project.conversation_id);
+                      openConversation(project);
                     }}
                     className="text-blue-600 hover:text-blue-700 transition-colors p-2"
                   >
