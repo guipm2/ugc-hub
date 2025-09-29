@@ -1,6 +1,5 @@
-import { useState } from 'react';
-import { useEffect } from 'react';
-import { Search, Filter, Clock, MapPin, DollarSign, Users, Eye, Heart, Send, X, Grid3X3, List, ChevronDown, Calendar } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { Search, Clock, MapPin, DollarSign, Users, Eye, Heart, Send, X, Grid3X3, List, Calendar } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
@@ -14,7 +13,7 @@ interface Opportunity {
   budget: string;
   deadline: string;
   description: string;
-  requirements: string[] | any;
+  requirements: string[];
   contentType: string;
   candidates: number;
   status: 'novo' | 'urgente';
@@ -25,14 +24,15 @@ interface Opportunity {
   };
 }
 
+interface UserApplication {
+  id: string;
+  opportunity_id: string;
+  status: 'pending' | 'approved' | 'rejected';
+}
+
 const Opportunities = () => {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [activeFilter, setActiveFilter] = useState('Todos');
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
-  const [statusFilter, setStatusFilter] = useState('Todos');
-  const [locationFilter, setLocationFilter] = useState('Todos');
-  const [budgetFilter, setBudgetFilter] = useState('Todos');
-  const [showFilters, setShowFilters] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
   const [selectedOpportunity, setSelectedOpportunity] = useState<Opportunity | null>(null);
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,16 +40,7 @@ const Opportunities = () => {
   const { user } = useAuth();
   const { navigate } = useRouter();
 
-  const filters = ['Todos', 'Reel', 'Vídeo', 'Post', 'Stories', 'TikTok'];
-  const statusFilters = ['Todos', 'Novo', 'Urgente'];
-  const locationFilters = ['Todos', 'Remoto', 'São Paulo', 'Rio de Janeiro', 'Belo Horizonte', 'Brasília'];
-  const budgetFilters = ['Todos', 'Até R$ 500', 'R$ 500 - R$ 1.000', 'R$ 1.000 - R$ 2.500', 'R$ 2.500 - R$ 5.000', 'Acima de R$ 5.000'];
-
-  useEffect(() => {
-    fetchOpportunities();
-  }, []);
-
-  const fetchOpportunities = async () => {
+  const fetchOpportunities = useCallback(async () => {
     try {
       // First get opportunities
       const { data: opportunitiesData, error: opportunitiesError } = await supabase
@@ -64,7 +55,7 @@ const Opportunities = () => {
       }
 
       // Get user applications if user is logged in
-      let userApplications: any[] = [];
+      let userApplications: UserApplication[] = [];
       if (user) {
         const { data: applicationsData, error: applicationsError } = await supabase
           .from('opportunity_applications')
@@ -139,44 +130,16 @@ const Opportunities = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    fetchOpportunities();
+  }, [fetchOpportunities]);
 
   const filteredOpportunities = opportunities.filter(opportunity => {
     const matchesSearch = opportunity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          opportunity.company.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesContentType = activeFilter === 'Todos' || opportunity.contentType.toLowerCase().includes(activeFilter.toLowerCase());
-    const matchesStatus = statusFilter === 'Todos' || 
-      (statusFilter === 'Novo' && opportunity.status === 'novo') ||
-      (statusFilter === 'Urgente' && opportunity.status === 'urgente');
-    const matchesLocation = locationFilter === 'Todos' || opportunity.location === locationFilter;
-    
-    // Budget filter logic
-    let matchesBudget = true;
-    if (budgetFilter !== 'Todos') {
-      const budgetMin = parseInt(opportunity.budget.split(' - ')[0].replace('R$ ', '').replace('.', ''));
-      const budgetMax = parseInt(opportunity.budget.split(' - ')[1].replace('R$ ', '').replace('.', ''));
-      const avgBudget = (budgetMin + budgetMax) / 2;
-      
-      switch (budgetFilter) {
-        case 'Até R$ 500':
-          matchesBudget = avgBudget <= 500;
-          break;
-        case 'R$ 500 - R$ 1.000':
-          matchesBudget = avgBudget > 500 && avgBudget <= 1000;
-          break;
-        case 'R$ 1.000 - R$ 2.500':
-          matchesBudget = avgBudget > 1000 && avgBudget <= 2500;
-          break;
-        case 'R$ 2.500 - R$ 5.000':
-          matchesBudget = avgBudget > 2500 && avgBudget <= 5000;
-          break;
-        case 'Acima de R$ 5.000':
-          matchesBudget = avgBudget > 5000;
-          break;
-      }
-    }
-    
-    return matchesSearch && matchesContentType && matchesStatus && matchesLocation && matchesBudget;
+    return matchesSearch;
   });
 
   const handleApply = async (opportunityId: string) => {
@@ -287,7 +250,7 @@ const Opportunities = () => {
         <p className="text-gray-600 mt-1">{opportunities.length} oportunidades disponíveis</p>
       </div>
 
-      {/* Search and Filters */}
+      {/* Search and View Mode Only */}
       <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
         <div className="flex-1 max-w-md">
           <div className="relative">
@@ -326,78 +289,8 @@ const Opportunities = () => {
               <List className="h-4 w-4" />
             </button>
           </div>
-          
-          {/* Content Type Filter */}
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            {filters.map((filter) => (
-              <button
-                key={filter}
-                onClick={() => setActiveFilter(filter)}
-                className={`px-3 py-1.5 text-sm font-medium rounded-md transition-colors ${
-                  activeFilter === filter
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-600 hover:text-gray-900'
-                }`}
-              >
-                {filter}
-              </button>
-            ))}
-          </div>
-          
-          <button 
-            onClick={() => setShowFilters(!showFilters)}
-            className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-          >
-            <Filter className="h-4 w-4" />
-            Filtros
-            <ChevronDown className={`h-4 w-4 transition-transform ${showFilters ? 'rotate-180' : ''}`} />
-          </button>
         </div>
       </div>
-
-      {/* Advanced Filters */}
-      {showFilters && (
-        <div className="bg-white rounded-xl border border-gray-200 p-4">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {statusFilters.map(status => (
-                  <option key={status} value={status}>{status}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Localização</label>
-              <select
-                value={locationFilter}
-                onChange={(e) => setLocationFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {locationFilters.map(location => (
-                  <option key={location} value={location}>{location}</option>
-                ))}
-              </select>
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Investimento</label>
-              <select
-                value={budgetFilter}
-                onChange={(e) => setBudgetFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              >
-                {budgetFilters.map(budget => (
-                  <option key={budget} value={budget}>{budget}</option>
-                ))}
-              </select>
-            </div>
-          </div>
-        </div>
-      )}
 
       {/* Opportunities Grid */}
       <div className={viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-4'}>
@@ -510,7 +403,7 @@ const Opportunities = () => {
                 </div>
               </div>
             ) : (
-              /* Grid View (existing layout) */
+              /* Grid View */
               <>
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, MapPin, Calendar, DollarSign, Tag, Users, Building2, Send, Heart, Share2, Check, Clock, Star, Award, Briefcase } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, DollarSign, Tag, Users, Building2, Send, Heart, Share2, Check, Clock, Star, Award, Briefcase, ExternalLink, Instagram, Globe } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
@@ -8,6 +8,7 @@ interface OpportunityDetails {
   id: string;
   title: string;
   company: string;
+  company_link?: string;
   description: string;
   budget_min: number;
   budget_max: number;
@@ -409,7 +410,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                   </div>
                   Sobre a Empresa
                 </h3>
-                <div className="space-y-4">
+                <div className="space-y-6">
                   <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
                     <div className="p-3 bg-gray-100 rounded-xl flex-shrink-0">
                       <Building2 className="h-6 w-6 text-gray-600" />
@@ -420,11 +421,41 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                         <Calendar className="h-4 w-4" />
                         Membro desde {formatDate(opportunity.created_at)}
                       </p>
+                      <p className="text-sm text-gray-700 mt-2">
+                        Esta empresa confia na nossa plataforma para encontrar criadores de conteúdo talentosos
+                        para suas campanhas de marketing digital.
+                      </p>
                     </div>
                   </div>
+
+                  {/* Company Link Button */}
+                  {opportunity.company_link && (
+                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
+                      <h4 className="text-sm font-semibold text-blue-900 mb-3">
+                        Conheça a empresa
+                      </h4>
+                      <button
+                        onClick={() => {
+                          window.open(opportunity.company_link, '_blank', 'noopener,noreferrer');
+                        }}
+                        className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
+                      >
+                        {opportunity.company_link?.includes('instagram.com') ? (
+                          <Instagram className="h-5 w-5" />
+                        ) : (
+                          <Globe className="h-5 w-5" />
+                        )}
+                        {opportunity.company_link?.includes('instagram.com') ? 'Ver Instagram' : 'Visitar Site'}
+                        <ExternalLink className="h-4 w-4" />
+                      </button>
+                      <p className="text-xs text-blue-700 mt-2 text-center">
+                        Explore o perfil da empresa para entender melhor sua marca e estilo
+                      </p>
+                    </div>
+                  )}
                   
                   {/* Additional company stats */}
-                  <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-100">
+                  <div className="grid grid-cols-2 gap-3 pt-2">
                     <div className="text-center p-3 bg-green-50 rounded-lg">
                       <p className="text-2xl font-bold text-green-600">★</p>
                       <p className="text-xs text-green-700 font-medium">Empresa Verificada</p>
