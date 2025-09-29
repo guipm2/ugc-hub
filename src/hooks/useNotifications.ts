@@ -34,8 +34,6 @@ export const useNotifications = () => {
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
-    console.log('🔔 [CREATOR] Fetching notifications for creator:', user.id);
-
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -49,8 +47,6 @@ export const useNotifications = () => {
         setNotifications([]);
         setUnreadCount(0);
       } else {
-        console.log('📊 [CREATOR] Notificações encontradas:', data?.length || 0);
-        console.log('🔍 [CREATOR] Primeira notificação para debug:', data?.[0]);
         setNotifications(data || []);
         setUnreadCount(data?.filter(n => !n.read).length || 0);
       }
@@ -66,8 +62,6 @@ export const useNotifications = () => {
   const markAsRead = async (notificationId: string) => {
     if (!user) return;
 
-    console.log('📖 [CREATOR] Marking notification as read:', notificationId);
-
     try {
       const { error } = await supabase
         .from('notifications')
@@ -78,7 +72,6 @@ export const useNotifications = () => {
       if (error) {
         console.error('❌ [CREATOR] Erro ao marcar notificação como lida:', error);
       } else {
-        console.log('✅ [CREATOR] Notificação marcada como lida');
         setNotifications(prev => 
           prev.map(n => 
             n.id === notificationId ? { ...n, read: true } : n
@@ -94,8 +87,6 @@ export const useNotifications = () => {
   const markAllAsRead = async () => {
     if (!user) return;
     
-    console.log('📖 [CREATOR] Marking all notifications as read for user:', user.id);
-    
     try {
       const { error } = await supabase
         .from('notifications')
@@ -108,7 +99,6 @@ export const useNotifications = () => {
         return;
       }
 
-      console.log('✅ [CREATOR] Todas as notificações marcadas como lidas');
       setNotifications(prev => prev.map(n => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (err) {
@@ -121,8 +111,6 @@ export const useNotifications = () => {
       fetchNotifications();
 
       // Escutar por novas notificações em tempo real
-      console.log('🔔 [CREATOR] Setting up real-time notifications for user:', user.id);
-      
       const channel = supabase
         .channel('creator_notifications')
         .on(
@@ -134,7 +122,6 @@ export const useNotifications = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            console.log('🔔 [CREATOR] Nova notificação real-time:', payload);
             const newNotification = payload.new as Notification;
             setNotifications(prev => [newNotification, ...prev]);
             setUnreadCount(prev => prev + 1);
@@ -149,7 +136,6 @@ export const useNotifications = () => {
             filter: `user_id=eq.${user.id}`
           },
           (payload) => {
-            console.log('📝 [CREATOR] Notificação atualizada real-time:', payload);
             const updatedNotification = payload.new as Notification;
             setNotifications(prev => 
               prev.map(n => 
@@ -164,7 +150,6 @@ export const useNotifications = () => {
         .subscribe();
 
       return () => {
-        console.log('🔄 [CREATOR] Cleaning up real-time subscription');
         supabase.removeChannel(channel);
       };
     }
