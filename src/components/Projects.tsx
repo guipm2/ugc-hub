@@ -52,6 +52,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
+  const [fetching, setFetching] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState<string | null>(null);
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
@@ -60,11 +61,10 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
   const { user } = useAuth();
 
   const fetchProjects = useCallback(async () => {
-    if (!user) return;
+    if (!user || fetching) return;
 
+    setFetching(true);
     try {
-      console.log('🔍 [PROJECTS] Buscando projetos para usuário:', user.id);
-
       // Buscar candidaturas aprovadas
       const { data: applications, error } = await supabase
         .from('opportunity_applications')
@@ -92,8 +92,6 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         return;
       }
 
-      console.log('📊 [PROJECTS] Candidaturas aprovadas encontradas:', applications?.length || 0);
-
       const projectsData = [];
       
       for (const app of applications || []) {
@@ -102,13 +100,17 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         if (!opportunity) continue;
 
         // Buscar conversa relacionada
-        const { data: conversation } = await supabase
+        const { data: conversation, error: conversationError } = await supabase
           .from('conversations')
           .select('id')
           .eq('opportunity_id', app.opportunity_id)
           .eq('creator_id', user.id)
           .eq('analyst_id', opportunity.created_by)
-          .single();
+          .maybeSingle();
+
+        if (conversationError) {
+          console.error('❌ [PROJECTS] Erro ao buscar conversa:', conversationError);
+        }
 
         // Buscar deliverables customizados do banco para esta candidatura
         const { data: customDeliverables, error: deliverablesError } = await supabase
@@ -162,20 +164,29 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         });
       }
 
-      console.log('✅ [PROJECTS] Projetos processados:', projectsData.length);
       setProjects(projectsData);
     } catch (err) {
       console.error('❌ [PROJECTS] Erro geral ao buscar projetos:', err);
     } finally {
       setLoading(false);
+      setFetching(false);
     }
-  }, [user]);
+  }, [user, fetching]);
 
   useEffect(() => {
-    if (user) {
-      fetchProjects();
+    let mounted = true;
+    
+    if (user && !fetching) {
+      fetchProjects().then(() => {
+        if (!mounted) return;
+        // Execução completa
+      });
     }
-  }, [user, fetchProjects]);
+
+    return () => {
+      mounted = false;
+    };
+  }, [user, fetchProjects, fetching]);
 
   const getProjectStatus = (deadline: string, deliverables?: Deliverable[]): 'em_andamento' | 'entregue' | 'aprovado' | 'atrasado' => {
     const deadlineDate = new Date(deadline);
