@@ -48,7 +48,7 @@ export const useCollaborationData = () => {
         .limit(10);
 
       if (error) {
-        console.error('Error fetching activities:', error);
+        console.error('Erro ao buscar atividades:', error);
         // Don't set error state for now, use mock data as fallback
         setActivities(getMockActivities());
         return;
@@ -71,7 +71,7 @@ export const useCollaborationData = () => {
         setActivities(getMockActivities());
       }
     } catch (err) {
-      console.error('Error in fetchActivities:', err);
+      console.error('Erro em fetchActivities:', err);
       setActivities(getMockActivities());
     } finally {
       setLoading(false);
@@ -93,7 +93,7 @@ export const useCollaborationData = () => {
         .gte('last_seen', new Date(Date.now() - 15 * 60 * 1000).toISOString()); // Last 15 minutes
 
       if (error) {
-        console.error('Error fetching online users:', error);
+        console.error('Erro ao buscar usuários online:', error);
         setOnlineUsers(getMockOnlineUsers());
         return;
       }
@@ -111,7 +111,7 @@ export const useCollaborationData = () => {
         setOnlineUsers(getMockOnlineUsers());
       }
     } catch (err) {
-      console.error('Error in fetchOnlineUsers:', err);
+      console.error('Erro em fetchOnlineUsers:', err);
       setOnlineUsers(getMockOnlineUsers());
     }
   }, []);
@@ -128,7 +128,7 @@ export const useCollaborationData = () => {
         .eq('user_id', currentUser.id);
 
       if (error) {
-        console.error('Error marking activity as read:', error);
+        console.error('Erro ao marcar atividade como lida:', error);
         return;
       }
 
@@ -137,7 +137,7 @@ export const useCollaborationData = () => {
         activity.id === activityId ? { ...activity, read: true } : activity
       ));
     } catch (err) {
-      console.error('Error in markActivityAsRead:', err);
+      console.error('Erro em markActivityAsRead:', err);
     }
   }, [currentUser?.id]);
 
@@ -153,14 +153,14 @@ export const useCollaborationData = () => {
         .eq('read', false);
 
       if (error) {
-        console.error('Error marking all as read:', error);
+        console.error('Erro ao marcar todos como lido:', error);
         return;
       }
 
       // Update local state
       setActivities(prev => prev.map(activity => ({ ...activity, read: true })));
     } catch (err) {
-      console.error('Error in markAllAsRead:', err);
+      console.error('Erro em markAllAsRead:', err);
     }
   }, [currentUser?.id]);
 

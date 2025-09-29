@@ -40,7 +40,7 @@ export const useUserRole = () => {
           }
         }
       } catch (error) {
-        console.error('Error checking user role:', error);
+        console.error('Erro ao verificar papel do usuário:', error);
         setRole(null);
       } finally {
         setLoading(false);

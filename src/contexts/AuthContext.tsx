@@ -48,7 +48,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Timeout de segurança - aumentado para 30 segundos para evitar falso positivo
     timeoutId = setTimeout(() => {
       if (loading && isInitializing) {
-        console.error('⏱️ [AUTH] Loading timeout - forcing logout');
+        console.error('⏱️ [AUTH] Timeout de carregamento - forçando logout');
         setProfile(null);
         setUser(null);
         setSession(null);
@@ -76,7 +76,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           setSession(null);
         }
       } catch (error) {
-        console.error('[AUTH] Error getting session:', error);
+        console.error('[AUTH] Erro ao obter sessão:', error);
         setProfile(null);
         setUser(null);
         setSession(null);
@@ -136,7 +136,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         .maybeSingle();
 
       if (fetchError) {
-        console.error('[AUTH] Error fetching profile:', fetchError.message);
+        console.error('[AUTH] Erro ao buscar perfil:', fetchError.message);
         // Se falhou por RLS ou permissão, cria perfil de fallback
         const fallbackProfile: Profile = {
           id: sessionId,
@@ -176,7 +176,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             .maybeSingle();
           
           if (newFetchError) {
-            console.error('[AUTH] Error fetching new profile:', newFetchError.message);
+            console.error('[AUTH] Erro ao buscar novo perfil:', newFetchError.message);
             // Se falhou novamente, usa perfil de fallback
             finalProfile = {
               id: sessionId,
@@ -191,7 +191,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             finalProfile = newProfile;
           }
         } else {
-          console.error('[AUTH] Profile creation failed:', profileError.message);
+          console.error('[AUTH] Falha na criação do perfil:', profileError.message);
           // Se falhou, usa perfil de fallback
           finalProfile = {
             id: sessionId,
@@ -213,7 +213,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       setProfile(finalProfile ?? null);
     } catch (error) {
-      console.error('[AUTH] Unexpected error in handleUserSession:', error);
+      console.error('[AUTH] Erro inesperado em handleUserSession:', error);
       
       // Em caso de erro, cria perfil básico localmente para destravar
       const emergencyProfile: Profile = {
@@ -269,7 +269,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('🔑 [AUTH] Starting sign in process for:', email);
+    console.log('🔑 [AUTH] Iniciando processo de login para:', email);
     try {
       // First check if this email exists as analyst in profiles table
       const { data: analystExists } = await supabase
@@ -288,18 +288,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       });
 
       if (error) {
-        console.error('❌ [AUTH] Login error:', error);
+        console.error('❌ [AUTH] Erro no login:', error);
         return { error: { message: 'Email ou senha incorretos' } as AuthError };
       }
 
-      console.log('✅ [AUTH] Login successful, user session will be handled by onAuthStateChange');
+      console.log('✅ [AUTH] Login bem-sucedido, sessão será tratada pelo onAuthStateChange');
       
       // NÃO fazemos validação aqui - deixa o onAuthStateChange e handleUserSession cuidar
       // Isso evita dupla validação e conflitos de estado
 
       return { error: null };
     } catch (err) {
-      console.error('💥 [AUTH] Unexpected error during login:', err);
+      console.error('💥 [AUTH] Erro inesperado durante login:', err);
       return { error: { message: 'Erro ao fazer login' } as AuthError };
     }
   };

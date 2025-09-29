@@ -67,14 +67,14 @@ export const useRealTimeCollaboration = (options: UseRealTimeCollaborationOption
         .limit(options.activityFeedLimit || 20);
 
       if (error) {
-        console.error('Error fetching activity feed:', error);
+        console.error('Erro ao buscar feed de atividades:', error);
         setError('Erro ao carregar feed de atividades');
         return;
       }
 
       setActivityFeed(data || []);
     } catch (err) {
-      console.error('Error in fetchActivityFeed:', err);
+      console.error('Erro em fetchActivityFeed:', err);
       setError('Erro ao carregar feed de atividades');
     } finally {
       setLoading(false);
@@ -92,7 +92,7 @@ export const useRealTimeCollaboration = (options: UseRealTimeCollaborationOption
         .eq('user_id', currentUserId);
 
       if (error) {
-        console.error('Error marking activity as read:', error);
+        console.error('Erro ao marcar atividade como lida:', error);
         return;
       }
 
@@ -101,7 +101,7 @@ export const useRealTimeCollaboration = (options: UseRealTimeCollaborationOption
         item.id === activityId ? { ...item, read: true } : item
       ));
     } catch (err) {
-      console.error('Error in markActivityAsRead:', err);
+      console.error('Erro em markActivityAsRead:', err);
     }
   }, [currentUserId]);
 
@@ -141,10 +141,10 @@ export const useRealTimeCollaboration = (options: UseRealTimeCollaborationOption
         });
 
       if (error) {
-        console.error('Error updating presence:', error);
+        console.error('Erro ao atualizar presença:', error);
       }
     } catch (err) {
-      console.error('Error in updatePresence:', err);
+      console.error('Erro em updatePresence:', err);
     }
   }, [currentUserId, options.enablePresence]);
 
@@ -158,7 +158,7 @@ export const useRealTimeCollaboration = (options: UseRealTimeCollaborationOption
         .gte('last_seen', new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()); // Last 24 hours
 
       if (error) {
-        console.error('Error fetching presence:', error);
+        console.error('Erro ao buscar presença:', error);
         return;
       }
 
@@ -169,7 +169,7 @@ export const useRealTimeCollaboration = (options: UseRealTimeCollaborationOption
       
       setUserPresence(presenceMap);
     } catch (err) {
-      console.error('Error in fetchPresence:', err);
+      console.error('Erro em fetchPresence:', err);
     }
   }, [options.enablePresence]);
 
@@ -189,27 +189,27 @@ export const useRealTimeCollaboration = (options: UseRealTimeCollaborationOption
   
   // These are placeholder functions for features that will be implemented later
   const createCollaborativeSession = useCallback(async () => {
-    console.log('createCollaborativeSession: Not implemented yet');
+    console.log('createCollaborativeSession: Ainda não implementado');
     return null;
   }, []);
 
   const joinCollaborativeSession = useCallback(async () => {
-    console.log('joinCollaborativeSession: Not implemented yet');
+    console.log('joinCollaborativeSession: Ainda não implementado');
     return false;
   }, []);
 
   const leaveCollaborativeSession = useCallback(async () => {
-    console.log('leaveCollaborativeSession: Not implemented yet');
+    console.log('leaveCollaborativeSession: Ainda não implementado');
     return false;
   }, []);
 
   const uploadSharedFile = useCallback(async () => {
-    console.log('uploadSharedFile: Not implemented yet');
+    console.log('uploadSharedFile: Ainda não implementado');
     return null;
   }, []);
 
   const updateNotificationPreferences = useCallback(async () => {
-    console.log('updateNotificationPreferences: Not implemented yet');
+    console.log('updateNotificationPreferences: Ainda não implementado');
     return false;
   }, []);
 
@@ -247,7 +247,7 @@ export const useRealTimeCollaboration = (options: UseRealTimeCollaborationOption
             updated_at: new Date().toISOString()
           })
           .then(() => {
-            console.log('User set to offline');
+            console.log('Usuário definido como offline');
           });
       }
     };

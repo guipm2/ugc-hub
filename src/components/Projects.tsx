@@ -63,7 +63,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
     if (!user) return;
 
     try {
-      console.log('🔍 [PROJECTS] Fetching projects for user:', user.id);
+      console.log('🔍 [PROJECTS] Buscando projetos para usuário:', user.id);
 
       // Buscar candidaturas aprovadas
       const { data: applications, error } = await supabase
@@ -271,7 +271,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
   const handleFileUpload = async (deliverableId: string) => {
     if (!uploadFiles || uploadFiles.length === 0) return;
 
-    console.log('📤 [PROJECTS] Uploading files for deliverable:', deliverableId);
+    console.log('📤 [PROJECTS] Enviando arquivos para entrega:', deliverableId);
 
     // Simular upload de arquivos (TODO: Implementar upload real para Supabase Storage)
     const newFiles: ProjectFile[] = Array.from(uploadFiles).map((file, index) => ({
@@ -300,7 +300,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
 
     setShowUploadModal(null);
     setUploadFiles(null);
-    console.log('✅ [PROJECTS] Files uploaded successfully');
+    console.log('✅ [PROJECTS] Arquivos enviados com sucesso');
   };
 
   const formatFileSize = (bytes: number) => {
@@ -317,10 +317,10 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
 
   const openConversation = (conversationId: string) => {
     if (conversationId) {
-      console.log('💬 [PROJECTS] Opening conversation:', conversationId);
+      console.log('💬 [PROJECTS] Abrindo conversa:', conversationId);
       onOpenConversation(conversationId);
     } else {
-      console.log('❌ [PROJECTS] No conversation found for this project');
+      console.log('❌ [PROJECTS] Nenhuma conversa encontrada para este projeto');
     }
   };
 
