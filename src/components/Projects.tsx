@@ -1,7 +1,14 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, Eye, X, Grid3X3, List, EyeOff, Briefcase } from 'lucide-react';
+import { Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, Eye, X, Grid3X3, List, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import ProjectInfo from './ProjectInfo';
+import { router } from '../utils/router';
+
+// Helper function to navigate to project
+const navigateToProject = (projectId: string) => {
+  router.navigate(`/creators/projects/${projectId}`);
+};
 
 interface Project {
   id: string;
@@ -16,10 +23,15 @@ interface Project {
   conversation_id: string;
   deliverables: Deliverable[];
   created_at: string;
+  opportunity?: {
+    company_link?: string;
+    briefing?: string;
+  };
 }
 
 interface ProjectsProps {
   onOpenConversation: (conversationId: string) => void;
+  selectedProjectId?: string; // Add support for URL-based project selection
 }
 
 interface Deliverable {
@@ -49,7 +61,7 @@ interface ProjectFile {
   uploaded_at: string;
 }
 
-const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
+const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProjectId }) => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
@@ -60,6 +72,16 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [hideCompleted, setHideCompleted] = useState(false);
   const { user } = useAuth();
+
+  // Auto-select project based on URL parameter
+  useEffect(() => {
+    if (selectedProjectId && projects.length > 0) {
+      const project = projects.find(p => p.id === selectedProjectId);
+      if (project) {
+        setSelectedProject(project);
+      }
+    }
+  }, [selectedProjectId, projects]);
 
   const fetchProjects = useCallback(async () => {
     if (!user || fetching) return;
@@ -82,7 +104,10 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
             content_type,
             budget_min,
             budget_max,
-            created_by
+            created_by,
+            company_link,
+            briefing,
+            created_at
           )
         `)
         .eq('creator_id', user.id)
@@ -94,6 +119,11 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
       }
 
       const projectsData = [];
+      
+            console.log('📋 [PROJECTS] Dados das applications:', applications?.map(app => ({
+        id: app.id,
+        opportunity_id: app.opportunity_id
+      })));
       
       for (const app of applications || []) {
         const opportunity = Array.isArray(app.opportunity) ? app.opportunity[0] : app.opportunity;
@@ -125,7 +155,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         }
 
         // Gerar deliverables padrão baseados no tipo de conteúdo
-        const standardDeliverables = generateDeliverables(opportunity.content_type, opportunity.deadline, app.id);
+        const standardDeliverables = generateDeliverables(opportunity.content_type, app.id);
         
         // Mapear deliverables customizados para a interface local
         const mappedCustomDeliverables: Deliverable[] = customDeliverables ? customDeliverables.map(d => ({
@@ -162,7 +192,11 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
           budget: `R$ ${opportunity.budget_min} - R$ ${opportunity.budget_max}`,
           conversation_id: conversation?.id || '',
           deliverables: allDeliverables,
-          created_at: new Date().toISOString()
+          created_at: new Date().toISOString(),
+          opportunity: {
+            company_link: opportunity.company_link,
+            briefing: opportunity.briefing
+          }
         });
       }
 
@@ -211,21 +245,8 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
     return 'em_andamento';
   };
 
-  const generateDeliverables = (contentType: string, deadline: string, applicationId?: string): Deliverable[] => {
-    const baseDeliverables = [
-      {
-        id: `std_1_${applicationId || Date.now()}`,
-        project_id: '',
-        application_id: applicationId,
-        title: 'Briefing e Conceito',
-        description: 'Apresentar o conceito criativo e briefing do conteúdo',
-        briefing: 'Aguardando briefing detalhado do analista. Este será fornecido após a aprovação da candidatura com todas as diretrizes, objetivos e especificações técnicas necessárias para o desenvolvimento do conceito criativo.',
-        due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-        priority: 1,
-        status: 'pendente' as const,
-        files: []
-      }
-    ];
+  const generateDeliverables = (contentType: string, applicationId?: string): Deliverable[] => {
+    const baseDeliverables = [];
 
     if (contentType.toLowerCase().includes('reel') || contentType.toLowerCase().includes('video')) {
       baseDeliverables.push({
@@ -241,19 +262,6 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         files: []
       });
     }
-
-    baseDeliverables.push({
-      id: `std_3_${applicationId || Date.now()}`,
-      project_id: '',
-      application_id: applicationId,
-      title: 'Conteúdo Final',
-      description: `Entrega do ${contentType} finalizado`,
-      briefing: 'O briefing final será fornecido após aprovação das etapas anteriores, contendo todas as especificações técnicas, formatos de entrega, dimensões e requisitos de qualidade para o conteúdo final.',
-      due_date: deadline,
-      priority: 3,
-      status: 'pendente' as const,
-      files: []
-    });
 
     return baseDeliverables;
   };
@@ -287,8 +295,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
   const handleFileUpload = async (deliverableId: string) => {
     if (!uploadFiles || uploadFiles.length === 0) return;
 
-    console.log('📤 [PROJECTS] Enviando arquivos para entrega:', deliverableId);
-
+    
     // Simular upload de arquivos (TODO: Implementar upload real para Supabase Storage)
     const newFiles: ProjectFile[] = Array.from(uploadFiles).map((file, index) => ({
       id: `file_${Date.now()}_${index}`,
@@ -316,8 +323,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
 
     setShowUploadModal(null);
     setUploadFiles(null);
-    console.log('✅ [PROJECTS] Arquivos enviados com sucesso');
-  };
+      };
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -332,9 +338,8 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
   };
 
   const openConversation = (project: Project) => {
-    // Usar o ID do projeto (application_id) para navegar para o chat
-    console.log('💬 [PROJECTS] Abrindo conversa para projeto:', project.id);
-    onOpenConversation(project.id);
+    // Usar o opportunity_id para navegar para o chat (não o ID da aplicação)
+        onOpenConversation(project.opportunity_id);
   };
 
   const filteredProjects = projects.filter(project => {
@@ -371,7 +376,10 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-4">
             <button
-              onClick={() => setSelectedProject(null)}
+              onClick={() => {
+                setSelectedProject(null);
+                router.navigate('/creators/projects');
+              }}
               className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               ←
@@ -416,6 +424,18 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
           </div>
         </div>
 
+        {/* Informações do Projeto (Briefing e Empresa) */}
+        <ProjectInfo 
+          project={{
+            title: selectedProject.title,
+            company: selectedProject.company,
+            description: selectedProject.description,
+            company_link: selectedProject.opportunity?.company_link,
+            created_at: selectedProject.created_at
+          }}
+          briefing={selectedProject.opportunity?.briefing}
+        />
+
         {/* Entregas Unificadas */}
         <div className="bg-white rounded-xl border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-6">Cronograma de Entregas</h3>
@@ -458,17 +478,6 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                       </div>
                     </div>
 
-                    {/* Briefing do Analista */}
-                    {deliverable.briefing && (
-                      <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Briefcase className="h-4 w-4 text-blue-600" />
-                          <h6 className="font-medium text-blue-900">Briefing do Analista</h6>
-                        </div>
-                        <p className="text-sm text-blue-800 leading-relaxed">{deliverable.briefing}</p>
-                      </div>
-                    )}
-
                     {/* Arquivos */}
                     {deliverable.files.length > 0 && (
                       <div className="mb-4">
@@ -490,15 +499,12 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                       </div>
                     )}
 
-                    {/* Botão de Upload */}
-                    {(deliverable.status === 'pending' || deliverable.status === 'pendente') && (
+                    {/* Botão de Upload - Apenas para deliverables customizados */}
+                    {(deliverable.status === 'pending' || deliverable.status === 'pendente') && 
+                     isCustom && (
                       <button
                         onClick={() => setShowUploadModal(deliverable.id)}
-                        className={`${
-                          isCustom 
-                            ? 'bg-purple-600 hover:bg-purple-700' 
-                            : 'bg-blue-600 hover:bg-blue-700'
-                        } text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2`}
+                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                       >
                         <Upload className="h-4 w-4" />
                         Enviar Arquivos
@@ -662,7 +668,10 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
           {filteredProjects.map((project) => (
             <div
               key={project.id}
-              onClick={() => setSelectedProject(project)}
+              onClick={() => {
+                setSelectedProject(project);
+                navigateToProject(project.id);
+              }}
               className={`bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all cursor-pointer ${
                 viewMode === 'list' ? 'flex items-center justify-between' : ''
               }`}

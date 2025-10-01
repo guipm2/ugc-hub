@@ -77,8 +77,7 @@ const BasicCollaborationHub: React.FC<BasicCollaborationHubProps> = ({
   };
 
   const handleActivityClick = (activityId: string) => {
-    console.log('Clicou na atividade:', activityId);
-    markActivityAsRead(activityId);
+        markActivityAsRead(activityId);
   };
 
   const handleRefresh = () => {

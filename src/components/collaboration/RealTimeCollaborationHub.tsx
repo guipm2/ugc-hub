@@ -140,8 +140,7 @@ const RealTimeCollaborationHub: React.FC<RealTimeCollaborationHubProps> = ({
       
       if (uploadedFile) {
         // Show success notification or update UI
-        console.log('File uploaded successfully:', uploadedFile);
-      }
+              }
     } catch (err) {
       console.error('Error uploading file:', err);
     }
@@ -166,8 +165,7 @@ const RealTimeCollaborationHub: React.FC<RealTimeCollaborationHubProps> = ({
       if (sessionId) {
         setShowSessionModal(false);
         // Navigate to session or show success
-        console.log('Session created:', sessionId);
-      }
+              }
     } catch (err) {
       console.error('Error creating session:', err);
     }

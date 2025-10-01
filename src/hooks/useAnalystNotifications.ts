@@ -34,8 +34,7 @@ export const useAnalystNotifications = () => {
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
 
-    console.log('🔔 Fetching notifications for analyst:', user.id);
-
+    
     try {
       const { data, error } = await supabase
         .from('notifications')
@@ -49,8 +48,7 @@ export const useAnalystNotifications = () => {
         setNotifications([]);
         setUnreadCount(0);
       } else {
-        console.log('📊 Notificações encontradas:', data?.length || 0);
-        setNotifications(data || []);
+                setNotifications(data || []);
         setUnreadCount(data?.filter(n => !n.read).length || 0);
       }
     } catch (err) {
@@ -65,8 +63,7 @@ export const useAnalystNotifications = () => {
   const markAsRead = useCallback(async (notificationId: string) => {
     if (!user) return;
 
-    console.log('📖 Marking notification as read:', notificationId);
-
+    
     try {
       const { error } = await supabase
         .from('notifications')
@@ -77,8 +74,7 @@ export const useAnalystNotifications = () => {
       if (error) {
         console.error('❌ Erro ao marcar notificação como lida:', error);
       } else {
-        console.log('✅ Notificação marcada como lida');
-        // Atualizar estado local
+                // Atualizar estado local
         setNotifications(prev => 
           prev.map(n => 
             n.id === notificationId ? { ...n, read: true } : n
@@ -94,8 +90,7 @@ export const useAnalystNotifications = () => {
   const markAllAsRead = useCallback(async () => {
     if (!user) return;
 
-    console.log('📖 Marking all notifications as read for analyst:', user.id);
-
+    
     try {
       const { error } = await supabase
         .from('notifications')
@@ -106,8 +101,7 @@ export const useAnalystNotifications = () => {
       if (error) {
         console.error('❌ Erro ao marcar todas as notificações como lidas:', error);
       } else {
-        console.log('✅ Todas as notificações marcadas como lidas');
-        // Atualizar estado local
+                // Atualizar estado local
         setNotifications(prev => 
           prev.map(n => ({ ...n, read: true }))
         );
@@ -134,8 +128,7 @@ export const useAnalystNotifications = () => {
             filter: `analyst_id=eq.${user.id}` // ✅ Corrigido: analyst_id ao invés de user_id
           },
           (payload) => {
-            console.log('🔔 Nova notificação real-time:', payload);
-            const newNotification = payload.new as AnalystNotification;
+                        const newNotification = payload.new as AnalystNotification;
             setNotifications(prev => [newNotification, ...prev]);
             if (!newNotification.read) {
               setUnreadCount(prev => prev + 1);
@@ -151,8 +144,7 @@ export const useAnalystNotifications = () => {
             filter: `analyst_id=eq.${user.id}` // ✅ Filtro para updates também
           },
           (payload) => {
-            console.log('📝 Notificação atualizada real-time:', payload);
-            const updatedNotification = payload.new as AnalystNotification;
+                        const updatedNotification = payload.new as AnalystNotification;
             setNotifications(prev => 
               prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
             );

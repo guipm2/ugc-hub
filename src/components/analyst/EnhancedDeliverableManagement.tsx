@@ -325,8 +325,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
 
   // Create deliverable from template
   const createDeliverablesFromTemplate = async (applicationId: string, templateName: string) => {
-    console.log('🚀 Iniciando criação de deliverables do template:', { applicationId, templateName });
-    
+        
     const template = DEFAULT_TEMPLATES.find(t => t.name === templateName);
     if (!template) {
       console.error('❌ Template não encontrado:', templateName);
@@ -351,9 +350,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
       const baseDate = new Date();
       const createdDeliverables: ProjectDeliverable[] = [];
 
-      console.log('📋 Template encontrado:', template);
-      console.log('🏢 Application encontrada:', application);
-
+            
       // Create deliverables in order to handle dependencies
       for (let i = 0; i < template.deliverables.length; i++) {
         const templateDeliverable = template.deliverables[i];
@@ -418,8 +415,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
 
   // Create custom deliverable
   const createCustomDeliverable = async () => {
-    console.log('🚀 Iniciando criação de deliverable customizado:', { selectedApplication, customForm });
-    
+        
     if (!selectedApplication || !customForm.title || !customForm.due_date) {
       alert('❌ Por favor, preencha todos os campos obrigatórios');
       return;
@@ -441,15 +437,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
     try {
       const tags = customForm.tags ? customForm.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
       
-      console.log('📝 Criando deliverable customizado:', {
-        application_id: selectedApplication,
-        opportunity_id: application.opportunity_id,
-        creator_id: application.creator_id,
-        analyst_id: user.id,
-        ...customForm,
-        tags
-      });
-
+      
       const { data, error } = await supabase
         .from('project_deliverables')
         .insert({
@@ -473,8 +461,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
         throw error;
       }
 
-      console.log('✅ Deliverable customizado criado com sucesso:', data);
-      
+            
       await fetchDeliverables();
       setShowCustomModal(false);
       

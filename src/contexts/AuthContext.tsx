@@ -279,8 +279,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signIn = async (email: string, password: string) => {
-    console.log('🔑 [AUTH] Iniciando processo de login para:', email);
-    try {
+        try {
       // First check if this email exists as analyst in profiles table
       const { data: analystExists } = await supabase
         .from('profiles')
@@ -302,8 +301,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: { message: 'Email ou senha incorretos' } as AuthError };
       }
 
-      console.log('✅ [AUTH] Login bem-sucedido, sessão será tratada pelo onAuthStateChange');
-      
+            
       // NÃO fazemos validação aqui - deixa o onAuthStateChange e handleUserSession cuidar
       // Isso evita dupla validação e conflitos de estado
 

@@ -32,6 +32,12 @@ const CreatorRouter: React.FC<CreatorRouterProps> = ({
     return <OpportunityDetailsPage opportunityId={opportunityId} />;
   }
 
+  // Handle project details route with ID parameter
+  if (route.startsWith('/projects/') && route !== '/projects') {
+    const projectId = route.split('/')[2];
+    return <Projects selectedProjectId={projectId} onOpenConversation={onOpenConversation} />;
+  }
+
   // Handle messages with project ID parameter
   if (route.startsWith('/messages/') && route !== '/messages') {
     const projectId = route.split('/')[2];

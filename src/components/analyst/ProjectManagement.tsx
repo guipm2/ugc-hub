@@ -19,6 +19,7 @@ interface Project {
   customDeliverables: ProjectDeliverable[];
   conversation_id?: string;
   created_at: string;
+  briefing?: string;
 }
 
 interface ProjectDeliverable {
@@ -62,6 +63,9 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'completed' | 'overdue'>('all');
   const [showCreateDeliverableModal, setShowCreateDeliverableModal] = useState(false);
+  const [briefing, setBriefing] = useState('');
+  const [briefingSaving, setBriefingSaving] = useState(false);
+  const [briefingSaved, setBriefingSaved] = useState(false);
   const [deliverableForm, setDeliverableForm] = useState({
     title: '',
     description: '',
@@ -120,28 +124,46 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
       // REMOVIDO: alert('Erro ao criar deliverable');
     }
   };
+
+  const saveBriefing = async () => {
+    if (!selectedProject || !user) return;
+
+    setBriefingSaving(true);
+    try {
+      const { error } = await supabase
+        .from('opportunities')
+        .update({ briefing })
+        .eq('id', selectedProject.opportunity_id);
+
+      if (error) {
+        console.error('Erro ao salvar briefing:', error);
+        return;
+      }
+
+      setBriefingSaved(true);
+      // Recarregar projetos para atualizar os dados
+      fetchProjects();
+      
+      // Limpar o indicador de "salvo" após alguns segundos
+      setTimeout(() => setBriefingSaved(false), 3000);
+    } catch (error) {
+      console.error('Erro ao salvar briefing:', error);
+    } finally {
+      setBriefingSaving(false);
+    }
+  };
   const openConversation = async (project: Project) => {
-    console.log('🚀 Iniciando openConversation para projeto:', project);
-    console.log('📋 Dados do projeto:', {
-      id: project.id,
-      opportunity_id: project.opportunity_id,
-      creator_id: project.creator_id,
-      opportunity_title: project.opportunity_title
-    });
-    
+            
     try {
       // Buscar conversa única entre analista e criador (independente do projeto)
-      console.log('🔍 Buscando conversa única entre analista e criador...');
-      const { data: existingConversation, error: searchError } = await supabase
+            const { data: existingConversation, error: searchError } = await supabase
         .from('conversations')
         .select('id')
         .eq('creator_id', project.creator_id)
         .eq('analyst_id', user?.id)
         .maybeSingle();
 
-      console.log('📊 Resultado da busca (conversa única):', existingConversation);
-      console.log('❌ Erro da busca:', searchError);
-
+      
       if (searchError && searchError.code !== 'PGRST116') {
         console.error('Erro ao buscar conversa única:', searchError);
         return;
@@ -151,8 +173,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
 
       // Se não existe conversa única, cria uma nova
       if (!conversationId) {
-        console.log('🆕 Criando nova conversa única entre analista e criador...');
-        const { data: newConversation, error: createError } = await supabase
+                const { data: newConversation, error: createError } = await supabase
           .from('conversations')
           .insert({
             opportunity_id: null, // Conversa geral, não específica de projeto
@@ -163,9 +184,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
           .select('id')
           .single();
 
-        console.log('📊 Nova conversa única criada:', newConversation);
-        console.log('❌ Erro ao criar:', createError);
-
+                
         if (createError) {
           console.error('Erro ao criar conversa única:', createError);
           return;
@@ -174,15 +193,12 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
         conversationId = newConversation.id;
       }
 
-      console.log('💬 ID da conversa única final:', conversationId);
-      console.log('🧭 Navegando para messages...');
-      
+                  
       // Navega para a página de mensagens
       navigate('/analysts/messages');
       
       // Chama o callback para abrir a conversa única específica
-      console.log('📞 Chamando onOpenConversation com ID da conversa única:', conversationId);
-      if (onOpenConversation) {
+            if (onOpenConversation) {
         onOpenConversation(conversationId);
       }
     } catch (error) {
@@ -192,12 +208,10 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
 
   const fetchProjects = useCallback(async () => {
     if (!user) {
-      console.log('❌ Usuário não encontrado');
-      return;
+            return;
     }
 
-    console.log('🔍 Iniciando busca de projetos para o analista:', user.id);
-
+    
     try {
       // Buscar candidaturas aprovadas para oportunidades do analista
       const { data: applications, error } = await supabase
@@ -216,7 +230,8 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
             content_type,
             budget_min,
             budget_max,
-            created_by
+            created_by,
+            briefing
           ),
           creator:profiles!creator_id (
             name,
@@ -225,8 +240,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
         `)
         .eq('status', 'approved');
 
-      console.log('✅ Todas as candidaturas aprovadas:', applications);
-
+      
       if (error) {
         console.error('❌ Erro ao buscar candidaturas:', error);
         setProjects([]);
@@ -247,8 +261,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
         return isFromAnalyst;
       });
 
-      console.log('🎯 Candidaturas filtradas para o analista:', filteredApplications);
-
+      
       // Processar cada candidatura aprovada
       const projectsData: Project[] = [];
       
@@ -261,8 +274,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
           continue;
         }
 
-        console.log('🔄 Processando projeto:', opportunity.title, 'para', creator.name);
-
+        
         // Gerar deliverables padrão
         const standardDeliverables = generateStandardDeliverables(opportunity.content_type, opportunity.deadline, app.id);
 
@@ -301,12 +313,12 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
           standardDeliverables,
           customDeliverables,
           conversation_id: undefined,
-          created_at: new Date().toISOString() // Usar data atual como fallback
+          created_at: new Date().toISOString(), // Usar data atual como fallback
+          briefing: opportunity.briefing || ''
         });
       }
 
-      console.log('📦 Projetos finais processados:', projectsData);
-      setProjects(projectsData);
+            setProjects(projectsData);
     } catch (error) {
       console.error('❌ Erro ao buscar projetos:', error);
       setProjects([]);
@@ -375,10 +387,16 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
     }
   }, [selectedProjectId, projects]);
 
+  // Carregar briefing quando projeto for selecionado
+  useEffect(() => {
+    if (selectedProject) {
+      setBriefing(selectedProject.briefing || '');
+    }
+  }, [selectedProject]);
+
   // Debug useEffect para monitorar o estado do modal
   useEffect(() => {
-    console.log('🔍 Estado do modal mudou para:', showCreateDeliverableModal);
-  }, [showCreateDeliverableModal]);
+      }, [showCreateDeliverableModal]);
 
   const getStatusBadge = (status: string, dueDate: string) => {
     const isOverdue = new Date(dueDate) < new Date() && status !== 'approved';
@@ -651,12 +669,9 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
             </span>
             <button
               onClick={() => {
-                console.log('🔥 Botão Nova Entrega clicado!');
-                console.log('🔥 Estado atual do modal:', showCreateDeliverableModal);
-                setShowCreateDeliverableModal(true);
+                                                setShowCreateDeliverableModal(true);
                 setTimeout(() => {
-                  console.log('🔥 Estado do modal após timeout:', showCreateDeliverableModal);
-                }, 100);
+                                  }, 100);
               }}
               className="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             >
@@ -693,6 +708,52 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
             <div>
               <p className="text-sm font-medium text-gray-700">Orçamento</p>
               <p className="text-gray-900">{selectedProject.budget}</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Briefing do Projeto */}
+        <div className="bg-white rounded-xl border border-gray-200 p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold text-gray-900">Briefing do Projeto</h3>
+            {briefingSaved && (
+              <span className="text-sm text-green-600 flex items-center gap-1">
+                <CheckCircle className="h-4 w-4" />
+                Salvo com sucesso
+              </span>
+            )}
+          </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Instruções para o Creator
+              </label>
+              <textarea
+                value={briefing}
+                onChange={(e) => setBriefing(e.target.value)}
+                placeholder="Digite aqui as instruções, conceito criativo, direcionamentos específicos e todas as informações que o creator precisa saber para desenvolver o projeto..."
+                className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                disabled={briefingSaving}
+              />
+            </div>
+            <div className="flex justify-end">
+              <button
+                onClick={saveBriefing}
+                disabled={briefingSaving}
+                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              >
+                {briefingSaving ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle className="h-4 w-4" />
+                    Salvar Briefing
+                  </>
+                )}
+              </button>
             </div>
           </div>
         </div>

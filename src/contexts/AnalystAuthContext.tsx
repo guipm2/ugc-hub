@@ -42,11 +42,9 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   useEffect(() => {
     // Check for existing session
     const getSession = async () => {
-      console.log('🔍 Checking session...');
-      try {
+            try {
         const { data: { session } } = await supabase.auth.getSession();
-        console.log('📊 Session found:', !!session?.user);
-        
+                
         if (session?.user) {
           setUser(session.user);
           // Busca perfil na tabela profiles
@@ -56,12 +54,10 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
             .eq('id', session.user.id)
             .maybeSingle();
 
-          console.log('👤 Profile found:', !!userProfile);
-
+          
           // Se não existe perfil, cria automaticamente
           if (!userProfile) {
-            console.log('🆕 Creating new profile...');
-            const { error: profileError } = await supabase
+                        const { error: profileError } = await supabase
               .from('profiles')
               .insert({
                 id: session.user.id,
@@ -89,8 +85,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
               if (analystError) {
                 console.error('❌ Analyst record creation failed:', analystError);
               } else {
-                console.log('✅ Analyst record created');
-              }
+                              }
               
               await new Promise(res => setTimeout(res, 300));
               const { data: newProfile } = await supabase
@@ -99,8 +94,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
                 .eq('id', session.user.id)
                 .maybeSingle();
               userProfile = newProfile;
-              console.log('✅ Profile created');
-            } else {
+                          } else {
               console.error('❌ Profile creation failed:', profileError);
             }
           }
@@ -136,8 +130,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
                   .eq('id', session.user.id)
                   .maybeSingle();
                 analystData = newAnalystData;
-                console.log('✅ Analyst record created for existing user');
-              } else {
+                              } else {
                 console.error('❌ Failed to create analyst record:', analystError);
               }
             }
@@ -156,8 +149,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         setAnalyst(null);
       }
       
-      console.log('✅ Setting loading to false');
-      setLoading(false);
+            setLoading(false);
     };
 
     getSession();
@@ -226,8 +218,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
               .eq('id', data.user.id)
               .maybeSingle();
             analystData = newAnalystData;
-            console.log('✅ Analyst record created during login');
-          } else {
+                      } else {
             console.error('❌ Failed to create analyst record during login:', analystError);
           }
         }
@@ -280,8 +271,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       if (authData.user) {
         // Aguardar confirmação do usuário por email antes de criar registros
         // Os registros serão criados automaticamente no getSession() quando o usuário confirmar
-        console.log('✅ User created, waiting for email confirmation to create profile and analyst record');
-      }
+              }
 
       setUser(authData.user ?? null);
       return { error: null };

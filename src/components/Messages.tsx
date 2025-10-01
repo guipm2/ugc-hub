@@ -11,6 +11,7 @@ interface ProjectChat {
     company: string;
     status: string; // To check if project was deleted
     analyst_id: string; // Added analyst_id
+    created_by: string; // Added created_by
   } | null;
   analyst: {
     name: string;
@@ -56,107 +57,176 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
   const fetchProjectChats = useCallback(async () => {
     if (!user) return;
 
+    setLoading(true);
+
     try {
-      // First, get all opportunities that the user has applied to and got approved
-      const { data: applicationsData, error: applicationsError } = await supabase
-        .from('opportunity_applications')
+      // Step 1: Get all conversations for this creator (replicando padrão do analista)
+      const { data: conversationData, error: convError } = await supabase
+        .from('conversations')
         .select(`
+          id,
+          analyst_id,
+          creator_id,
           opportunity_id,
-          status,
-          opportunity:opportunities (
-            id,
-            title,
-            company,
-            status,
-            analyst_id
-          )
+          created_at,
+          last_message_at
         `)
         .eq('creator_id', user.id)
-        .eq('status', 'approved');
+        .order('last_message_at', { ascending: false });
 
-      if (applicationsError) {
-        console.error('Erro ao buscar candidaturas:', applicationsError);
+      if (convError) {
+        console.error('❌ [MESSAGES] Erro ao buscar conversas:', convError);
         setLoading(false);
         return;
       }
 
-      // For each approved application, get conversation data and analyst info
-      const chatsData = await Promise.all(
-        (applicationsData || []).map(async (application) => {
-          const opportunityId = application.opportunity_id;
-          const opportunity = Array.isArray(application.opportunity) 
-            ? application.opportunity[0] 
-            : application.opportunity;
+      
+      // Step 2: Group conversations by analyst and collect conversation IDs
+      const analystConversations = new Map();
+      const allConversationsByAnalyst = new Map();
+      
+      for (const conv of conversationData || []) {
+        if (!analystConversations.has(conv.analyst_id)) {
+          analystConversations.set(conv.analyst_id, {
+            id: conv.id, // Use the first conversation ID as the unified conversation ID
+            analyst_id: conv.analyst_id,
+            creator_id: conv.creator_id,
+            created_at: conv.created_at,
+            last_message_at: conv.last_message_at,
+            projects: [],
+            unread_count: 0
+          });
+          allConversationsByAnalyst.set(conv.analyst_id, []);
+        } else {
+          // Update last_message_at if this conversation is more recent
+          const existing = analystConversations.get(conv.analyst_id);
+          if (new Date(conv.last_message_at) > new Date(existing.last_message_at)) {
+            existing.last_message_at = conv.last_message_at;
+          }
+        }
+        
+        // Add conversation ID to the analyst's list
+        allConversationsByAnalyst.get(conv.analyst_id).push(conv.id);
+      }
 
-          // Check if conversation exists
-          const { data: conversationData } = await supabase
-            .from('conversations')
-            .select('id, last_message_at')
-            .eq('opportunity_id', opportunityId)
-            .eq('creator_id', user.id)
-            .maybeSingle();
-
+      // Step 3: Get all projects (opportunity_applications) for each analyst
+      const unifiedConversations = await Promise.all(
+        Array.from(analystConversations.values()).map(async (conv) => {
           // Get analyst info
           const { data: analystData } = await supabase
-            .from('analysts')
-            .select('name, company')
-            .eq('id', opportunity?.analyst_id)
-            .maybeSingle();
+            .from('analyst')
+            .select('name, email')
+            .eq('user_id', conv.analyst_id)
+            .single();
 
-          // Get last message if conversation exists
+          // Fallback to profiles if not found in analyst table
+          let analystInfo = analystData;
+          if (!analystData) {
+            const { data: profileData } = await supabase
+              .from('profiles')
+              .select('full_name, email')
+              .eq('id', conv.analyst_id)
+              .single();
+            analystInfo = profileData ? {
+              name: profileData.full_name,
+              email: profileData.email
+            } : { name: 'Analista', email: '' };
+          }
+
+          // Get all approved projects between this creator and analyst
+          const { data: applications } = await supabase
+            .from('opportunity_applications')
+            .select('id, opportunity_id, status, applied_at')
+            .eq('creator_id', user.id)
+            .eq('status', 'approved');
+
+          // Get opportunity details for each application
+          const projectPromises = (applications || []).map(async (app) => {
+            const { data: opportunity } = await supabase
+              .from('opportunities')
+              .select('id, title, company, analyst_id')
+              .eq('id', app.opportunity_id)
+              .eq('analyst_id', conv.analyst_id)
+              .maybeSingle();
+
+            if (opportunity) {
+              return {
+                id: app.id,
+                opportunity_id: app.opportunity_id,
+                title: opportunity.title,
+                company: opportunity.company,
+                status: 'active' as const,
+                analyst_id: opportunity.analyst_id,
+                created_by: opportunity.analyst_id
+              };
+            }
+            return null;
+          });
+
+          const projectResults = await Promise.all(projectPromises);
+          const formattedProjects = projectResults.filter(Boolean);
+
+          // Get conversation IDs for this analyst
+          const conversationIds = allConversationsByAnalyst.get(conv.analyst_id) || [];
+
+          // Get last message across all conversations with this analyst
           let lastMessage = null;
-          let unreadCount = 0;
-          if (conversationData) {
-            const { data: lastMessageData } = await supabase
+          if (conversationIds.length > 0) {
+            const { data } = await supabase
               .from('messages')
               .select('content, sender_type, created_at')
-              .eq('conversation_id', conversationData.id)
+              .in('conversation_id', conversationIds)
               .order('created_at', { ascending: false })
               .limit(1)
               .maybeSingle();
-
-            // Count unread messages
-            const { count } = await supabase
-              .from('messages')
-              .select('*', { count: 'exact', head: true })
-              .eq('conversation_id', conversationData.id)
-              .eq('read', false)
-              .neq('sender_id', user.id);
-
-            lastMessage = lastMessageData;
-            unreadCount = count || 0;
+            
+            lastMessage = data;
           }
 
-          return {
-            opportunity_id: opportunityId,
-            opportunity: opportunity,
-            analyst: analystData,
-            conversation_id: conversationData?.id || null,
-            last_message_at: conversationData?.last_message_at || null,
-            lastMessage: lastMessage,
-            unread_count: unreadCount
-          } as ProjectChat;
+          // Count unread messages
+          const { count: unreadCount } = await supabase
+            .from('messages')
+            .select('*', { count: 'exact' })
+            .in('conversation_id', conversationIds)
+            .eq('read', false)
+            .neq('sender_id', user.id);
+
+          // Convert to the ProjectChat format
+          return formattedProjects.map(project => {
+            if (!project) return null;
+            
+            return {
+              opportunity_id: project.opportunity_id,
+              opportunity: {
+                id: project.opportunity_id,
+                title: project.title,
+                company: project.company,
+                status: 'active',
+                analyst_id: project.analyst_id,
+                created_by: project.created_by
+              },
+              analyst: analystInfo,
+              conversation_id: conv.id,
+              last_message_at: conv.last_message_at,
+              lastMessage: lastMessage,
+              unread_count: unreadCount || 0
+            } as ProjectChat;
+          }).filter(Boolean);
         })
       );
 
-      // Sort by last message time (most recent first)
-      chatsData.sort((a, b) => {
-        if (!a.last_message_at && !b.last_message_at) return 0;
-        if (!a.last_message_at) return 1;
-        if (!b.last_message_at) return -1;
-        return new Date(b.last_message_at).getTime() - new Date(a.last_message_at).getTime();
-      });
-
-      setProjectChats(chatsData);
+      // Flatten the array of arrays and filter out nulls
+      const allChats = unifiedConversations.flat().filter((chat): chat is ProjectChat => chat !== null);
+            setProjectChats(allChats);
     } catch (err) {
-      console.error('Erro ao buscar chats de projetos:', err);
+      console.error('❌ [MESSAGES] Erro ao buscar chats:', err);
     } finally {
       setLoading(false);
     }
   }, [user]);
 
   const fetchMessages = useCallback(async (conversationId: string) => {
-    try {
+        try {
       const { data, error } = await supabase
         .from('messages')
         .select('*')
@@ -164,9 +234,9 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
         .order('created_at', { ascending: true });
 
       if (error) {
-        console.error('Erro ao buscar mensagens:', error);
+        console.error('❌ [MESSAGES] Erro ao buscar mensagens:', error);
       } else {
-        setMessages(data || []);
+                setMessages(data || []);
         
         // Mark messages as read
         await supabase
@@ -176,7 +246,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
           .neq('sender_id', user?.id);
       }
     } catch (err) {
-      console.error('Erro ao buscar mensagens:', err);
+      console.error('❌ [MESSAGES] Erro ao buscar mensagens:', err);
     }
   }, [user]);
 
@@ -186,22 +256,88 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
     }
   }, [user, fetchProjectChats]);
 
+  const createConversationForProject = useCallback(async (projectId: string) => {
+    try {
+      // First, get project details
+      const { data: projectData, error: projectError } = await supabase
+        .from('opportunities')
+        .select('id, title, analyst_id')
+        .eq('id', projectId)
+        .single();
+
+      if (projectError || !projectData) {
+        console.error('❌ [MESSAGES] Projeto não encontrado:', projectError);
+        return;
+      }
+
+      // Check if conversation already exists
+      const { data: existingConv } = await supabase
+        .from('conversations')
+        .select('*')
+        .eq('opportunity_id', projectId)
+        .eq('creator_id', user?.id)
+        .maybeSingle();
+
+      if (existingConv) {
+        // Refresh the chats list to include this conversation
+        fetchProjectChats();
+        return;
+      }
+
+      // Create new conversation
+      const { data: newConv, error: convError } = await supabase
+        .from('conversations')
+        .insert({
+          opportunity_id: projectId,
+          analyst_id: projectData.analyst_id,
+          creator_id: user?.id
+        })
+        .select()
+        .single();
+
+      if (convError) {
+        console.error('❌ [MESSAGES] Erro ao criar conversa:', convError);
+        
+        // If conversation already exists (unique constraint violation), just refresh
+        if (convError.code === '23505') {
+          fetchProjectChats();
+          return;
+        }
+        return;
+      }
+
+            
+      // Refresh the chats list
+      fetchProjectChats();
+      
+    } catch (error) {
+      console.error('❌ [MESSAGES] Erro geral ao criar conversa:', error);
+    }
+  }, [user, fetchProjectChats]);
+
   // Auto-select project chat if provided via URL
   useEffect(() => {
-    if (selectedProjectId && projectChats.length > 0) {
+        if (selectedProjectId && projectChats.length > 0) {
       const projectChat = projectChats.find(chat => chat.opportunity_id === selectedProjectId);
-      if (projectChat) {
-        setSelectedProject(projectChat);
-      }
+            if (projectChat) {
+                setSelectedProject(projectChat);
+      } else {
+              }
+    } else if (selectedProjectId && projectChats.length === 0) {
+      // If we have a projectId but no chats yet, try to create/find conversation for this project
+      createConversationForProject(selectedProjectId);
+    } else if (!selectedProjectId) {
+            setSelectedProject(null);
     }
-  }, [selectedProjectId, projectChats]);
+  }, [selectedProjectId, projectChats, createConversationForProject]);
 
   useEffect(() => {
+            
     if (selectedProject && selectedProject.conversation_id) {
-      fetchMessages(selectedProject.conversation_id);
+            fetchMessages(selectedProject.conversation_id);
       
       // Subscribe to new messages
-      const channel = supabase
+            const channel = supabase
         .channel(`messages_${selectedProject.conversation_id}`)
         .on(
           'postgres_changes',
@@ -212,17 +348,27 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
             filter: `conversation_id=eq.${selectedProject.conversation_id}`
           },
           (payload) => {
-            const newMessage = payload.new as Message;
-            setMessages(prev => [...prev, newMessage]);
+                        const newMessage = payload.new as Message;
+            // Evitar duplicação - só adicionar se não for do usuário atual
+            if (newMessage.sender_id !== user?.id) {
+              setMessages(prev => {
+                // Verificar se a mensagem já existe
+                const exists = prev.find(m => m.id === newMessage.id);
+                if (exists) return prev;
+                return [...prev, newMessage];
+              });
+            }
           }
         )
         .subscribe();
 
       return () => {
-        supabase.removeChannel(channel);
+                supabase.removeChannel(channel);
       };
+    } else if (selectedProject && !selectedProject.conversation_id) {
+            setMessages([]); // Limpar mensagens se não há conversa
     }
-  }, [selectedProject, fetchMessages]);
+  }, [selectedProject, fetchMessages, user]);
 
   // Scroll to bottom when messages change
   useEffect(() => {
@@ -236,54 +382,57 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
   const sendMessage = async () => {
     if (!newMessage.trim() || !selectedProject || !user) return;
     
-    // If no conversation exists yet, create one
-    let conversationId = selectedProject.conversation_id;
-    if (!conversationId) {
-      const { data: newConversation, error: conversationError } = await supabase
-        .from('conversations')
-        .insert({
-          opportunity_id: selectedProject.opportunity_id,
-          analyst_id: selectedProject.opportunity?.analyst_id,
-          creator_id: user.id
-        })
-        .select()
-        .single();
-
-      if (conversationError || !newConversation) {
-        console.error('Erro ao criar conversa:', conversationError);
-        return;
-      }
-
-      conversationId = newConversation.id;
-      // Update the selected project with the new conversation ID
-      setSelectedProject(prev => prev ? { ...prev, conversation_id: conversationId } : null);
-    }
-
-    setSendingMessage(true);
+        setSendingMessage(true);
 
     try {
-      const { data, error } = await supabase
+      let conversationId = selectedProject.conversation_id;
+      
+      // If no conversation exists, create one
+      if (!conversationId) {
+        const analystId = selectedProject.opportunity?.analyst_id || selectedProject.opportunity?.created_by;
+        
+        const { data: newConversation, error: conversationError } = await supabase
+          .from('conversations')
+          .insert({
+            opportunity_id: selectedProject.opportunity_id,
+            analyst_id: analystId,
+            creator_id: user.id
+          })
+          .select()
+          .single();
+
+        if (conversationError) {
+          console.error('❌ [MESSAGES] Erro ao criar conversa:', conversationError);
+          return;
+        }
+
+        conversationId = newConversation.id;
+        setSelectedProject(prev => prev ? { ...prev, conversation_id: conversationId } : null);
+      }
+
+      // Send the message
+      const { error } = await supabase
         .from('messages')
         .insert({
           conversation_id: conversationId,
           sender_id: user.id,
           sender_type: 'creator',
           content: newMessage.trim()
-        })
-        .select()
-        .single();
+        });
 
       if (error) {
-        console.error('Erro ao enviar mensagem:', error);
-      } else {
-        // Adicionar a mensagem imediatamente à lista local
-        if (data) {
-          setMessages(prev => [...prev, data]);
-        }
-        setNewMessage('');
+        console.error('❌ [MESSAGES] Erro ao enviar mensagem:', error);
+        return;
       }
+
+      // Clear the input and refresh messages
+      setNewMessage('');
+      if (conversationId) {
+        await fetchMessages(conversationId);
+      }
+      
     } catch (err) {
-      console.error('Erro ao enviar mensagem:', err);
+      console.error('❌ [MESSAGES] Erro ao enviar mensagem:', err);
     } finally {
       setSendingMessage(false);
     }
@@ -371,9 +520,9 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
         <div className="flex items-center gap-4 sticky top-16 bg-gray-50 z-50 py-4">
           <button
             onClick={() => {
-              navigate('/creators/messages');
+                            navigate('/creators/messages');
               if (onBackToList) {
-                onBackToList();
+                                onBackToList();
               }
             }}
             className="p-2 hover:bg-gray-100 rounded-lg transition-colors"

@@ -89,6 +89,7 @@ function CreatorApp() {
 
   const handleBackToMessagesList = () => {
     setSelectedProjectId(null);
+    navigate('/creators/messages');
   };
 
   // Fetch opportunities count

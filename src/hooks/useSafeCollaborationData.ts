@@ -99,8 +99,7 @@ export const useSafeCollaborationData = () => {
       }));
       
       setActivities(realActivities);
-      console.log('✅ Loaded activities:', realActivities.length);
-      
+            
     } catch (err) {
       console.error('Failed to fetch activities:', err);
       setError('Erro ao carregar atividades');
@@ -152,8 +151,7 @@ export const useSafeCollaborationData = () => {
         });
         
         setOnlineUsers(realUsers);
-        console.log('✅ Loaded online users:', realUsers.length);
-      } else {
+              } else {
         setOnlineUsers([]);
         console.log('📝 No users currently online');
       }
@@ -192,8 +190,7 @@ export const useSafeCollaborationData = () => {
           activity.id === activityId ? { ...activity, read: false } : activity
         ));
       } else {
-        console.log('✅ Marked as read:', activityId);
-      }
+              }
     } catch (err) {
       console.error('Error marking as read:', err);
       // Reverter mudança local em caso de erro
@@ -236,8 +233,7 @@ export const useSafeCollaborationData = () => {
           return wasUnread ? { ...activity, read: false } : activity;
         }));
       } else {
-        console.log('✅ Marked all activities as read');
-      }
+              }
     } catch (err) {
       console.error('Error marking all as read:', err);
       // Reverter mudanças locais
@@ -272,8 +268,7 @@ export const useSafeCollaborationData = () => {
     
     if (!currentUserId) return;
 
-    console.log('🔄 Setting up real-time subscription for activities');
-
+    
     const subscription = supabase
       .channel('activity_feed_changes')
       .on('postgres_changes', 
@@ -284,8 +279,7 @@ export const useSafeCollaborationData = () => {
           filter: `user_id=eq.${currentUserId}`
         }, 
         (payload) => {
-          console.log('🔔 Real-time activity update:', payload);
-          
+                    
           if (payload.eventType === 'INSERT') {
             const newActivity = {
               id: payload.new.id,
@@ -318,8 +312,7 @@ export const useSafeCollaborationData = () => {
       .subscribe();
 
     return () => {
-      console.log('🔄 Cleaning up real-time subscription');
-      subscription.unsubscribe();
+            subscription.unsubscribe();
     };
   }, [getCurrentUserId, formatTimeAgo]);
 
