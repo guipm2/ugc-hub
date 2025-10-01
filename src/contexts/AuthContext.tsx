@@ -11,6 +11,8 @@ export interface Profile {
   terms_accepted: boolean;
   terms_accepted_at?: string;
   terms_version?: string;
+  onboarding_completed?: boolean;
+  onboarding_step?: number;
 }
 
 interface AuthContextType {
@@ -145,7 +147,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           role: 'creator',
           terms_accepted: true,
           terms_accepted_at: new Date().toISOString(),
-          terms_version: '1.0'
+          terms_version: '1.0',
+          onboarding_completed: false,
+          onboarding_step: 0,
         };
         setProfile(fallbackProfile);
         return;
@@ -165,6 +169,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             terms_accepted: true,
             terms_accepted_at: new Date().toISOString(),
             terms_version: '1.0',
+            onboarding_completed: false,
+            onboarding_step: 0,
           });
         
         if (!profileError) {
@@ -200,7 +206,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             role: 'creator',
             terms_accepted: true,
             terms_accepted_at: new Date().toISOString(),
-            terms_version: '1.0'
+            terms_version: '1.0',
+            onboarding_completed: false,
+            onboarding_step: 0,
           };
         }
       }
@@ -223,7 +231,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         role: 'creator',
         terms_accepted: true,
         terms_accepted_at: new Date().toISOString(),
-        terms_version: '1.0'
+        terms_version: '1.0',
+        onboarding_completed: false,
+        onboarding_step: 0,
       };
       setProfile(emergencyProfile);
     } finally {
