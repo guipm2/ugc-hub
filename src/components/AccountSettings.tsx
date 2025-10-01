@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { Save, Eye, EyeOff, Shield, Bell, User, Mail, Lock, Trash2, Download } from 'lucide-react';
+import { Save, Eye, EyeOff, Shield, Bell, User, Mail, Lock, Trash2, Download, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { supabase } from '../lib/supabase';
 
 const AccountSettings = () => {
   const [activeTab, setActiveTab] = useState('profile');
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showFinalConfirmation, setShowFinalConfirmation] = useState(false);
+  const [deleteConfirmationText, setDeleteConfirmationText] = useState('');
+  const [isDeleting, setIsDeleting] = useState(false);
   const { user, signOut } = useAuth();
 
   const [profileData, setProfileData] = useState({
@@ -73,8 +78,128 @@ const AccountSettings = () => {
   };
 
   const handleDeleteAccount = () => {
-    if (confirm('Tem certeza que deseja excluir sua conta? Esta ação não pode ser desfeita.')) {
-      // REMOVIDO: alert('Funcionalidade de exclusão de conta será implementada em breve.');
+    setShowDeleteModal(true);
+  };
+
+  const handleConfirmDelete = () => {
+    setShowDeleteModal(false);
+    setShowFinalConfirmation(true);
+  };
+
+  const handleFinalDelete = async () => {
+    if (deleteConfirmationText !== 'EXCLUIR MINHA CONTA') {
+      alert('Por favor, digite exatamente "EXCLUIR MINHA CONTA" para confirmar.');
+      return;
+    }
+
+    setIsDeleting(true);
+
+    try {
+      if (!user) {
+        throw new Error('Usuário não encontrado');
+      }
+
+      // 1. Deletar candidaturas em oportunidades
+      const { error: applicationsError } = await supabase
+        .from('opportunity_applications')
+        .delete()
+        .eq('creator_id', user.id);
+
+      if (applicationsError) {
+        console.error('Erro ao deletar candidaturas:', applicationsError);
+        // Não impede a exclusão se der erro aqui
+      }
+
+      // 2. Deletar etapas de oportunidades
+      const { error: stagesError } = await supabase
+        .from('opportunity_stages')
+        .delete()
+        .eq('creator_id', user.id);
+
+      if (stagesError) {
+        console.error('Erro ao deletar etapas:', stagesError);
+        // Não impede a exclusão se der erro aqui
+      }
+
+      // 3. Deletar mensagens onde o creator é o remetente
+      const { error: messagesError } = await supabase
+        .from('messages')
+        .delete()
+        .eq('sender_id', user.id);
+
+      if (messagesError) {
+        console.error('Erro ao deletar mensagens:', messagesError);
+        // Não impede a exclusão se der erro aqui
+      }
+
+      // 4. Deletar conversas do creator
+      const { error: conversationsError } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('creator_id', user.id);
+
+      if (conversationsError) {
+        console.error('Erro ao deletar conversas:', conversationsError);
+        // Não impede a exclusão se der erro aqui
+      }
+
+      // 5. Deletar projetos e colaborações relacionadas (se existir)
+      const { error: projectsError } = await supabase
+        .from('collaboration_projects')
+        .delete()
+        .eq('creator_id', user.id);
+
+      if (projectsError && !projectsError.message.includes('does not exist')) {
+        console.error('Erro ao deletar projetos:', projectsError);
+        // Não impede a exclusão se der erro aqui
+      }
+
+      // 6. Deletar mensagens de colaboração (se existir)
+      const { error: collabMessagesError } = await supabase
+        .from('collaboration_messages')
+        .delete()
+        .eq('sender_id', user.id);
+
+      if (collabMessagesError && !collabMessagesError.message.includes('does not exist')) {
+        console.error('Erro ao deletar mensagens de colaboração:', collabMessagesError);
+        // Não impede a exclusão se der erro aqui
+      }
+
+      // 7. Deletar notificações relacionadas
+      const { error: notificationsError } = await supabase
+        .from('notifications')
+        .delete()
+        .eq('user_id', user.id);
+
+      if (notificationsError) {
+        console.error('Erro ao deletar notificações:', notificationsError);
+        // Não impede a exclusão se der erro aqui
+      }
+
+      // 8. Por último, deletar dados do perfil (isso trigará CASCADE nas outras tabelas devido ao FK)
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .delete()
+        .eq('id', user.id);
+
+      if (profileError) {
+        console.error('Erro ao deletar perfil:', profileError);
+        throw profileError;
+      }
+
+      // 9. Fazer logout do usuário
+      await signOut();
+      
+      // Mostrar mensagem de sucesso
+      alert('Sua conta e todos os dados relacionados foram excluídos com sucesso.');
+      
+    } catch (error) {
+      console.error('Erro ao excluir conta:', error);
+      alert('Ocorreu um erro ao excluir sua conta. Por favor, tente novamente ou entre em contato com o suporte.');
+    } finally {
+      setIsDeleting(false);
+      setShowFinalConfirmation(false);
+      setDeleteConfirmationText('');
     }
   };
 
@@ -313,47 +438,155 @@ const AccountSettings = () => {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Configurações da Conta</h1>
-        <p className="text-gray-600 mt-1">Gerencie suas preferências e configurações de segurança</p>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-        {/* Sidebar */}
-        <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
-            <nav className="space-y-2">
-              {tabs.map((tab) => {
-                const Icon = tab.icon;
-                return (
-                  <button
-                    key={tab.id}
-                    onClick={() => setActiveTab(tab.id)}
-                    className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
-                      activeTab === tab.id
-                        ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
-                        : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                    }`}
-                  >
-                    <Icon className={`h-5 w-5 ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`} />
-                    {tab.label}
-                  </button>
-                );
-              })}
-            </nav>
-          </div>
+    <>
+      <div className="space-y-6">
+        {/* Header */}
+        <div>
+          <h1 className="text-2xl font-semibold text-gray-900">Configurações da Conta</h1>
+          <p className="text-gray-600 mt-1">Gerencie suas preferências e configurações de segurança</p>
         </div>
 
-        {/* Content */}
-        <div className="lg:col-span-3">
-          <div className="bg-white rounded-xl border border-gray-200 p-6">
-            {renderTabContent()}
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+          {/* Sidebar */}
+          <div className="lg:col-span-1">
+            <div className="bg-white rounded-xl border border-gray-200 p-4">
+              <nav className="space-y-2">
+                {tabs.map((tab) => {
+                  const Icon = tab.icon;
+                  return (
+                    <button
+                      key={tab.id}
+                      onClick={() => setActiveTab(tab.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
+                        activeTab === tab.id
+                          ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600'
+                          : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                      }`}
+                    >
+                      <Icon className={`h-5 w-5 ${activeTab === tab.id ? 'text-blue-600' : 'text-gray-400'}`} />
+                      {tab.label}
+                    </button>
+                  );
+                })}
+              </nav>
+            </div>
+          </div>
+
+          {/* Content */}
+          <div className="lg:col-span-3">
+            <div className="bg-white rounded-xl border border-gray-200 p-6">
+              {renderTabContent()}
+            </div>
           </div>
         </div>
       </div>
-    </div>
+
+      {/* Modal de Primeira Confirmação */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Excluir Conta</h3>
+                <p className="text-sm text-gray-600">Esta ação não pode ser desfeita</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700 mb-4">
+                Ao excluir sua conta, os seguintes dados serão permanentemente removidos:
+              </p>
+              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                <li>Todas as suas informações de perfil</li>
+                <li>Histórico de projetos e colaborações</li>
+                <li>Mensagens e conversas</li>
+                <li>Notificações e preferências</li>
+                <li>Dados bancários e contratuais</li>
+              </ul>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteModal(false)}
+                className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleConfirmDelete}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Continuar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de Confirmação Final */}
+      {showFinalConfirmation && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl max-w-md w-full p-6">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
+                <AlertTriangle className="h-6 w-6 text-red-600" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Confirmação Final</h3>
+                <p className="text-sm text-gray-600">Última etapa para excluir sua conta</p>
+              </div>
+            </div>
+            
+            <div className="mb-6">
+              <p className="text-gray-700 mb-4">
+                Para confirmar a exclusão da sua conta, digite exatamente:
+              </p>
+              <div className="bg-gray-100 p-3 rounded-lg mb-4">
+                <code className="text-red-600 font-mono font-bold">EXCLUIR MINHA CONTA</code>
+              </div>
+              <input
+                type="text"
+                value={deleteConfirmationText}
+                onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                placeholder="Digite a confirmação aqui"
+                disabled={isDeleting}
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowFinalConfirmation(false);
+                  setDeleteConfirmationText('');
+                }}
+                disabled={isDeleting}
+                className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleFinalDelete}
+                disabled={isDeleting || deleteConfirmationText !== 'EXCLUIR MINHA CONTA'}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Excluindo...
+                  </>
+                ) : (
+                  'Excluir Conta Permanentemente'
+                )}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 };
 
