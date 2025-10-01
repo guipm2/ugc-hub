@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, Eye, X, Grid3X3, List, EyeOff } from 'lucide-react';
+import { Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, Eye, X, Grid3X3, List, EyeOff, Briefcase } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 
@@ -28,6 +28,7 @@ interface Deliverable {
   application_id?: string;
   title: string;
   description: string;
+  briefing?: string;
   due_date: string;
   priority?: number;
   status: 'pending' | 'in_progress' | 'submitted' | 'approved' | 'rejected' | 'pendente' | 'entregue' | 'aprovado';
@@ -132,6 +133,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
           application_id: d.application_id,
           title: d.title,
           description: d.description || '',
+          briefing: d.briefing || '',
           due_date: d.due_date,
           priority: d.priority,
           status: d.status,
@@ -217,6 +219,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         application_id: applicationId,
         title: 'Briefing e Conceito',
         description: 'Apresentar o conceito criativo e briefing do conteúdo',
+        briefing: 'Aguardando briefing detalhado do analista. Este será fornecido após a aprovação da candidatura com todas as diretrizes, objetivos e especificações técnicas necessárias para o desenvolvimento do conceito criativo.',
         due_date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         priority: 1,
         status: 'pendente' as const,
@@ -231,6 +234,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
         application_id: applicationId,
         title: 'Roteiro e Storyboard',
         description: 'Roteiro detalhado e storyboard do vídeo',
+        briefing: 'O briefing para desenvolvimento do roteiro será fornecido após aprovação do conceito inicial. Incluirá direcionamentos sobre narrativa, duração, elementos visuais e chamadas para ação.',
         due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         priority: 2,
         status: 'pendente' as const,
@@ -244,6 +248,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
       application_id: applicationId,
       title: 'Conteúdo Final',
       description: `Entrega do ${contentType} finalizado`,
+      briefing: 'O briefing final será fornecido após aprovação das etapas anteriores, contendo todas as especificações técnicas, formatos de entrega, dimensões e requisitos de qualidade para o conteúdo final.',
       due_date: deadline,
       priority: 3,
       status: 'pendente' as const,
@@ -443,7 +448,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600">{deliverable.description}</p>
+                        <p className="text-sm text-gray-600 mb-2">{deliverable.description}</p>
                       </div>
                       <div className="flex items-center gap-3">
                         <span className="text-sm text-gray-500">
@@ -452,6 +457,17 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation }) => {
                         {getStatusBadge(deliverable.status)}
                       </div>
                     </div>
+
+                    {/* Briefing do Analista */}
+                    {deliverable.briefing && (
+                      <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Briefcase className="h-4 w-4 text-blue-600" />
+                          <h6 className="font-medium text-blue-900">Briefing do Analista</h6>
+                        </div>
+                        <p className="text-sm text-blue-800 leading-relaxed">{deliverable.briefing}</p>
+                      </div>
+                    )}
 
                     {/* Arquivos */}
                     {deliverable.files.length > 0 && (
