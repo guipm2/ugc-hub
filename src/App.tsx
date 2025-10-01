@@ -6,6 +6,7 @@ import { AnalystAuthProvider, useAnalystAuth } from './contexts/AnalystAuthConte
 import { useRouter } from './hooks/useRouter';
 import { supabase } from './lib/supabase';
 import CreatorRouter from './components/creator/CreatorRouter';
+import CreatorOnboarding from './components/CreatorOnboarding';
 import GlobalSearch from './components/GlobalSearch';
 import NotificationDropdown from './components/NotificationDropdown';
 import AuthPage from './components/auth/AuthPage';
@@ -62,6 +63,7 @@ function CreatorApp() {
   const [selectedProjectId, setSelectedProjectId] = useState<string | null>(null); // Changed from selectedConversationId
   const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
+  const [showSidebarUserDropdown, setShowSidebarUserDropdown] = useState(false);
   const [opportunitiesCount, setOpportunitiesCount] = useState(0);
   const [profileTimeout, setProfileTimeout] = useState(false);
   const { user, loading, signOut, profile } = useAuth();
@@ -182,6 +184,18 @@ function CreatorApp() {
     );
   }
 
+  // Verificar se precisa completar onboarding
+  if (profile && !profile.onboarding_completed) {
+    return (
+      <CreatorOnboarding 
+        onComplete={() => {
+          // Recarregar perfil após completar onboarding
+          window.location.reload();
+        }} 
+      />
+    );
+  }
+
   const menuItems = [
     { path: '/creators/dashboard', label: 'Dashboard', icon: LayoutDashboard },
     { path: '/creators/opportunities', label: 'Oportunidades', icon: Target, badge: opportunitiesCount > 0 ? opportunitiesCount : undefined },
@@ -276,18 +290,65 @@ function CreatorApp() {
           onMouseEnter={() => setSidebarExpanded(true)}
           onMouseLeave={() => setSidebarExpanded(false)}
         >
-          <div className={`flex items-center rounded-lg hover:bg-gray-50 cursor-pointer transition-all duration-300 ${
-            sidebarExpanded ? 'px-3 py-2' : 'px-2 py-2 justify-center'
-          }`}>
-            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
-              {user.user_metadata?.name?.charAt(0) || user.email?.charAt(0).toUpperCase()}
-            </div>
-            <div className={`ml-3 transition-opacity duration-300 min-w-0 flex-1 ${
-              sidebarExpanded ? 'opacity-100' : 'opacity-0'
-            }`}>
-              <div className="text-sm font-medium text-gray-900 truncate">{user.user_metadata?.name || user.email}</div>
-              <div className="text-xs text-gray-500">Criador</div>
-            </div>
+          <div className="relative">
+            <button
+              onClick={() => setShowSidebarUserDropdown(!showSidebarUserDropdown)}
+              className={`w-full flex items-center rounded-lg hover:bg-gray-50 cursor-pointer transition-all duration-300 ${
+                sidebarExpanded ? 'px-3 py-2' : 'px-2 py-2 justify-center'
+              }`}
+            >
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
+                {user.user_metadata?.name?.charAt(0) || user.email?.charAt(0).toUpperCase()}
+              </div>
+              <div className={`ml-3 transition-opacity duration-300 min-w-0 flex-1 ${
+                sidebarExpanded ? 'opacity-100' : 'opacity-0'
+              }`}>
+                <div className="text-sm font-medium text-gray-900 truncate">{user.user_metadata?.name || user.email}</div>
+                <div className="text-xs text-gray-500">Criador</div>
+              </div>
+            </button>
+
+            {/* Dropdown Menu */}
+            {showSidebarUserDropdown && (
+              <>
+                <div
+                  className="fixed inset-0 z-10"
+                  onClick={() => setShowSidebarUserDropdown(false)}
+                />
+                <div className={`absolute bottom-full mb-2 ${sidebarExpanded ? 'left-0' : 'left-1/2 transform -translate-x-1/2'} w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20`}>
+                  <div className="py-1">
+                    <button
+                      onClick={() => {
+                        navigate('/creators/profile');
+                        setShowSidebarUserDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      Meu Perfil
+                    </button>
+                    <button
+                      onClick={() => {
+                        navigate('/creators/settings');
+                        setShowSidebarUserDropdown(false);
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                    >
+                      Configurações da Conta
+                    </button>
+                    <hr className="my-1" />
+                    <button
+                      onClick={() => {
+                        setShowSidebarUserDropdown(false);
+                        signOut();
+                      }}
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      Sair
+                    </button>
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         </div>
       </div>
