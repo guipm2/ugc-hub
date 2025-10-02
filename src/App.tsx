@@ -43,11 +43,9 @@ function AnalystApp() {
     );
   }
 
-  // Se não tem perfil, redireciona para landing page
+  // Se não tem perfil, mostrar página de login de analistas (não redirecionar)
   if (!profile) {
-    // Usar navigate em vez de renderizar a página obsoleta
-    navigate('/');
-    return null;
+    return <AnalystLoginPage />;
   }
 
   return (

@@ -273,7 +273,7 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
 
       // Cria o usuário com role analyst no user_metadata
-      const { data: authData, error: authError } = await supabase.auth.signUp({
+      const { error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
@@ -292,13 +292,9 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
         return { error: 'Erro ao criar conta' };
       }
 
-      // Se o usuário foi criado com sucesso, criar perfil e registro de analyst
-      if (authData.user) {
-        // Aguardar confirmação do usuário por email antes de criar registros
-        // Os registros serão criados automaticamente no getSession() quando o usuário confirmar
-              }
-
-      setUser(authData.user ?? null);
+      // ❌ NÃO definir setUser aqui! O usuário só deve ser setado após confirmação do email
+      // setUser(authData.user ?? null);
+      
       return { error: null };
     } catch {
       return { error: 'Erro ao criar conta' };

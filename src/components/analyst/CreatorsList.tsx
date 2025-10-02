@@ -74,7 +74,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
     const phoneWithCountryCode = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
     
     // Mensagem personalizada
-    const message = `Olá ${name}! Sou ${analyst?.email}. Vi seu perfil na UGC Hub e gostaria de conversar sobre uma possível parceria.`;
+    const message = `Olá ${name}! Sou ${analyst?.name || analyst?.email}. Vi seu perfil na UGC Hub e gostaria de conversar sobre uma possível parceria.`;
     
     // Criar URL do WhatsApp
     const whatsappUrl = `https://wa.me/${phoneWithCountryCode}?text=${encodeURIComponent(message)}`;

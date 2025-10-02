@@ -1369,7 +1369,7 @@ const OpportunityStagesManagement: React.FC = () => {
                       const phoneWithCountryCode = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
                       
                       // Mensagem personalizada
-                      const message = `Olá ${selectedCreatorProfile.name || selectedCreatorProfile.email}! Sou ${analyst?.email}. Gostaria de conversar sobre o projeto.`;
+                      const message = `Olá ${selectedCreatorProfile.name || selectedCreatorProfile.email}! Sou ${analyst?.name || analyst?.email}. Gostaria de conversar sobre o projeto.`;
                       
                       // Criar URL do WhatsApp
                       const whatsappUrl = `https://wa.me/${phoneWithCountryCode}?text=${encodeURIComponent(message)}`;
