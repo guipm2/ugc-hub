@@ -204,12 +204,74 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
 
       if (data.user) {
+        const metadata = data.user.user_metadata ?? {};
+        const profilePayload = {
+          id: data.user.id,
+          email: data.user.email ?? email,
+          name: metadata.name ?? '',
+          company: metadata.company ?? '',
+          role: 'analyst' as const,
+          terms_accepted: true,
+          terms_accepted_at: new Date().toISOString(),
+          terms_version: '1.0'
+        };
+
         // Busca perfil na tabela profiles
-        const { data: userProfile } = await supabase
+        const { data: fetchedProfile, error: profileFetchError } = await supabase
           .from('profiles')
           .select('*')
           .eq('id', data.user.id)
           .maybeSingle();
+        let userProfile = fetchedProfile;
+
+        if (profileFetchError) {
+          console.error('❌ Failed to fetch profile during login:', profileFetchError);
+        }
+
+        // Criar ou corrigir perfil automaticamente se necessário
+        if (!userProfile) {
+          const { error: profileInsertError } = await supabase
+            .from('profiles')
+            .upsert(profilePayload);
+
+          if (profileInsertError) {
+            console.error('❌ Failed to create analyst profile during login:', profileInsertError);
+            await supabase.auth.signOut();
+            return { error: 'Não foi possível preparar seu perfil de analista. Tente novamente em instantes.' };
+          }
+
+          const { data: newProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .maybeSingle();
+          userProfile = newProfile ?? null;
+        } else if (userProfile.role !== 'analyst') {
+          const { error: profileUpdateError } = await supabase
+            .from('profiles')
+            .update({
+              role: 'analyst',
+              name: profilePayload.name,
+              company: profilePayload.company,
+              terms_accepted: profilePayload.terms_accepted,
+              terms_accepted_at: profilePayload.terms_accepted_at,
+              terms_version: profilePayload.terms_version
+            })
+            .eq('id', data.user.id);
+
+          if (profileUpdateError) {
+            console.error('❌ Failed to update profile role during login:', profileUpdateError);
+            await supabase.auth.signOut();
+            return { error: 'Acesso negado. Esta área é apenas para analistas.' };
+          }
+
+          const { data: updatedProfile } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', data.user.id)
+            .maybeSingle();
+          userProfile = updatedProfile ?? null;
+        }
 
         if (!userProfile || userProfile.role !== 'analyst') {
           await supabase.auth.signOut();
@@ -223,28 +285,26 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
           .eq('id', data.user.id)
           .maybeSingle();
 
-        // Se não existe registro na tabela analysts, criar automaticamente
         if (!analystData) {
-          const { error: analystError } = await supabase
+          const { error: analystUpsertError } = await supabase
             .from('analysts')
-            .insert({
+            .upsert({
               id: data.user.id,
               email: userProfile.email,
-              name: userProfile.name || '',
-              company: userProfile.company || '',
+              name: userProfile.name ?? '',
+              company: userProfile.company ?? '',
               role: 'analyst'
             });
-          
-          if (!analystError) {
-            // Buscar o registro recém-criado
+
+          if (analystUpsertError) {
+            console.error('❌ Failed to create analyst record during login:', analystUpsertError);
+          } else {
             const { data: newAnalystData } = await supabase
               .from('analysts')
               .select('*')
               .eq('id', data.user.id)
               .maybeSingle();
             analystData = newAnalystData;
-                      } else {
-            console.error('❌ Failed to create analyst record during login:', analystError);
           }
         }
 

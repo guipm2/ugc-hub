@@ -135,7 +135,3 @@ CREATE POLICY "Allow profile update during signup"
 
 -- Comentários para documentação
 COMMENT ON FUNCTION handle_new_user() IS 'Trigger function robusta que cria perfis e registros de analistas automaticamente. Inclui logs para debug e não falha o signup em caso de erro.';
-
--- Habilitar logs para debug (pode ser desabilitado depois)
-ALTER SYSTEM SET log_statement = 'all';
-SELECT pg_reload_conf();

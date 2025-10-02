@@ -1,6 +1,9 @@
 -- Migration: Fix analyst signup and profile creation
 -- Date: 2025-10-02
 
+-- Primeiro, remover o campo password_hash da tabela analysts (não é mais necessário com Supabase Auth)
+ALTER TABLE analysts DROP COLUMN IF EXISTS password_hash;
+
 -- Atualizar função handle_new_user para lidar com analistas
 CREATE OR REPLACE FUNCTION handle_new_user()
 RETURNS trigger AS $$
