@@ -11,6 +11,7 @@ import GlobalSearch from './components/GlobalSearch';
 import NotificationDropdown from './components/NotificationDropdown';
 import CreatorLoginPage from './components/auth/CreatorLoginPage';
 import AnalystLoginPage from './components/auth/AnalystLoginPage';
+import EmailConfirmationPage from './components/auth/EmailConfirmationPage';
 import AnalystDashboard from './components/analyst/AnalystDashboard';
 import LandingPage from './components/LandingPage';
 
@@ -451,6 +452,11 @@ function App() {
         <AnalystLoginPage />
       </AnalystAuthProvider>
     );
+  }
+
+  // Handle generic auth routes
+  if (currentPath === '/auth/email-confirmed') {
+    return <EmailConfirmationPage />;
   }
 
   // Handle root route

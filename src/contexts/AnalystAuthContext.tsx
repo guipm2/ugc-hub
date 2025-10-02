@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { router } from '../utils/router';
+import { resolveSiteUrl } from '../utils/siteUrl';
 import type { User } from '@supabase/supabase-js';
 
 interface Analyst {
@@ -333,10 +334,13 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       }
 
       // Cria o usuário com role analyst no user_metadata
+      const emailRedirectTo = `${resolveSiteUrl()}/auth/email-confirmed?type=analyst`;
+
       const { error: authError } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo,
           data: {
             role: 'analyst',
             name,

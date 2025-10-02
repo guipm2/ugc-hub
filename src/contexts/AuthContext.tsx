@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { resolveSiteUrl } from '../utils/siteUrl';
 import { router } from '../utils/router';
 
 // Tipagem do perfil de usuário
@@ -261,10 +262,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error: { message: 'Este email já está cadastrado como analista' } as AuthError };
       }
 
+      const emailRedirectTo = `${resolveSiteUrl()}/auth/email-confirmed?type=creator`;
+
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
+          emailRedirectTo,
           data: userData,
         },
       });
