@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
 
 interface ProjectChat {
+  project_id: string;
   opportunity_id: string;
   opportunity: {
     title: string;
@@ -196,6 +197,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
             if (!project) return null;
             
             return {
+              project_id: project.id,
               opportunity_id: project.opportunity_id,
               opportunity: {
                 id: project.opportunity_id,
@@ -285,7 +287,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
       }
 
       // Create new conversation
-      const { data: newConv, error: convError } = await supabase
+      const { error: convError } = await supabase
         .from('conversations')
         .insert({
           opportunity_id: projectId,
@@ -317,17 +319,19 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
   // Auto-select project chat if provided via URL
   useEffect(() => {
-        if (selectedProjectId && projectChats.length > 0) {
-      const projectChat = projectChats.find(chat => chat.opportunity_id === selectedProjectId);
-            if (projectChat) {
-                setSelectedProject(projectChat);
-      } else {
-              }
+    if (selectedProjectId && projectChats.length > 0) {
+      const projectChat = projectChats.find(
+        chat => chat.project_id === selectedProjectId || chat.opportunity_id === selectedProjectId
+      );
+
+      if (projectChat) {
+        setSelectedProject(projectChat);
+      }
     } else if (selectedProjectId && projectChats.length === 0) {
       // If we have a projectId but no chats yet, try to create/find conversation for this project
       createConversationForProject(selectedProjectId);
     } else if (!selectedProjectId) {
-            setSelectedProject(null);
+      setSelectedProject(null);
     }
   }, [selectedProjectId, projectChats, createConversationForProject]);
 
@@ -541,7 +545,13 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
           {/* Project Details Button - Hide if project deleted */}
           {!isProjectDeleted && (
             <button
-              onClick={() => navigate(`/creators/opportunities/${selectedProject.opportunity_id}`)}
+              onClick={() => {
+                if (selectedProject.project_id) {
+                  navigate(`/creators/projects/${selectedProject.project_id}`);
+                } else {
+                  navigate(`/creators/opportunities/${selectedProject.opportunity_id}`);
+                }
+              }}
               className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
             >
               <ExternalLink className="h-4 w-4" />

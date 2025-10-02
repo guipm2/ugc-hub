@@ -1,9 +1,42 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowRight, Users, Target, MessageCircle, Star, Zap, Shield, ChevronRight } from 'lucide-react';
 import { useRouter } from '../hooks/useRouter';
+import { supabase } from '../lib/supabase';
 
 const LandingPage: React.FC = () => {
   const { navigate } = useRouter();
+
+  useEffect(() => {
+    const handleEmailConfirmationRedirect = async () => {
+      if (typeof window === 'undefined') return;
+
+      const { pathname, hash } = window.location;
+
+      if (pathname !== '/' || !hash) return;
+
+      const hashParams = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash);
+      const eventType = hashParams.get('type');
+
+      if (eventType !== 'signup' || !hashParams.has('access_token')) return;
+
+      try {
+        const { data, error } = await supabase.auth.getSession();
+
+        if (error) {
+          console.error('[LandingPage] Erro ao obter sessão após confirmação de email:', error);
+        }
+
+        const role = data?.session?.user?.user_metadata?.role === 'analyst' ? 'analyst' : 'creator';
+
+        navigate(`/auth/email-confirmed?type=${role}`);
+      } catch (err) {
+        console.error('[LandingPage] Falha ao redirecionar confirmação de email:', err);
+        navigate('/auth/email-confirmed?type=creator');
+      }
+    };
+
+    handleEmailConfirmationRedirect();
+  }, [navigate]);
 
   const features = [
     {

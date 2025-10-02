@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Search, MoreVertical, Send, ArrowLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import { MessageCircle, Search, MoreVertical, Send, ArrowLeft, ExternalLink } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
+import { useRouter } from '../../hooks/useRouter';
 
 // Unified conversation - one per analyst-creator pair
 interface UnifiedConversation {
@@ -54,6 +55,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
   selectedConversationId 
 }) => {
   const { analyst } = useAnalystAuth();
+  const { navigate } = useRouter();
   const [conversations, setConversations] = useState<UnifiedConversation[]>([]);
   const [selectedConversation, setSelectedConversation] = useState<UnifiedConversation | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -303,6 +305,28 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  const activeProject = useMemo(() => {
+    if (!selectedConversation || selectedConversation.projects.length === 0) {
+      return null;
+    }
+
+    const lastProjectMessage = [...messages]
+      .reverse()
+      .find((message) => message.project_context);
+
+    if (lastProjectMessage) {
+      const matchedProject = selectedConversation.projects.find(
+        (project) => project.opportunity_id === lastProjectMessage.project_context
+      );
+
+      if (matchedProject) {
+        return matchedProject;
+      }
+    }
+
+    return selectedConversation.projects[0];
+  }, [selectedConversation, messages]);
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
@@ -406,28 +430,40 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
         <div className="flex-1 flex flex-col">
           {/* Chat Header */}
           <div className="bg-white border-b border-gray-200 p-4">
-            <div className="flex items-center space-x-3">
-              <button
-                onClick={() => setSelectedConversation(null)}
-                className="p-2 text-gray-400 hover:text-gray-600 lg:hidden"
-              >
-                <ArrowLeft className="h-5 w-5" />
-              </button>
-              <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                <span className="text-purple-600 font-medium text-sm">
-                  {selectedConversation.creator?.name?.[0] || 'U'}
-                </span>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setSelectedConversation(null)}
+                  className="p-2 text-gray-400 hover:text-gray-600 lg:hidden"
+                >
+                  <ArrowLeft className="h-5 w-5" />
+                </button>
+                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                  <span className="text-purple-600 font-medium text-sm">
+                    {selectedConversation.creator?.name?.[0] || 'U'}
+                  </span>
+                </div>
+                <div>
+                  <h3 className="text-lg font-medium text-gray-900">
+                    {selectedConversation.creator?.name || 'Usuário'}
+                  </h3>
+                  {selectedConversation.projects.length > 0 && (
+                    <p className="text-sm text-gray-500">
+                      {selectedConversation.projects.length} projeto(s) ativo(s)
+                    </p>
+                  )}
+                </div>
               </div>
-              <div className="flex-1">
-                <h3 className="text-lg font-medium text-gray-900">
-                  {selectedConversation.creator?.name || 'Usuário'}
-                </h3>
-                {selectedConversation.projects.length > 0 && (
-                  <p className="text-sm text-gray-500">
-                    {selectedConversation.projects.length} projeto(s) ativo(s)
-                  </p>
-                )}
-              </div>
+
+              {activeProject && (
+                <button
+                  onClick={() => navigate(`/analysts/projects/${activeProject.id}`)}
+                  className="inline-flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                >
+                  <ExternalLink className="h-4 w-4" />
+                  <span>Ver Projeto</span>
+                </button>
+              )}
             </div>
           </div>
 
