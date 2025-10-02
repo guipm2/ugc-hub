@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowRight, ArrowLeft, User, CreditCard, FileText, Check, Camera, TrendingUp, Globe, Phone, MapPin, Hash, Calendar, Users } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { formatCEP, formatDocument, formatPhone } from '../utils/formatters';
 
 interface OnboardingData {
   // Etapa 1 - Qualificação
@@ -172,29 +173,6 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatCPFCNPJ = (value: string, type: 'cpf' | 'cnpj') => {
-    const numbers = value.replace(/\D/g, '');
-    if (type === 'cpf') {
-      return numbers.replace(/(\d{3})(\d{3})(\d{3})(\d{2})/, '$1.$2.$3-$4');
-    } else {
-      return numbers.replace(/(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})/, '$1.$2.$3/$4-$5');
-    }
-  };
-
-  const formatPhone = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    if (numbers.length <= 10) {
-      return numbers.replace(/(\d{2})(\d{4})(\d{4})/, '($1) $2-$3');
-    } else {
-      return numbers.replace(/(\d{2})(\d{5})(\d{4})/, '($1) $2-$3');
-    }
-  };
-
-  const formatCEP = (value: string) => {
-    const numbers = value.replace(/\D/g, '');
-    return numbers.replace(/(\d{5})(\d{3})/, '$1-$2');
   };
 
   return (
@@ -490,7 +468,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                   type="text"
                   value={data.document_number || ''}
                   onChange={(e) => {
-                    const formatted = data.document_type ? formatCPFCNPJ(e.target.value, data.document_type) : e.target.value;
+                    const formatted = data.document_type ? formatDocument(e.target.value, data.document_type) : e.target.value;
                     setData(prev => ({ ...prev, document_number: formatted }));
                   }}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
