@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
+import { router } from '../utils/router';
 import type { User } from '@supabase/supabase-js';
 
 interface Analyst {
@@ -85,7 +86,8 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
               if (analystError) {
                 console.error('❌ Analyst record creation failed:', analystError);
               } else {
-                              }
+                console.log('✅ Analyst record created successfully');
+              }
               
               await new Promise(res => setTimeout(res, 300));
               const { data: newProfile } = await supabase
@@ -173,6 +175,31 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
       });
 
       if (error) {
+        console.error('❌ [ANALYST] Erro no login:', error);
+        
+        // Verificar se é erro de email não confirmado
+        if (error.message?.includes('Email not confirmed') || 
+            error.message?.includes('email_not_confirmed') ||
+            error.message?.includes('signup_disabled')) {
+          return { error: 'Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.' };
+        }
+        
+        // Verificar se a conta existe mas senha está incorreta
+        if (error.message?.includes('Invalid login credentials')) {
+          // Verificar se o email existe
+          const { data: userExists } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('email', email)
+            .maybeSingle();
+            
+          if (userExists) {
+            return { error: 'Senha incorreta' };
+          } else {
+            return { error: 'Conta não encontrada. Por favor, verifique seu email ou crie uma conta.' };
+          }
+        }
+        
         return { error: 'Email ou senha incorretos' };
       }
 
@@ -279,12 +306,43 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-    setUser(null);
-    setAnalyst(null);
-    // Redirecionar para landing page após logout
-    window.location.href = '/';
+    try {
+      // Limpar estado local primeiro
+      setProfile(null);
+      setUser(null);
+      setAnalyst(null);
+      
+      // Fazer logout no Supabase (remove a sessão do localStorage)
+      await supabase.auth.signOut();
+      
+      // Limpar completamente o localStorage/sessionStorage de qualquer dados relacionados ao Supabase
+      const keysToRemove = [
+        'supabase.auth.token',
+        'sb-' + import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.split('.')[0] + '-auth-token'
+      ];
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+      });
+      
+      // Limpar também qualquer chave que contenha 'supabase' ou 'auth'
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('supabase') || key.includes('auth')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      sessionStorage.clear();
+      
+      // Força redirecionamento para landing page
+      router.navigate('/');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Mesmo com erro, força limpeza e redirecionamento
+      localStorage.clear();
+      sessionStorage.clear();
+      router.navigate('/');
+    }
   };
 
   const value = {

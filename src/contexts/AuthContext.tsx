@@ -1,6 +1,7 @@
 import React, { createContext, useEffect, useState } from 'react';
 import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabase';
+import { router } from '../utils/router';
 
 // Tipagem do perfil de usuário
 export interface Profile {
@@ -272,7 +273,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { error };
       }
 
-      return { error };
+      // Sucesso no signup - retorna sem erro para mostrar mensagem de confirmação
+      return { error: null };
     } catch {
       return { error: { message: 'Erro ao criar conta' } as AuthError };
     }
@@ -298,6 +300,30 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       if (error) {
         console.error('❌ [AUTH] Erro no login:', error);
+        
+        // Verificar se é erro de email não confirmado
+        if (error.message?.includes('Email not confirmed') || 
+            error.message?.includes('email_not_confirmed') ||
+            error.message?.includes('signup_disabled')) {
+          return { error: { message: 'Por favor, confirme seu email antes de fazer login. Verifique sua caixa de entrada.' } as AuthError };
+        }
+        
+        // Verificar se a conta existe mas senha está incorreta
+        if (error.message?.includes('Invalid login credentials')) {
+          // Verificar se o email existe
+          const { data: userExists } = await supabase
+            .from('profiles')
+            .select('email')
+            .eq('email', email)
+            .maybeSingle();
+            
+          if (userExists) {
+            return { error: { message: 'Senha incorreta' } as AuthError };
+          } else {
+            return { error: { message: 'Conta não encontrada. Por favor, verifique seu email ou crie uma conta.' } as AuthError };
+          }
+        }
+        
         return { error: { message: 'Email ou senha incorretos' } as AuthError };
       }
 
@@ -313,12 +339,42 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setProfile(null);
-    setUser(null);
-    setSession(null);
-    // Redirecionar para landing page após logout
-    window.location.href = '/';
+    try {
+      // Limpar estado local primeiro
+      setUser(null);
+      setProfile(null);
+      
+      // Fazer logout no Supabase (remove a sessão do localStorage)
+      await supabase.auth.signOut();
+      
+      // Limpar completamente o localStorage/sessionStorage de qualquer dados relacionados ao Supabase
+      const keysToRemove = [
+        'supabase.auth.token',
+        'sb-' + import.meta.env.VITE_SUPABASE_URL?.split('//')[1]?.split('.')[0] + '-auth-token'
+      ];
+      
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+      });
+      
+      // Limpar também qualquer chave que contenha 'supabase' ou 'auth'
+      Object.keys(localStorage).forEach(key => {
+        if (key.includes('supabase') || key.includes('auth')) {
+          localStorage.removeItem(key);
+        }
+      });
+      
+      sessionStorage.clear();
+      
+      // Força reload completo da página para limpar qualquer estado residual
+      router.navigate('/');
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+      // Mesmo com erro, força limpeza e redirecionamento
+      localStorage.clear();
+      sessionStorage.clear();
+      router.navigate('/');
+    }
   };
 
   const resetPassword = async (email: string) => {

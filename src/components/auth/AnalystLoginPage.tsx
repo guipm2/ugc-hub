@@ -14,6 +14,7 @@ const AnalystLoginPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
 
   const { signIn, signUp } = useAnalystAuth();
   const { navigate } = useRouter();
@@ -21,6 +22,7 @@ const AnalystLoginPage: React.FC = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMessage('');
     setLoading(true);
 
     try {
@@ -44,7 +46,18 @@ const AnalystLoginPage: React.FC = () => {
         if (error) {
           setError(error);
         } else {
-          navigate('/analysts/overview');
+          setSuccessMessage(`Conta criada com sucesso! Enviamos um email de confirmação para ${email}. Por favor, clique no link do email para ativar sua conta antes de fazer login.`);
+          // Limpar o formulário
+          setEmail('');
+          setPassword('');
+          setConfirmPassword('');
+          setName('');
+          setCompany('');
+          // Mudar para tela de login após 3 segundos
+          setTimeout(() => {
+            setIsLogin(true);
+            setSuccessMessage('');
+          }, 5000);
         }
       }
     } catch {
@@ -89,6 +102,18 @@ const AnalystLoginPage: React.FC = () => {
             <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
               <div className="text-red-700 text-sm">{error}</div>
+            </div>
+          )}
+
+          {/* Success Alert */}
+          {successMessage && (
+            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-start gap-3">
+              <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
+                <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+              <div className="text-green-700 text-sm">{successMessage}</div>
             </div>
           )}
 

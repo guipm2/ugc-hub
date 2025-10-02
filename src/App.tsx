@@ -9,10 +9,8 @@ import CreatorRouter from './components/creator/CreatorRouter';
 import CreatorOnboarding from './components/CreatorOnboarding';
 import GlobalSearch from './components/GlobalSearch';
 import NotificationDropdown from './components/NotificationDropdown';
-import AuthPage from './components/auth/AuthPage';
 import CreatorLoginPage from './components/auth/CreatorLoginPage';
 import AnalystLoginPage from './components/auth/AnalystLoginPage';
-import AnalystAuthPage from './components/analyst/AnalystAuthPage';
 import AnalystDashboard from './components/analyst/AnalystDashboard';
 import LandingPage from './components/LandingPage';
 
@@ -45,9 +43,11 @@ function AnalystApp() {
     );
   }
 
-  // Se não tem perfil, mostra tela de login
+  // Se não tem perfil, redireciona para landing page
   if (!profile) {
-    return <AnalystAuthPage />;
+    // Usar navigate em vez de renderizar a página obsoleta
+    navigate('/');
+    return null;
   }
 
   return (
@@ -151,13 +151,15 @@ function CreatorApp() {
     );
   }
 
-  // Se não tem usuário ou perfil, mostra tela de login
+  // Se não tem usuário ou perfil, redireciona para landing page
   // Se profile timeout, força logout
   if (!user || (!profile && !loading && profileTimeout) || (profile && profile.role !== 'creator')) {
     if (profileTimeout) {
       signOut();
     }
-    return <AuthPage />;
+    // Usar navigate em vez de renderizar a página obsoleta
+    navigate('/');
+    return null;
   }
 
   // Se ainda está carregando profile sem timeout
