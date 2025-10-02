@@ -99,103 +99,61 @@ const AccountSettings = () => {
         throw new Error('Usuário não encontrado');
       }
 
-      // 1. Deletar candidaturas em oportunidades
-      const { error: applicationsError } = await supabase
-        .from('opportunity_applications')
-        .delete()
-        .eq('creator_id', user.id);
+      // Usar a função RPC para deletar completamente o usuário
+      const { data, error } = await supabase.rpc('delete_my_account');
 
-      if (applicationsError) {
-        console.error('Erro ao deletar candidaturas:', applicationsError);
-        // Não impede a exclusão se der erro aqui
+      if (error) {
+        console.error('Erro ao deletar conta via RPC:', error);
+        throw error;
       }
 
-      // 2. Deletar etapas de oportunidades
-      const { error: stagesError } = await supabase
-        .from('opportunity_stages')
-        .delete()
-        .eq('creator_id', user.id);
-
-      if (stagesError) {
-        console.error('Erro ao deletar etapas:', stagesError);
-        // Não impede a exclusão se der erro aqui
+      if (!data) {
+        throw new Error('Falha ao deletar conta');
       }
 
-      // 3. Deletar mensagens onde o creator é o remetente
-      const { error: messagesError } = await supabase
-        .from('messages')
-        .delete()
-        .eq('sender_id', user.id);
-
-      if (messagesError) {
-        console.error('Erro ao deletar mensagens:', messagesError);
-        // Não impede a exclusão se der erro aqui
-      }
-
-      // 4. Deletar conversas do creator
-      const { error: conversationsError } = await supabase
-        .from('conversations')
-        .delete()
-        .eq('creator_id', user.id);
-
-      if (conversationsError) {
-        console.error('Erro ao deletar conversas:', conversationsError);
-        // Não impede a exclusão se der erro aqui
-      }
-
-      // 5. Deletar projetos e colaborações relacionadas (se existir)
-      const { error: projectsError } = await supabase
-        .from('collaboration_projects')
-        .delete()
-        .eq('creator_id', user.id);
-
-      if (projectsError && !projectsError.message.includes('does not exist')) {
-        console.error('Erro ao deletar projetos:', projectsError);
-        // Não impede a exclusão se der erro aqui
-      }
-
-      // 6. Deletar mensagens de colaboração (se existir)
-      const { error: collabMessagesError } = await supabase
-        .from('collaboration_messages')
-        .delete()
-        .eq('sender_id', user.id);
-
-      if (collabMessagesError && !collabMessagesError.message.includes('does not exist')) {
-        console.error('Erro ao deletar mensagens de colaboração:', collabMessagesError);
-        // Não impede a exclusão se der erro aqui
-      }
-
-      // 7. Deletar notificações relacionadas
-      const { error: notificationsError } = await supabase
-        .from('notifications')
-        .delete()
-        .eq('user_id', user.id);
-
-      if (notificationsError) {
-        console.error('Erro ao deletar notificações:', notificationsError);
-        // Não impede a exclusão se der erro aqui
-      }
-
-      // 8. Por último, deletar dados do perfil (isso trigará CASCADE nas outras tabelas devido ao FK)
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .delete()
-        .eq('id', user.id);
-
-      if (profileError) {
-        console.error('Erro ao deletar perfil:', profileError);
-        throw profileError;
-      }
-
-      // 9. Fazer logout do usuário
+      // Fazer logout do usuário
       await signOut();
       
       // Mostrar mensagem de sucesso
-      alert('Sua conta e todos os dados relacionados foram excluídos com sucesso.');
+      alert('Sua conta foi completamente excluída do sistema. Obrigado por ter usado nossa plataforma.');
       
     } catch (error) {
       console.error('Erro ao excluir conta:', error);
-      alert('Ocorreu um erro ao excluir sua conta. Por favor, tente novamente ou entre em contato com o suporte.');
+      
+      // Fallback: se a RPC falhar, tentar método manual
+      try {
+        console.log('Tentando método de fallback...');
+        
+        if (!user) {
+          throw new Error('Usuário não encontrado para fallback');
+        }
+        
+        // Deletar dados relacionados manualmente
+        await supabase.from('opportunity_applications').delete().eq('creator_id', user.id);
+        await supabase.from('opportunity_stages').delete().eq('creator_id', user.id);
+        await supabase.from('messages').delete().eq('sender_id', user.id);
+        await supabase.from('conversations').delete().eq('creator_id', user.id);
+        await supabase.from('notifications').delete().eq('user_id', user.id);
+        
+        // Deletar perfil
+        const { error: profileError } = await supabase
+          .from('profiles')
+          .delete()
+          .eq('id', user.id);
+
+        if (profileError) {
+          throw profileError;
+        }
+
+        // Fazer logout
+        await signOut();
+        
+        alert('Sua conta e dados foram excluídos com sucesso. Nota: Sua conta de autenticação pode ainda existir no sistema.');
+        
+      } catch (fallbackError) {
+        console.error('Erro no método de fallback:', fallbackError);
+        alert('Ocorreu um erro ao excluir sua conta. Por favor, entre em contato com o suporte técnico para assistência.');
+      }
     } finally {
       setIsDeleting(false);
       setShowFinalConfirmation(false);
