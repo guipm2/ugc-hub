@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
-import { MessageCircle, Search, MoreVertical, Send, ArrowLeft, ExternalLink } from 'lucide-react';
+import { MessageCircle, Search, MoreVertical, Send, ArrowLeft, ExternalLink, AlertTriangle, Trash2, PencilLine, Check } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRouter } from '../../hooks/useRouter';
@@ -31,6 +31,8 @@ interface UnifiedConversation {
     project_context?: string; // Which project this message is about
   };
   unread_count: number;
+  custom_title?: string | null;
+  tags?: string[] | null;
 }
 
 interface Message {
@@ -62,6 +64,13 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
   const [newMessage, setNewMessage] = useState('');
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [deletingChat, setDeletingChat] = useState(false);
+  const [isEditingChatDetails, setIsEditingChatDetails] = useState(false);
+  const [chatTitleInput, setChatTitleInput] = useState('');
+  const [chatTagsInput, setChatTagsInput] = useState('');
+  const [savingChatDetails, setSavingChatDetails] = useState(false);
+  const [chatDetailsStatus, setChatDetailsStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Fetch unified conversations
@@ -78,6 +87,8 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
           creator_id,
           created_at,
           last_message_at,
+          custom_title,
+          tags,
           creator:profiles!creator_id (
             name,
             email
@@ -105,14 +116,21 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
             created_at: conv.created_at,
             last_message_at: conv.last_message_at,
             projects: [],
-            unread_count: 0
+            unread_count: 0,
+            custom_title: conv.custom_title,
+            tags: conv.tags
           });
           allConversationsByCreator.set(conv.creator_id, []);
         } else {
           // Update last_message_at if this conversation is more recent
           const existing = creatorConversations.get(conv.creator_id);
-          if (new Date(conv.last_message_at) > new Date(existing.last_message_at)) {
+          const existingDate = existing.last_message_at ? new Date(existing.last_message_at) : null;
+          const currentDate = conv.last_message_at ? new Date(conv.last_message_at) : null;
+          if (currentDate && (!existingDate || currentDate > existingDate)) {
+            existing.id = conv.id;
             existing.last_message_at = conv.last_message_at;
+            existing.custom_title = conv.custom_title;
+            existing.tags = conv.tags;
           }
         }
         
@@ -186,7 +204,9 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
               sender_type: lastMessage.sender_type,
               created_at: lastMessage.created_at,
               project_context: lastMessage.project_context
-            } : undefined
+            } : undefined,
+            custom_title: conv.custom_title || null,
+            tags: (conv.tags || []) as string[]
           };
         })
       );
@@ -248,6 +268,126 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
     }
   };
 
+  const getChatDisplayTitle = (conversation: UnifiedConversation) => {
+    if (conversation.custom_title && conversation.custom_title.trim().length > 0) {
+      return conversation.custom_title.trim();
+    }
+
+    if (conversation.creator?.name) {
+      return conversation.creator.name;
+    }
+
+    if (conversation.projects.length > 0) {
+      return conversation.projects[0].opportunity_title;
+    }
+
+    return conversation.creator?.email || 'Chat';
+  };
+
+  const parseTagsInput = (value: string) => {
+    return Array.from(
+      new Set(
+        value
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+      )
+    ).slice(0, 10);
+  };
+
+  const handleSaveChatDetails = async () => {
+    if (!selectedConversation || savingChatDetails) {
+      return;
+    }
+
+    const conversationId = selectedConversation.id;
+    const trimmedTitle = chatTitleInput.trim();
+    const tagsArray = parseTagsInput(chatTagsInput);
+
+    try {
+      setSavingChatDetails(true);
+      setChatDetailsStatus(null);
+
+      const { error } = await supabase
+        .from('conversations')
+        .update({
+          custom_title: trimmedTitle.length > 0 ? trimmedTitle : null,
+          tags: tagsArray
+        })
+        .eq('id', conversationId);
+
+      if (error) {
+        throw error;
+      }
+
+      setConversations((prev) =>
+        prev.map((conv) =>
+          conv.id === conversationId
+            ? { ...conv, custom_title: trimmedTitle || null, tags: tagsArray }
+            : conv
+        )
+      );
+
+      setSelectedConversation((prev) =>
+        prev
+          ? { ...prev, custom_title: trimmedTitle || null, tags: tagsArray }
+          : prev
+      );
+
+      setIsEditingChatDetails(false);
+      setChatDetailsStatus({ type: 'success', message: 'Detalhes do chat atualizados com sucesso.' });
+    } catch (error) {
+      console.error('Erro ao atualizar detalhes do chat:', error);
+      setChatDetailsStatus({ type: 'error', message: 'Não foi possível salvar as alterações. Tente novamente.' });
+    } finally {
+      setSavingChatDetails(false);
+    }
+  };
+
+  const handleCancelChatDetails = () => {
+    if (selectedConversation) {
+      setChatTitleInput(selectedConversation.custom_title || '');
+      setChatTagsInput(Array.isArray(selectedConversation.tags) ? selectedConversation.tags.join(', ') : '');
+    } else {
+      setChatTitleInput('');
+      setChatTagsInput('');
+    }
+
+    setChatDetailsStatus(null);
+    setIsEditingChatDetails(false);
+  };
+
+  const deleteConversation = async () => {
+    if (!selectedConversation) {
+      return;
+    }
+
+    try {
+      setDeletingChat(true);
+      setChatDetailsStatus(null);
+
+      const { error } = await supabase
+        .from('conversations')
+        .delete()
+        .eq('id', selectedConversation.id);
+
+      if (error) {
+        throw error;
+      }
+
+      setConversations((prev) => prev.filter((conv) => conv.id !== selectedConversation.id));
+      setSelectedConversation(null);
+      setMessages([]);
+      setShowDeleteConfirm(false);
+      await fetchConversations();
+    } catch (error) {
+      console.error('Erro ao deletar conversa:', error);
+      setChatDetailsStatus({ type: 'error', message: 'Não foi possível apagar o chat. Tente novamente.' });
+    } finally {
+      setDeletingChat(false);
+    }
+  };
+
   // Format time
   const formatTime = (dateString: string) => {
     const date = new Date(dateString);
@@ -272,6 +412,8 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
     return (
       conv.creator?.name?.toLowerCase().includes(searchTermLower) ||
       conv.creator?.email?.toLowerCase().includes(searchTermLower) ||
+      conv.custom_title?.toLowerCase().includes(searchTermLower) ||
+      (Array.isArray(conv.tags) && conv.tags.some((tag) => tag.toLowerCase().includes(searchTermLower))) ||
       conv.projects.some(project => 
         project.opportunity_title.toLowerCase().includes(searchTermLower) ||
         project.opportunity_company.toLowerCase().includes(searchTermLower)
@@ -305,6 +447,31 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
+  useEffect(() => {
+    if (selectedConversation) {
+      setChatTitleInput(selectedConversation.custom_title || '');
+      setChatTagsInput(Array.isArray(selectedConversation.tags) ? selectedConversation.tags.join(', ') : '');
+      setIsEditingChatDetails(false);
+      setChatDetailsStatus(null);
+    } else {
+      setChatTitleInput('');
+      setChatTagsInput('');
+      setIsEditingChatDetails(false);
+      setChatDetailsStatus(null);
+    }
+  }, [selectedConversation]);
+
+  useEffect(() => {
+    if (!chatDetailsStatus) return;
+
+    const timeout = window.setTimeout(() => setChatDetailsStatus(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [chatDetailsStatus]);
+
+  useEffect(() => {
+    setShowDeleteConfirm(false);
+  }, [selectedConversation]);
+
   const activeProject = useMemo(() => {
     if (!selectedConversation || selectedConversation.projects.length === 0) {
       return null;
@@ -326,6 +493,9 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
 
     return selectedConversation.projects[0];
   }, [selectedConversation, messages]);
+
+  const chatTitle = selectedConversation ? getChatDisplayTitle(selectedConversation) : '';
+  const chatTags = selectedConversation ? (Array.isArray(selectedConversation.tags) ? selectedConversation.tags : []) : [];
 
   if (loading) {
     return (
@@ -368,59 +538,81 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
               </p>
             </div>
           ) : (
-            filteredConversations.map((conversation) => (
-              <div
-                key={conversation.id}
-                onClick={() => setSelectedConversation(conversation)}
-                className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                  selectedConversation?.id === conversation.id ? 'bg-purple-50' : ''
-                }`}
-              >
-                <div className="flex items-start space-x-3">
-                  <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                    <span className="text-purple-600 font-medium text-sm">
-                      {conversation.creator?.name?.[0] || 'U'}
-                    </span>
-                  </div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-sm font-medium text-gray-900 truncate">
-                        {conversation.creator?.name || 'Usuário'}
-                      </h3>
-                      {conversation.lastMessage && (
-                        <span className="text-xs text-gray-500">
-                          {formatTime(conversation.lastMessage.created_at)}
-                        </span>
-                      )}
+            filteredConversations.map((conversation) => {
+              const displayTitle = getChatDisplayTitle(conversation);
+              const tags = Array.isArray(conversation.tags) ? conversation.tags : [];
+
+              return (
+                <div
+                  key={conversation.id}
+                  onClick={() => setSelectedConversation(conversation)}
+                  className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
+                    selectedConversation?.id === conversation.id ? 'bg-purple-50' : ''
+                  }`}
+                >
+                  <div className="flex items-start space-x-3">
+                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
+                      <span className="text-purple-600 font-medium text-sm">
+                        {conversation.creator?.name?.[0] || 'U'}
+                      </span>
                     </div>
-                    
-                    {/* Project titles */}
-                    {conversation.projects.length > 0 && (
-                      <div className="mt-1">
-                        {conversation.projects.slice(0, 2).map((project) => (
-                          <p key={project.id} className="text-xs text-purple-600 font-medium truncate">
-                            📁 {project.opportunity_title}
-                          </p>
-                        ))}
-                        {conversation.projects.length > 2 && (
-                          <p className="text-xs text-gray-500">
-                            +{conversation.projects.length - 2} outros projetos
-                          </p>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <h3 className="text-sm font-medium text-gray-900 truncate">
+                          {displayTitle}
+                        </h3>
+                        {conversation.lastMessage && (
+                          <span className="text-xs text-gray-500">
+                            {formatTime(conversation.lastMessage.created_at)}
+                          </span>
                         )}
                       </div>
-                    )}
-                    
-                    {/* Last message preview */}
-                    {conversation.lastMessage && (
-                      <p className="text-xs text-gray-600 truncate mt-1">
-                        {conversation.lastMessage.sender_type === 'analyst' ? 'Você: ' : ''}
-                        {conversation.lastMessage.content}
+
+                      <p className="text-xs text-gray-500 mt-1">
+                        {conversation.creator?.name || 'Usuário'} • {conversation.creator?.email || 'sem e-mail'}
                       </p>
-                    )}
+
+                      {tags.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-medium text-purple-700"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
+                      {/* Project titles */}
+                      {conversation.projects.length > 0 && (
+                        <div className="mt-2">
+                          {conversation.projects.slice(0, 2).map((project) => (
+                            <p key={project.id} className="text-xs text-purple-600 font-medium truncate">
+                              📁 {project.opportunity_title}
+                            </p>
+                          ))}
+                          {conversation.projects.length > 2 && (
+                            <p className="text-xs text-gray-500">
+                              +{conversation.projects.length - 2} outros projetos
+                            </p>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Last message preview */}
+                      {conversation.lastMessage && (
+                        <p className="text-xs text-gray-600 truncate mt-2">
+                          {conversation.lastMessage.sender_type === 'analyst' ? 'Você: ' : ''}
+                          {conversation.lastMessage.content}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       </div>
@@ -429,8 +621,8 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
       {selectedConversation ? (
         <div className="flex-1 flex flex-col">
           {/* Chat Header */}
-          <div className="bg-white border-b border-gray-200 p-4">
-            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="bg-white border-b border-gray-200 p-4 space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-center space-x-3">
                 <button
                   onClick={() => setSelectedConversation(null)}
@@ -443,29 +635,126 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                     {selectedConversation.creator?.name?.[0] || 'U'}
                   </span>
                 </div>
-                <div>
-                  <h3 className="text-lg font-medium text-gray-900">
-                    {selectedConversation.creator?.name || 'Usuário'}
-                  </h3>
+                <div className="min-w-0">
+                  <h3 className="text-lg font-semibold text-gray-900 truncate">{chatTitle || 'Chat'}</h3>
+                  <p className="text-sm text-gray-500">
+                    {selectedConversation.creator?.name || 'Usuário'} • {selectedConversation.creator?.email || 'sem e-mail'}
+                  </p>
                   {selectedConversation.projects.length > 0 && (
-                    <p className="text-sm text-gray-500">
+                    <p className="mt-1 text-xs text-gray-500">
                       {selectedConversation.projects.length} projeto(s) ativo(s)
                     </p>
                   )}
                 </div>
               </div>
 
-              {activeProject && (
+              <div className="flex flex-wrap items-center gap-2">
+                {activeProject && (
+                  <button
+                    onClick={() => navigate(`/analysts/projects/${activeProject.id}`)}
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
+                  >
+                    <ExternalLink className="h-4 w-4" />
+                    <span>Ver Projeto</span>
+                  </button>
+                )}
                 <button
-                  onClick={() => navigate(`/analysts/projects/${activeProject.id}`)}
-                  className="inline-flex items-center justify-center gap-2 bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  onClick={() => setIsEditingChatDetails((prev) => !prev)}
+                  className="flex items-center gap-2 rounded-lg border border-gray-300 px-4 py-2 text-gray-700 transition-colors hover:border-gray-400 hover:text-gray-900"
                 >
-                  <ExternalLink className="h-4 w-4" />
-                  <span>Ver Projeto</span>
+                  <PencilLine className="h-4 w-4" />
+                  <span>{isEditingChatDetails ? 'Fechar edição' : 'Editar detalhes'}</span>
                 </button>
-              )}
+                <button
+                  onClick={() => setShowDeleteConfirm(true)}
+                  className="flex items-center gap-2 rounded-lg border border-red-300 px-4 py-2 text-red-600 transition-colors hover:border-red-400 hover:text-red-700"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Apagar chat</span>
+                </button>
+              </div>
             </div>
+
+            {chatTags.length > 0 && (
+              <div className="flex flex-wrap gap-2">
+                {chatTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
+
+          {chatDetailsStatus && (
+            <div
+              className={`mx-4 mt-4 rounded-lg border px-4 py-3 text-sm ${
+                chatDetailsStatus.type === 'success'
+                  ? 'border-green-200 bg-green-50 text-green-700'
+                  : 'border-red-200 bg-red-50 text-red-700'
+              }`}
+            >
+              {chatDetailsStatus.message}
+            </div>
+          )}
+
+          {isEditingChatDetails && (
+            <div className="mx-4 mt-4 rounded-xl border border-gray-200 bg-white p-4">
+              <div className="grid gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Título personalizado</label>
+                  <input
+                    type="text"
+                    value={chatTitleInput}
+                    onChange={(event) => setChatTitleInput(event.target.value)}
+                    placeholder="Defina um nome descritivo para este chat"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-500"
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    Deixe em branco para usar o nome do criador ou do projeto automaticamente.
+                  </p>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700">Tags (separadas por vírgula)</label>
+                  <input
+                    type="text"
+                    value={chatTagsInput}
+                    onChange={(event) => setChatTagsInput(event.target.value)}
+                    placeholder="ex: briefing, revisão, contrato"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-500"
+                  />
+                  <p className="mt-2 text-xs text-gray-500">
+                    Máximo de 10 tags. Utilize palavras-chave curtas para categorizar o chat.
+                  </p>
+                </div>
+                <div className="flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={handleCancelChatDetails}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-900"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleSaveChatDetails}
+                    disabled={savingChatDetails}
+                    className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400"
+                  >
+                    {savingChatDetails ? (
+                      <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-white"></span>
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                    <span>Salvar alterações</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Messages */}
           <div className="flex-1 overflow-y-auto p-4 space-y-4">
@@ -535,6 +824,43 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
               </button>
             </div>
           </div>
+
+          {showDeleteConfirm && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+              <div className="w-full max-w-md rounded-lg bg-white p-6 shadow-xl">
+                <div className="mb-4 flex items-center gap-3">
+                  <AlertTriangle className="h-6 w-6 text-red-600" />
+                  <h3 className="text-lg font-semibold text-gray-900">Confirmar exclusão</h3>
+                </div>
+                <p className="text-sm text-gray-600">
+                  Ao apagar este chat todas as mensagens serão removidas permanentemente para você e para o criador. Essa ação não pode ser desfeita.
+                </p>
+                <div className="mt-6 flex justify-end gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="px-4 py-2 text-gray-600 hover:text-gray-900"
+                    disabled={deletingChat}
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    type="button"
+                    onClick={deleteConversation}
+                    disabled={deletingChat}
+                    className="flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2 text-white transition-colors hover:bg-red-700 disabled:cursor-not-allowed disabled:bg-red-400"
+                  >
+                    {deletingChat ? (
+                      <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-white"></span>
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    <span>Apagar chat</span>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         <div className="flex-1 flex items-center justify-center bg-gray-50">

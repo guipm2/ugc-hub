@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Search, MoreVertical, Send, ArrowLeft, ExternalLink, AlertTriangle, Trash2 } from 'lucide-react';
+import { MessageCircle, Search, MoreVertical, Send, ArrowLeft, ExternalLink, AlertTriangle, Trash2, PencilLine, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
@@ -26,6 +26,8 @@ interface ProjectChat {
     created_at: string;
   };
   unread_count: number;
+  custom_title?: string | null;
+  tags?: string[] | null;
 }
 
 interface Message {
@@ -51,6 +53,11 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
   const [loading, setLoading] = useState(true);
   const [sendingMessage, setSendingMessage] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isEditingChatDetails, setIsEditingChatDetails] = useState(false);
+  const [chatTitleInput, setChatTitleInput] = useState('');
+  const [chatTagsInput, setChatTagsInput] = useState('');
+  const [savingChatDetails, setSavingChatDetails] = useState(false);
+  const [chatDetailsStatus, setChatDetailsStatus] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
   const { user } = useAuth();
   const { navigate } = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -70,7 +77,9 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
           creator_id,
           opportunity_id,
           created_at,
-          last_message_at
+          last_message_at,
+          custom_title,
+          tags
         `)
         .eq('creator_id', user.id)
         .order('last_message_at', { ascending: false });
@@ -95,14 +104,21 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
             created_at: conv.created_at,
             last_message_at: conv.last_message_at,
             projects: [],
-            unread_count: 0
+            unread_count: 0,
+            custom_title: conv.custom_title,
+            tags: conv.tags
           });
           allConversationsByAnalyst.set(conv.analyst_id, []);
         } else {
           // Update last_message_at if this conversation is more recent
           const existing = analystConversations.get(conv.analyst_id);
-          if (new Date(conv.last_message_at) > new Date(existing.last_message_at)) {
+          const existingDate = existing.last_message_at ? new Date(existing.last_message_at) : null;
+          const currentDate = conv.last_message_at ? new Date(conv.last_message_at) : null;
+          if (currentDate && (!existingDate || currentDate > existingDate)) {
+            existing.id = conv.id;
             existing.last_message_at = conv.last_message_at;
+            existing.custom_title = conv.custom_title;
+            existing.tags = conv.tags;
           }
         }
         
@@ -211,7 +227,9 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
               conversation_id: conv.id,
               last_message_at: conv.last_message_at,
               lastMessage: lastMessage,
-              unread_count: unreadCount || 0
+              unread_count: unreadCount || 0,
+              custom_title: conv.custom_title || null,
+              tags: conv.tags || []
             } as ProjectChat;
           }).filter(Boolean);
         })
@@ -379,6 +397,27 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (selectedProject) {
+      setChatTitleInput(selectedProject.custom_title || '');
+      setChatTagsInput((selectedProject.tags || []).join(', '));
+      setChatDetailsStatus(null);
+      setIsEditingChatDetails(false);
+    } else {
+      setChatTitleInput('');
+      setChatTagsInput('');
+      setIsEditingChatDetails(false);
+      setChatDetailsStatus(null);
+    }
+  }, [selectedProject]);
+
+  useEffect(() => {
+    if (!chatDetailsStatus) return;
+
+    const timeout = window.setTimeout(() => setChatDetailsStatus(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [chatDetailsStatus]);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -450,18 +489,6 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
     }
 
     try {
-      // Delete all messages first
-      const { error: messagesError } = await supabase
-        .from('messages')
-        .delete()
-        .eq('conversation_id', selectedProject.conversation_id);
-
-      if (messagesError) {
-        console.error('Erro ao deletar mensagens:', messagesError);
-        return;
-      }
-
-      // Delete the conversation
       const { error: conversationError } = await supabase
         .from('conversations')
         .delete()
@@ -474,12 +501,108 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
       // Navigate back to messages list and refresh
       setShowDeleteConfirm(false);
+      setSelectedProject(null);
+      setMessages([]);
       navigate('/creators/messages');
       fetchProjectChats(); // Refresh the list
     } catch (err) {
       console.error('Erro ao deletar chat:', err);
-      console.error('Erro ao deletar chat:', err);
     }
+  };
+
+  const getChatDisplayTitle = (chat: ProjectChat) => {
+    if (chat.custom_title && chat.custom_title.trim().length > 0) {
+      return chat.custom_title.trim();
+    }
+
+    if (chat.opportunity?.title) {
+      return chat.opportunity.title;
+    }
+
+    if (chat.analyst?.name) {
+      return `Conversa com ${chat.analyst.name}`;
+    }
+
+    if (chat.analyst?.company) {
+      return `Conversa com ${chat.analyst.company}`;
+    }
+
+    return 'Chat';
+  };
+
+  const parseTagsInput = (value: string) => {
+    return Array.from(
+      new Set(
+        value
+          .split(',')
+          .map((tag) => tag.trim())
+          .filter(Boolean)
+      )
+    ).slice(0, 10);
+  };
+
+  const handleSaveChatDetails = async () => {
+    if (!selectedProject?.conversation_id || savingChatDetails) {
+      return;
+    }
+
+    const trimmedTitle = chatTitleInput.trim();
+    const tagsArray = parseTagsInput(chatTagsInput);
+
+    try {
+      setSavingChatDetails(true);
+      setChatDetailsStatus(null);
+
+      const { error } = await supabase
+        .from('conversations')
+        .update({
+          custom_title: trimmedTitle.length > 0 ? trimmedTitle : null,
+          tags: tagsArray
+        })
+        .eq('id', selectedProject.conversation_id);
+
+      if (error) {
+        throw error;
+      }
+
+      setProjectChats((prev) =>
+        prev.map((chat) =>
+          chat.conversation_id === selectedProject.conversation_id
+            ? { ...chat, custom_title: trimmedTitle || null, tags: tagsArray }
+            : chat
+        )
+      );
+
+      setSelectedProject((prev) =>
+        prev
+          ? {
+              ...prev,
+              custom_title: trimmedTitle || null,
+              tags: tagsArray
+            }
+          : prev
+      );
+
+      setIsEditingChatDetails(false);
+      setChatDetailsStatus({ type: 'success', message: 'Detalhes do chat atualizados com sucesso.' });
+    } catch (error) {
+      console.error('Erro ao atualizar detalhes do chat:', error);
+      setChatDetailsStatus({ type: 'error', message: 'Não foi possível salvar as alterações. Tente novamente.' });
+    } finally {
+      setSavingChatDetails(false);
+    }
+  };
+
+  const handleCancelChatDetails = () => {
+    if (selectedProject) {
+      setChatTitleInput(selectedProject.custom_title || '');
+      setChatTagsInput((selectedProject.tags || []).join(', '));
+    } else {
+      setChatTitleInput('');
+      setChatTagsInput('');
+    }
+    setChatDetailsStatus(null);
+    setIsEditingChatDetails(false);
   };
 
   const formatTime = (dateString: string) => {
@@ -517,11 +640,13 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
   if (selectedProject) {
     // Check if project was deleted
     const isProjectDeleted = !selectedProject.opportunity || selectedProject.opportunity.status === 'deleted' || selectedProject.opportunity.status === 'inativo';
+    const chatTitle = getChatDisplayTitle(selectedProject);
+    const chatTags = (selectedProject.tags || []) as string[];
     
     return (
       <div className="space-y-6">
         {/* Chat Header */}
-        <div className="flex items-center gap-4 sticky top-16 bg-gray-50 z-50 py-4">
+        <div className="flex flex-wrap items-center gap-4 sticky top-16 bg-gray-50 z-50 py-4">
           <button
             onClick={() => {
                             navigate('/creators/messages');
@@ -533,32 +658,132 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div className="flex-1">
-            <h1 className="text-2xl font-semibold text-gray-900">
-              {selectedProject.analyst?.name || 'Analista'}
-            </h1>
-            <p className="text-gray-600">
-              {selectedProject.analyst?.company || 'Empresa'} • {selectedProject.opportunity?.title || 'Oportunidade'}
+          <div className="flex-1 min-w-[220px]">
+            <h1 className="text-2xl font-semibold text-gray-900 truncate">{chatTitle}</h1>
+            <p className="text-gray-600 text-sm mt-1">
+              {selectedProject.analyst?.name || 'Analista'} • {selectedProject.analyst?.company || 'Empresa'}
             </p>
+            {selectedProject.opportunity?.title && (
+              <p className="text-xs text-gray-500 mt-0.5">
+                {selectedProject.opportunity.title}
+              </p>
+            )}
+            {chatTags.length > 0 && (
+              <div className="flex flex-wrap gap-2 mt-3">
+                {chatTags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
+                  >
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            )}
           </div>
-          
-          {/* Project Details Button - Hide if project deleted */}
-          {!isProjectDeleted && (
+          <div className="flex flex-wrap items-center gap-2">
+            {!isProjectDeleted && (
+              <button
+                onClick={() => {
+                  if (selectedProject.project_id) {
+                    navigate(`/creators/projects/${selectedProject.project_id}`);
+                  } else {
+                    navigate(`/creators/opportunities/${selectedProject.opportunity_id}`);
+                  }
+                }}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <ExternalLink className="h-4 w-4" />
+                <span>Ver Projeto</span>
+              </button>
+            )}
             <button
-              onClick={() => {
-                if (selectedProject.project_id) {
-                  navigate(`/creators/projects/${selectedProject.project_id}`);
-                } else {
-                  navigate(`/creators/opportunities/${selectedProject.opportunity_id}`);
-                }
-              }}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+              onClick={() => setIsEditingChatDetails((prev) => !prev)}
+              className="flex items-center gap-2 border border-gray-300 text-gray-700 hover:border-gray-400 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors"
             >
-              <ExternalLink className="h-4 w-4" />
-              <span>Ver Projeto</span>
+              <PencilLine className="h-4 w-4" />
+              <span>{isEditingChatDetails ? 'Fechar edição' : 'Editar detalhes'}</span>
             </button>
-          )}
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="flex items-center gap-2 border border-red-300 text-red-600 hover:border-red-400 hover:text-red-700 px-4 py-2 rounded-lg transition-colors"
+            >
+              <Trash2 className="h-4 w-4" />
+              <span>Apagar chat</span>
+            </button>
+          </div>
         </div>
+
+        {chatDetailsStatus && (
+          <div
+            className={`rounded-lg border px-4 py-3 text-sm ${
+              chatDetailsStatus.type === 'success'
+                ? 'border-green-200 bg-green-50 text-green-700'
+                : 'border-red-200 bg-red-50 text-red-700'
+            }`}
+          >
+            {chatDetailsStatus.message}
+          </div>
+        )}
+
+        {isEditingChatDetails && (
+          <div className="bg-white rounded-xl border border-gray-200 p-4">
+            <div className="grid gap-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Título personalizado
+                </label>
+                <input
+                  type="text"
+                  value={chatTitleInput}
+                  onChange={(event) => setChatTitleInput(event.target.value)}
+                  placeholder="Digite um título descritivo para este chat"
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  Deixe em branco para usar automaticamente o título da oportunidade.
+                </p>
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700">
+                  Tags (separadas por vírgula)
+                </label>
+                <input
+                  type="text"
+                  value={chatTagsInput}
+                  onChange={(event) => setChatTagsInput(event.target.value)}
+                  placeholder="ex: briefing, entrega, revisão"
+                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                />
+                <p className="mt-2 text-xs text-gray-500">
+                  Máximo de 10 tags. Use palavras-chave curtas para facilitar futuras buscas.
+                </p>
+              </div>
+              <div className="flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={handleCancelChatDetails}
+                  className="px-4 py-2 text-gray-600 hover:text-gray-900"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveChatDetails}
+                  disabled={savingChatDetails}
+                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+                >
+                  {savingChatDetails ? (
+                    <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-white"></span>
+                  ) : (
+                    <Check className="h-4 w-4" />
+                  )}
+                  <span>Salvar alterações</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Project Deleted Warning */}
         {isProjectDeleted && (
@@ -571,13 +796,6 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                   Este projeto foi encerrado ou removido. Você não pode mais enviar mensagens.
                 </p>
               </div>
-              <button
-                onClick={() => setShowDeleteConfirm(true)}
-                className="flex items-center gap-2 text-red-600 hover:text-red-800 px-3 py-1 rounded border border-red-300 hover:border-red-400 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-                <span>Apagar Chat</span>
-              </button>
             </div>
           </div>
         )}
@@ -694,57 +912,84 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
         {/* Conversations List */}
         <div className="divide-y divide-gray-200">
-          {projectChats.map((projectChat) => (
-            <div
-              key={projectChat.opportunity_id}
-              className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
-              onClick={() => navigate(`/creators/messages/${projectChat.opportunity_id}`)}
-            >
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-3">
-                  <img
-                    src="https://images.pexels.com/photos/3762800/pexels-photo-3762800.jpeg?auto=compress&cs=tinysrgb&w=50&h=50&fit=crop"
-                    alt={projectChat.analyst?.company || 'Empresa'}
-                    className="w-12 h-12 rounded-full object-cover"
-                  />
-                  <div className="flex-1">
-                    <div className="flex items-center space-x-2">
-                      <h3 className="font-semibold text-gray-900">{projectChat.analyst?.company || 'Empresa'}</h3>
-                      {projectChat.unread_count > 0 && (
-                        <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {projectChat.unread_count}
-                        </span>
+          {projectChats.map((projectChat) => {
+            const displayTitle = getChatDisplayTitle(projectChat);
+            const tags = (projectChat.tags || []) as string[];
+            const targetPathId = projectChat.opportunity_id || projectChat.project_id || projectChat.conversation_id;
+
+            return (
+              <div
+                key={projectChat.conversation_id || projectChat.opportunity_id}
+                className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                onClick={() => {
+                  if (targetPathId) {
+                    navigate(`/creators/messages/${targetPathId}`);
+                  } else {
+                    navigate('/creators/messages');
+                  }
+                }}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-3">
+                    <img
+                      src="https://images.pexels.com/photos/3762800/pexels-photo-3762800.jpeg?auto=compress&cs=tinysrgb&w=50&h=50&fit=crop"
+                      alt={projectChat.analyst?.company || 'Empresa'}
+                      className="w-12 h-12 rounded-full object-cover"
+                    />
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center space-x-2">
+                        <h3 className="font-semibold text-gray-900 truncate">{displayTitle}</h3>
+                        {projectChat.unread_count > 0 && (
+                          <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                            {projectChat.unread_count}
+                          </span>
+                        )}
+                        {/* Project status indicator */}
+                        {projectChat.opportunity?.status === 'inativo' || projectChat.opportunity?.status === 'deleted' ? (
+                          <div className="w-2 h-2 bg-red-500 rounded-full" title="Projeto encerrado"></div>
+                        ) : (
+                          <div className="w-2 h-2 bg-green-500 rounded-full" title="Projeto ativo"></div>
+                        )}
+                      </div>
+                      <p className="text-gray-500 text-xs mt-1">{projectChat.analyst?.company || 'Empresa'}</p>
+                      {projectChat.opportunity?.title && (
+                        <p className="text-gray-500 text-xs mt-1">{projectChat.opportunity.title}</p>
                       )}
-                      {/* Project status indicator */}
-                      {projectChat.opportunity?.status === 'inativo' || projectChat.opportunity?.status === 'deleted' ? (
-                        <div className="w-2 h-2 bg-red-500 rounded-full" title="Projeto encerrado"></div>
-                      ) : (
-                        <div className="w-2 h-2 bg-green-500 rounded-full" title="Projeto ativo"></div>
+                      {tags.length > 0 && (
+                        <div className="mt-2 flex flex-wrap gap-1">
+                          {tags.map((tag) => (
+                            <span
+                              key={tag}
+                              className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-700"
+                            >
+                              #{tag}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+                      {projectChat.lastMessage && (
+                        <p className="text-gray-600 text-sm truncate max-w-xs mt-2">
+                          {projectChat.lastMessage.sender_type === 'creator' ? 'Você: ' : ''}
+                          {projectChat.lastMessage.content}
+                        </p>
                       )}
                     </div>
-                    <p className="text-gray-500 text-xs mb-1">{projectChat.opportunity?.title || 'Oportunidade'}</p>
+                  </div>
+
+                  <div className="flex items-center space-x-2">
                     {projectChat.lastMessage && (
-                      <p className="text-gray-600 text-sm truncate max-w-xs">
-                        {projectChat.lastMessage.sender_type === 'creator' ? 'Você: ' : ''}
-                        {projectChat.lastMessage.content}
-                      </p>
+                      <span className="text-xs text-gray-500">
+                        {formatTime(projectChat.lastMessage.created_at)}
+                      </span>
                     )}
+                    <button className="p-1 hover:bg-gray-200 rounded">
+                      <MoreVertical className="h-4 w-4 text-gray-400" />
+                    </button>
                   </div>
                 </div>
-                
-                <div className="flex items-center space-x-2">
-                  {projectChat.lastMessage && (
-                    <span className="text-xs text-gray-500">
-                      {formatTime(projectChat.lastMessage.created_at)}
-                    </span>
-                  )}
-                  <button className="p-1 hover:bg-gray-200 rounded">
-                    <MoreVertical className="h-4 w-4 text-gray-400" />
-                  </button>
-                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
 
         {/* Empty State */}
