@@ -14,7 +14,20 @@ import {
   Upload,
   AlertCircle
 } from 'lucide-react';
-import { useSafeCollaborationData } from '../../hooks/useSafeCollaborationData';
+
+// Simple hook to replace removed useSafeCollaborationData
+const useSimpleCollaborationData = () => ({
+  activities: [],
+  onlineUsers: [],
+  unreadCount: 0,
+  loading: false,
+  error: null,
+  markActivityAsRead: (_activityId: string) => {},
+  markAllAsRead: () => {},
+  refreshData: () => {},
+  refetchActivities: () => {},
+  refetchOnlineUsers: () => {}
+});
 
 interface BasicCollaborationHubProps {
   className?: string;
@@ -54,7 +67,7 @@ const BasicCollaborationHub: React.FC<BasicCollaborationHubProps> = ({
     markAllAsRead,
     refetchActivities,
     refetchOnlineUsers
-  } = useSafeCollaborationData();
+  } = useSimpleCollaborationData();
 
   // Função para obter ícone baseado no tipo de atividade
   const getActivityIcon = (activityType?: string) => {
