@@ -1,5 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
 
+// These environment variables are safe to expose in the client-side bundle
+// VITE_SUPABASE_URL: Public Supabase project URL
+// VITE_SUPABASE_ANON_KEY: Public anonymous key for client-side access (designed to be exposed)
+// Row Level Security (RLS) in Supabase protects sensitive data even with exposed anon key
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 

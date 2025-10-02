@@ -248,7 +248,6 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
       }
 
       if (!applications || applications.length === 0) {
-        console.log('📭 Nenhuma candidatura aprovada encontrada');
         setProjects([]);
         return;
       }
@@ -257,7 +256,6 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
       const filteredApplications = applications.filter(app => {
         const opportunity = Array.isArray(app.opportunity) ? app.opportunity[0] : app.opportunity;
         const isFromAnalyst = opportunity && opportunity.created_by === user.id;
-        console.log(`🔍 Verificando oportunidade ${opportunity?.title}: criada por ${opportunity?.created_by}, analista atual: ${user.id}, match: ${isFromAnalyst}`);
         return isFromAnalyst;
       });
 

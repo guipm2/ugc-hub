@@ -111,7 +111,6 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
             
             // Se não existe registro na tabela analysts, criar automaticamente
             if (!analystData && userProfile.role === 'analyst') {
-              console.log('🔧 Creating missing analyst record for existing user');
               const { error: analystError } = await supabase
                 .from('analysts')
                 .insert({
@@ -199,7 +198,6 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
         // Se não existe registro na tabela analysts, criar automaticamente
         if (!analystData) {
-          console.log('🔧 Creating missing analyst record during login');
           const { error: analystError } = await supabase
             .from('analysts')
             .insert({

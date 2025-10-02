@@ -120,11 +120,6 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
 
       const projectsData = [];
       
-            console.log('📋 [PROJECTS] Dados das applications:', applications?.map(app => ({
-        id: app.id,
-        opportunity_id: app.opportunity_id
-      })));
-      
       for (const app of applications || []) {
         const opportunity = Array.isArray(app.opportunity) ? app.opportunity[0] : app.opportunity;
         
