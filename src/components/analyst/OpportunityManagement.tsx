@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Plus, Search, Filter, Edit, Trash2, Eye, Users, Target, UserCheck } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
+import { resolveSiteUrl } from '../../utils/siteUrl';
 import CreateOpportunityModal from './CreateOpportunityModal';
 import ApplicationsModal from './ApplicationsModal';
 import ViewOpportunityModal from './ViewOpportunityModal';
@@ -11,6 +12,7 @@ interface Opportunity {
   id: string;
   title: string;
   company: string;
+  company_link?: string;
   description: string;
   budget_min: number;
   budget_max: number;
@@ -19,9 +21,108 @@ interface Opportunity {
   requirements: string[];
   deadline: string;
   status: string;
+  age_range?: string;
+  gender?: string;
+  analyst_id: string;
+  created_by: string;
   candidates_count: number;
   created_at: string;
 }
+
+type NewOpportunityPayload = {
+  title: string;
+  company: string;
+  company_link?: string;
+  description: string;
+  budget_min: number;
+  budget_max: number;
+  location: string;
+  content_type: string;
+  requirements: string[];
+  deadline: string;
+  status: string;
+  age_range: string;
+  gender: string;
+};
+
+const OPPORTUNITY_CREATED_WEBHOOK_URL =
+  (import.meta.env.VITE_OPPORTUNITY_CREATED_WEBHOOK_URL as string | undefined) ??
+  'https://n8n.turbopartners.com.br/webhook/ugc-hub-turbo';
+
+type RawOpportunity = Partial<Opportunity> & Record<string, unknown>;
+
+const normalizeOpportunity = (raw: RawOpportunity, overrides: Partial<Opportunity> = {}): Opportunity => {
+  const safeArray = (value?: string[] | null) => (Array.isArray(value) ? value : []);
+
+  return {
+    id: (raw?.id as string) ?? overrides.id ?? '',
+    title: (raw?.title as string) ?? overrides.title ?? '',
+    company: (raw?.company as string) ?? overrides.company ?? '',
+    company_link: (raw?.company_link as string) ?? overrides.company_link ?? '',
+    description: (raw?.description as string) ?? overrides.description ?? '',
+    budget_min: typeof raw?.budget_min === 'number' ? (raw.budget_min as number) : overrides.budget_min ?? 0,
+    budget_max: typeof raw?.budget_max === 'number' ? (raw.budget_max as number) : overrides.budget_max ?? 0,
+    location: (raw?.location as string) ?? overrides.location ?? '',
+    content_type: (raw?.content_type as string) ?? overrides.content_type ?? '',
+    requirements: safeArray((raw as { requirements?: string[] }).requirements) ?? overrides.requirements ?? [],
+    deadline: (raw?.deadline as string) ?? overrides.deadline ?? '',
+    status: (raw?.status as string) ?? overrides.status ?? '',
+    age_range: (raw?.age_range as string) ?? overrides.age_range ?? '',
+    gender: (raw?.gender as string) ?? overrides.gender ?? '',
+    analyst_id: (raw?.analyst_id as string) ?? overrides.analyst_id ?? '',
+    created_by: (raw?.created_by as string) ?? overrides.created_by ?? '',
+    candidates_count: typeof raw?.candidates_count === 'number' ? raw.candidates_count : overrides.candidates_count ?? 0,
+    created_at: (raw?.created_at as string) ?? overrides.created_at ?? new Date().toISOString()
+  };
+};
+
+const notifyOpportunityCreated = async (opportunity: Opportunity) => {
+  if (!opportunity?.id || !OPPORTUNITY_CREATED_WEBHOOK_URL) {
+    return;
+  }
+
+  try {
+    const baseUrl = resolveSiteUrl();
+    const opportunityLink = `${baseUrl}/creators/opportunities/${opportunity.id}`;
+
+    const safeString = (value?: string | null) => (value ? String(value) : '');
+    const safeNumber = (value?: number | null) => (typeof value === 'number' && !Number.isNaN(value) ? value : '');
+    const safeArray = (value?: string[] | null) => (Array.isArray(value) ? value : []);
+
+    const response = await fetch(OPPORTUNITY_CREATED_WEBHOOK_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        opportunity_id: safeString(opportunity.id),
+        opportunity_link: opportunityLink,
+        title: safeString(opportunity.title),
+        company: safeString(opportunity.company),
+        company_link: safeString(opportunity.company_link),
+        description: safeString(opportunity.description),
+        budget_min: safeNumber(opportunity.budget_min),
+        budget_max: safeNumber(opportunity.budget_max),
+        location: safeString(opportunity.location),
+        content_type: safeString(opportunity.content_type),
+        requirements: safeArray(opportunity.requirements),
+        deadline: safeString(opportunity.deadline),
+        status: safeString(opportunity.status),
+        age_range: safeString(opportunity.age_range),
+        gender: safeString(opportunity.gender),
+        analyst_id: safeString(opportunity.analyst_id),
+        created_by: safeString(opportunity.created_by),
+        created_at: safeString(opportunity.created_at)
+      })
+    });
+
+    if (!response.ok) {
+      console.error('Webhook de oportunidade retornou um status inesperado:', response.status, response.statusText);
+    }
+  } catch (error) {
+    console.error('Erro ao notificar webhook de nova oportunidade:', error);
+  }
+};
 
 const OpportunityManagement: React.FC = () => {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
@@ -62,10 +163,9 @@ const OpportunityManagement: React.FC = () => {
               console.error('Erro ao buscar contagem de candidatos:', countError);
             }
 
-            return {
-              ...opp,
+            return normalizeOpportunity(opp as RawOpportunity, {
               candidates_count: count || 0
-            };
+            });
           })
         );
 
@@ -82,7 +182,7 @@ const OpportunityManagement: React.FC = () => {
     fetchOpportunities();
   }, [fetchOpportunities]);
 
-  const handleCreateOpportunity = async (opportunityData: Record<string, unknown>) => {
+  const handleCreateOpportunity = async (opportunityData: NewOpportunityPayload) => {
     if (!profile) return;
 
     try {
@@ -102,8 +202,15 @@ const OpportunityManagement: React.FC = () => {
         console.error('Erro ao criar oportunidade:', error);
         // REMOVIDO: alert('Erro ao criar oportunidade');
       } else {
-        setOpportunities([data, ...opportunities]);
+        const createdOpportunity = normalizeOpportunity(data as RawOpportunity, {
+          analyst_id: profile.id,
+          created_by: profile.id,
+          candidates_count: 0
+        });
+
+        setOpportunities([createdOpportunity, ...opportunities]);
         setShowCreateModal(false);
+        void notifyOpportunityCreated(createdOpportunity);
         // REMOVIDO: alert('Oportunidade criada com sucesso!');
       }
     } catch (err) {
