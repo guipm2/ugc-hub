@@ -3,6 +3,7 @@ import { MessageCircle, Search, MoreVertical, Send, ArrowLeft, ExternalLink, Ale
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 
 interface ProjectChat {
   project_id: string;
@@ -276,6 +277,8 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
     }
   }, [user, fetchProjectChats]);
 
+  useAutoRefresh(fetchProjectChats, 20000, Boolean(user));
+
   const createConversationForProject = useCallback(async (projectId: string) => {
     try {
       // First, get project details
@@ -391,6 +394,17 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
             setMessages([]); // Limpar mensagens se não há conversa
     }
   }, [selectedProject, fetchMessages, user]);
+
+        useAutoRefresh(
+          () => {
+            if (selectedProject?.conversation_id) {
+              return fetchMessages(selectedProject.conversation_id);
+            }
+            return undefined;
+          },
+          12000,
+          Boolean(selectedProject?.conversation_id)
+        );
 
   // Scroll to bottom when messages change
   useEffect(() => {

@@ -3,6 +3,7 @@ import { MessageCircle, Search, MoreVertical, Send, ArrowLeft, ExternalLink, Ale
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRouter } from '../../hooks/useRouter';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 
 // Unified conversation - one per analyst-creator pair
 interface UnifiedConversation {
@@ -427,6 +428,8 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
     fetchConversations();
   }, [fetchConversations]);
 
+  useAutoRefresh(fetchConversations, 20000, Boolean(analyst));
+
   useEffect(() => {
     if (selectedConversationId) {
       const conversation = conversations.find(c => c.id === selectedConversationId);
@@ -442,6 +445,17 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
       fetchMessages(selectedConversation.id);
     }
   }, [selectedConversation, fetchMessages]);
+
+  useAutoRefresh(
+    () => {
+      if (selectedConversation?.id) {
+        return fetchMessages(selectedConversation.id);
+      }
+      return undefined;
+    },
+    12000,
+    Boolean(selectedConversation?.id)
+  );
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

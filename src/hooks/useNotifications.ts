@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { useAutoRefresh } from './useAutoRefresh';
 
 export interface Notification {
   id: string;
@@ -58,6 +59,8 @@ export const useNotifications = () => {
       setLoading(false);
     }
   }, [user]);
+
+  useAutoRefresh(fetchNotifications, 15000, Boolean(user));
 
   const markAsRead = async (notificationId: string) => {
     if (!user) return;

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAnalystAuth } from '../contexts/AnalystAuthContext';
+import { useAutoRefresh } from './useAutoRefresh';
 
 export interface AnalystNotification {
   id: string;
@@ -59,6 +60,8 @@ export const useAnalystNotifications = () => {
       setLoading(false);
     }
   }, [user]);
+
+  useAutoRefresh(fetchNotifications, 15000, Boolean(user));
 
   const markAsRead = useCallback(async (notificationId: string) => {
     if (!user) return;

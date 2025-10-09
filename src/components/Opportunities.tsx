@@ -3,6 +3,7 @@ import { Search, Clock, MapPin, DollarSign, Users, Eye, Heart, Send, X, Grid3X3,
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 
 interface Opportunity {
   id: string;
@@ -40,8 +41,10 @@ const Opportunities = () => {
   const { user } = useAuth();
   const { navigate } = useRouter();
 
-  const fetchOpportunities = useCallback(async () => {
-    setLoading(true);
+  const fetchOpportunities = useCallback(async ({ silent = false } = {}) => {
+    if (!silent) {
+      setLoading(true);
+    }
 
     try {
       const [opportunitiesResponse, applicationsResponse] = await Promise.all([
@@ -117,13 +120,17 @@ const Opportunities = () => {
       console.error('Erro ao buscar oportunidades:', err);
       setOpportunities([]);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [user]);
 
   useEffect(() => {
     fetchOpportunities();
   }, [fetchOpportunities]);
+
+  useAutoRefresh(() => fetchOpportunities({ silent: true }), 20000, true);
 
   const filteredOpportunities = opportunities.filter(opportunity => {
     const matchesSearch = opportunity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -173,8 +180,8 @@ const Opportunities = () => {
       }
 
       // REMOVIDO: alert('Candidatura enviada com sucesso!');
-      // Refresh opportunities to update application status
-      fetchOpportunities();
+  // Refresh opportunities to update application status
+  fetchOpportunities({ silent: true });
     } catch (err) {
       console.error('Erro ao se candidatar:', err);
       // REMOVIDO: alert('Erro ao se candidatar. Tente novamente.');
@@ -206,8 +213,8 @@ const Opportunities = () => {
         }
       } else {
         // REMOVIDO: alert('Candidatura cancelada com sucesso!');
-        // Refresh opportunities to update application status
-        fetchOpportunities();
+  // Refresh opportunities to update application status
+  fetchOpportunities({ silent: true });
       }
     } catch (err) {
       console.error('Erro ao cancelar candidatura:', err);

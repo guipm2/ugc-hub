@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import ProjectInfo from './ProjectInfo';
 import { router } from '../utils/router';
+import { useAutoRefresh } from '../hooks/useAutoRefresh';
 
 // Helper function to navigate to project
 const navigateToProject = (projectId: string) => {
@@ -218,6 +219,8 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
       mounted = false;
     };
   }, [user, fetchProjects, fetching]);
+
+  useAutoRefresh(fetchProjects, 25000, Boolean(user));
 
   const getProjectStatus = (deadline: string, deliverables?: Deliverable[]): 'em_andamento' | 'entregue' | 'aprovado' | 'atrasado' => {
     const deadlineDate = new Date(deadline);
