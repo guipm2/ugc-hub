@@ -1,5 +1,23 @@
 const onlyDigits = (value: string) => value.replace(/\D/g, '');
 
+export const detectDocumentType = (value: string): 'cpf' | 'cnpj' | null => {
+  const digits = onlyDigits(value);
+
+  if (!digits.length) {
+    return null;
+  }
+
+  if (digits.length > 11) {
+    return 'cnpj';
+  }
+
+  if (digits.length === 11) {
+    return 'cpf';
+  }
+
+  return null;
+};
+
 export const formatCPF = (value: string) => {
   const digits = onlyDigits(value).slice(0, 11);
 
@@ -25,8 +43,16 @@ export const formatCNPJ = (value: string) => {
   return `${digits.slice(0, 2)}.${digits.slice(2, 5)}.${digits.slice(5, 8)}/${digits.slice(8, 12)}-${digits.slice(12)}`;
 };
 
-export const formatDocument = (value: string, type: 'cpf' | 'cnpj') => {
-  return type === 'cnpj' ? formatCNPJ(value) : formatCPF(value);
+export const formatDocument = (value: string, type?: 'cpf' | 'cnpj') => {
+  const digits = onlyDigits(value);
+
+  if (!digits.length) {
+    return '';
+  }
+
+  const documentType = type ?? (digits.length > 11 ? 'cnpj' : 'cpf');
+
+  return documentType === 'cnpj' ? formatCNPJ(digits) : formatCPF(digits);
 };
 
 export const formatCEP = (value: string) => {
