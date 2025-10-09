@@ -86,7 +86,7 @@ const NotificationDropdown: React.FC = () => {
     <div className="relative">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="relative p-2 text-gray-400 hover:text-gray-600 transition-colors"
+        className="relative p-2 text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-300 dark:hover:text-gray-100"
       >
         <Bell className="h-5 w-5" />
         {unreadCount > 0 && (
@@ -102,14 +102,14 @@ const NotificationDropdown: React.FC = () => {
             className="fixed inset-0 z-10"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
-            <div className="p-4 border-b border-gray-200">
+          <div className="absolute right-0 mt-2 w-80 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900 z-20">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-700">
               <div className="flex items-center justify-between">
-                <h3 className="font-semibold text-gray-900">Notificações</h3>
+                <h3 className="font-semibold text-gray-900 dark:text-gray-100">Notificações</h3>
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="text-sm text-blue-600 hover:text-blue-700"
+                    className="text-sm text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
                   >
                     Marcar todas como lidas
                   </button>
@@ -119,16 +119,16 @@ const NotificationDropdown: React.FC = () => {
 
             <div className="max-h-96 overflow-y-auto">
               {notifications.length === 0 ? (
-                <div className="p-4 text-center text-gray-500">
-                  <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+                <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                  <Bell className="h-8 w-8 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                   <p>Nenhuma notificação</p>
                 </div>
               ) : (
                 notifications.map((notification) => (
                   <div
                     key={notification.id}
-                    className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                      !notification.read ? 'bg-blue-50' : ''
+                    className={`p-4 cursor-pointer border-b border-gray-100 transition-colors hover:bg-gray-50 dark:border-gray-800 dark:hover:bg-gray-800/70 ${
+                      !notification.read ? 'bg-blue-50 dark:bg-blue-900/40' : ''
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
@@ -138,19 +138,19 @@ const NotificationDropdown: React.FC = () => {
                       </div>
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between">
-                          <p className="text-sm font-medium text-gray-900 truncate">
+                          <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                             {notification.title}
                           </p>
                           <div className="flex items-center space-x-2">
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
                               {formatTime(notification.created_at)}
                             </span>
                             {!notification.read && (
-                              <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                              <div className="h-2 w-2 rounded-full bg-blue-600"></div>
                             )}
                           </div>
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">
+                        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
                           {notification.message}
                         </p>
                       </div>
@@ -161,8 +161,8 @@ const NotificationDropdown: React.FC = () => {
             </div>
 
             {notifications.length > 0 && (
-              <div className="p-3 border-t border-gray-200">
-                <button className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium">
+              <div className="p-3 border-t border-gray-200 dark:border-gray-700">
+                <button className="w-full text-sm font-medium text-blue-600 transition-colors hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
                   Ver todas as notificações
                 </button>
               </div>

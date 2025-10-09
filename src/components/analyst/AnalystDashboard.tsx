@@ -6,6 +6,7 @@ import AnalystGlobalSearch from './AnalystGlobalSearch';
 import AnalystRouter from './AnalystRouter';
 import AnalystNotificationDropdown from './NotificationDropdown';
 import BasicCollaborationHub from '../collaboration/BasicCollaborationHub';
+import ThemeToggle from '../ThemeToggle';
 
 interface AnalystDashboardProps {
   onOpenConversation: (conversationId: string) => void;
@@ -47,23 +48,23 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen flex bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-950 dark:text-gray-100">
       {/* Sidebar */}
       <div 
-        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-50 overflow-hidden ${
+        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-50 overflow-hidden dark:bg-gray-900 dark:border-gray-800 ${
           sidebarExpanded ? 'w-64' : 'w-16'
         }`}
       >
         {/* Logo */}
         <div 
-          className="flex items-center h-16 px-4 border-b border-gray-200"
+          className="flex items-center h-16 px-4 border-b border-gray-200 dark:border-gray-800"
           onMouseEnter={() => setSidebarExpanded(true)}
           onMouseLeave={() => setSidebarExpanded(false)}
         >
           <div className="w-8 h-8 bg-purple-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
             UGC
           </div>
-          <span className={`ml-3 font-semibold text-gray-900 transition-opacity duration-300 ${
+          <span className={`ml-3 font-semibold text-gray-900 transition-opacity duration-300 dark:text-gray-100 ${
             sidebarExpanded ? 'opacity-100' : 'opacity-0'
           }`}>
             UGC Hub
@@ -86,11 +87,11 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
                 onClick={() => navigate(item.path)}
                 className={`w-full flex items-center px-3 py-3 mb-1 rounded-lg text-left transition-all duration-200 group relative ${
                   isActive 
-                    ? 'bg-purple-50 text-purple-600 border-r-2 border-purple-600' 
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-purple-50 text-purple-600 border-r-2 border-purple-600 dark:bg-purple-900/40 dark:text-purple-300 dark:border-purple-400' 
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800/80 dark:hover:text-gray-100'
                 }`}
               >
-                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-purple-600' : 'text-gray-400'}`} />
+                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-purple-600 dark:text-purple-300' : 'text-gray-400 dark:text-gray-500'}`} />
                 <span className={`ml-3 transition-opacity duration-300 ${
                   sidebarExpanded ? 'opacity-100' : 'opacity-0'
                 }`}>
@@ -99,7 +100,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
                 
                 {/* Tooltip for collapsed state */}
                 {!sidebarExpanded && (
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 dark:bg-gray-700">
                     {item.label}
                   </div>
                 )}
@@ -117,7 +118,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowSidebarUserDropdown(!showSidebarUserDropdown)}
-              className={`w-full flex items-center rounded-lg hover:bg-gray-50 cursor-pointer transition-all duration-300 group ${
+              className={`w-full flex items-center rounded-lg cursor-pointer transition-all duration-300 group hover:bg-gray-50 dark:hover:bg-gray-800/80 ${
                 sidebarExpanded ? 'px-3 py-2' : 'px-2 py-2 justify-center'
               }`}
             >
@@ -127,8 +128,8 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
               <div className={`ml-3 transition-opacity duration-300 min-w-0 flex-1 ${
                 sidebarExpanded ? 'opacity-100' : 'opacity-0'
               }`}>
-                <div className="text-sm font-medium text-gray-900 truncate">{profile?.name}</div>
-                <div className="text-xs text-gray-500">{profile?.company}</div>
+                <div className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">{profile?.name}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">{profile?.company}</div>
               </div>
             </button>
             
@@ -146,14 +147,14 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
                   className="fixed inset-0 z-10"
                   onClick={() => setShowSidebarUserDropdown(false)}
                 />
-                <div className="absolute bottom-full left-0 mb-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                <div className="absolute bottom-full left-0 mb-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900 z-20">
                   <div className="py-1">
                     <button
                       onClick={() => {
                         setShowSidebarUserDropdown(false);
                         navigate('/analysts/profile');
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
                     >
                       Meu Perfil
                     </button>
@@ -162,7 +163,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
                         navigate('/analysts/settings');
                         setShowSidebarUserDropdown(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
                     >
                       Configurações da Conta
                     </button>
@@ -172,7 +173,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
                         setShowSidebarUserDropdown(false);
                         signOut();
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
                     >
                       Sair
                     </button>
@@ -187,23 +188,24 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
       {/* Main Content */}
       <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'ml-64' : 'ml-16'}`}>
         {/* Top Header */}
-        <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 fixed top-0 right-0 z-40" style={{ left: sidebarExpanded ? '256px' : '64px' }}>
+        <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 fixed top-0 right-0 z-40 transition-colors duration-300 dark:bg-gray-900 dark:border-gray-800" style={{ left: sidebarExpanded ? '256px' : '64px' }}>
           <AnalystGlobalSearch />
           
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             <AnalystNotificationDropdown />
             
             <div className="relative">
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+                className="flex items-center space-x-3 rounded-lg px-2 py-1 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/80"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
                   {profile?.name?.charAt(0) || profile?.email?.charAt(0).toUpperCase()}
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-medium text-gray-900">{profile?.name}</div>
-                  <div className="text-xs text-gray-500">{profile?.company}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{profile?.name}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">{profile?.company}</div>
                 </div>
               </button>
 
@@ -213,14 +215,14 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
                     className="fixed inset-0 z-10"
                     onClick={() => setShowUserDropdown(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                  <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900 z-20">
                     <div className="py-1">
                       <button
                         onClick={() => {
                           setShowUserDropdown(false);
                           navigate('/analysts/profile');
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
                       >
                         Meu Perfil
                       </button>
@@ -229,7 +231,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
                           navigate('/analysts/settings');
                           setShowUserDropdown(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
                       >
                         Configurações da Conta
                       </button>
@@ -239,7 +241,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
                           setShowUserDropdown(false);
                           signOut();
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
                       >
                         Sair
                       </button>

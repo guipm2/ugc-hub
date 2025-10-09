@@ -14,6 +14,7 @@ import AnalystLoginPage from './components/auth/AnalystLoginPage';
 import EmailConfirmationPage from './components/auth/EmailConfirmationPage';
 import AnalystDashboard from './components/analyst/AnalystDashboard';
 import LandingPage from './components/LandingPage';
+import ThemeToggle from './components/ThemeToggle';
 
 function AnalystApp() {
   const { profile, loading } = useAnalystAuth();
@@ -32,13 +33,13 @@ function AnalystApp() {
   // Se ainda está carregando, mostra loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 bg-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl mb-4 mx-auto">
             UGC
           </div>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Carregando...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Carregando...</p>
         </div>
       </div>
     );
@@ -138,13 +139,13 @@ function CreatorApp() {
   // Se ainda está carregando, mostra loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl mb-4 mx-auto">
             UGC
           </div>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Carregando...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Carregando...</p>
         </div>
       </div>
     );
@@ -164,20 +165,20 @@ function CreatorApp() {
   // Se ainda está carregando profile sem timeout
   if (!profile && !profileTimeout) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
         <div className="text-center">
           <div className="w-16 h-16 bg-blue-600 rounded-xl flex items-center justify-center text-white font-bold text-xl mb-4 mx-auto">
             UGC
           </div>
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="text-gray-600 mt-4">Carregando perfil...</p>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">Carregando perfil...</p>
           
           {/* Botão de emergência para forçar logout */}
           <button
             onClick={() => {
               signOut();
             }}
-            className="mt-8 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm"
+            className="mt-8 px-4 py-2 bg-red-600 text-white rounded-lg transition-colors hover:bg-red-700 dark:hover:bg-red-500"
           >
             Forçar Logout (Caso Esteja Travado)
           </button>
@@ -213,23 +214,23 @@ function CreatorApp() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div className="min-h-screen flex bg-gray-50 text-gray-900 transition-colors duration-300 dark:bg-gray-950 dark:text-gray-100">
       {/* Sidebar */}
       <div 
-        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-50 overflow-hidden ${
+        className={`fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-50 overflow-hidden dark:bg-gray-900 dark:border-gray-800 ${
           sidebarExpanded ? 'w-64' : 'w-16'
         }`}
       >
         {/* Logo */}
         <div 
-          className="flex items-center h-16 px-4 border-b border-gray-200"
+          className="flex items-center h-16 px-4 border-b border-gray-200 dark:border-gray-800"
           onMouseEnter={() => setSidebarExpanded(true)}
           onMouseLeave={() => setSidebarExpanded(false)}
         >
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-sm">
             UGC
           </div>
-          <span className={`ml-3 font-semibold text-gray-900 transition-opacity duration-300 ${
+          <span className={`ml-3 font-semibold text-gray-900 transition-opacity duration-300 dark:text-gray-100 ${
             sidebarExpanded ? 'opacity-100' : 'opacity-0'
           }`}>
             UGC Hub
@@ -252,11 +253,11 @@ function CreatorApp() {
                 onClick={() => navigate(item.path)}
                 className={`w-full flex items-center px-3 py-3 mb-1 rounded-lg text-left transition-all duration-200 group relative ${
                   isActive 
-                    ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600' 
-                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
+                    ? 'bg-blue-50 text-blue-600 border-r-2 border-blue-600 dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-400' 
+                    : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900 dark:text-gray-300 dark:hover:bg-gray-800/80 dark:hover:text-gray-100'
                 }`}
               >
-                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600' : 'text-gray-400'}`} />
+                <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-blue-600 dark:text-blue-300' : 'text-gray-400 dark:text-gray-500'}`} />
                 <span className={`ml-3 transition-opacity duration-300 ${
                   sidebarExpanded ? 'opacity-100' : 'opacity-0'
                 }`}>
@@ -265,7 +266,7 @@ function CreatorApp() {
                 {item.locked && (
                   <Lock className={`w-4 h-4 ml-auto flex-shrink-0 transition-opacity duration-300 ${
                     sidebarExpanded ? 'opacity-100' : 'opacity-0'
-                  } text-gray-400`} />
+                  } text-gray-400 dark:text-gray-500`} />
                 )}
                 {item.badge && (
                   <span className={`ml-auto bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center transition-opacity duration-300 ${
@@ -277,7 +278,7 @@ function CreatorApp() {
                 
                 {/* Tooltip for collapsed state */}
                 {!sidebarExpanded && (
-                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
+                  <div className="absolute left-full ml-2 px-2 py-1 bg-gray-900 text-white text-sm rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50 dark:bg-gray-700">
                     {item.label} {item.locked && '🔒'}
                   </div>
                 )}
@@ -305,8 +306,8 @@ function CreatorApp() {
               <div className={`ml-3 transition-opacity duration-300 min-w-0 flex-1 ${
                 sidebarExpanded ? 'opacity-100' : 'opacity-0'
               }`}>
-                <div className="text-sm font-medium text-gray-900 truncate">{user.user_metadata?.name || user.email}</div>
-                <div className="text-xs text-gray-500">Criador</div>
+                <div className="text-sm font-medium text-gray-900 truncate dark:text-gray-100">{user.user_metadata?.name || user.email}</div>
+                <div className="text-xs text-gray-500 dark:text-gray-400">Criador</div>
               </div>
             </button>
 
@@ -317,14 +318,14 @@ function CreatorApp() {
                   className="fixed inset-0 z-10"
                   onClick={() => setShowSidebarUserDropdown(false)}
                 />
-                <div className={`absolute bottom-full mb-2 ${sidebarExpanded ? 'left-0' : 'left-1/2 transform -translate-x-1/2'} w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20`}>
+                <div className={`absolute bottom-full mb-2 ${sidebarExpanded ? 'left-0' : 'left-1/2 transform -translate-x-1/2'} w-48 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900 z-20`}>
                   <div className="py-1">
                     <button
                       onClick={() => {
                         navigate('/creators/profile');
                         setShowSidebarUserDropdown(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
                     >
                       Meu Perfil
                     </button>
@@ -333,7 +334,7 @@ function CreatorApp() {
                         navigate('/creators/settings');
                         setShowSidebarUserDropdown(false);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                      className="w-full text-left px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
                     >
                       Configurações da Conta
                     </button>
@@ -343,7 +344,7 @@ function CreatorApp() {
                         setShowSidebarUserDropdown(false);
                         signOut();
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      className="w-full text-left px-4 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
                     >
                       Sair
                     </button>
@@ -358,22 +359,23 @@ function CreatorApp() {
       {/* Main Content */}
       <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'ml-64' : 'ml-16'}`}>
         {/* Top Header */}
-        <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 fixed top-0 right-0 z-40" style={{ left: sidebarExpanded ? '256px' : '64px' }}>
+        <header className="bg-white border-b border-gray-200 h-16 flex items-center justify-between px-6 fixed top-0 right-0 z-40 transition-colors duration-300 dark:bg-gray-900 dark:border-gray-800" style={{ left: sidebarExpanded ? '256px' : '64px' }}>
           <GlobalSearch />
           
           <div className="flex items-center space-x-4">
+            <ThemeToggle />
             <NotificationDropdown />
             <div className="relative">
               <button
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
-                className="flex items-center space-x-3 hover:bg-gray-50 rounded-lg px-2 py-1 transition-colors"
+                className="flex items-center space-x-3 rounded-lg px-2 py-1 transition-colors hover:bg-gray-50 dark:hover:bg-gray-800/80"
               >
                 <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium">
                   {user.user_metadata?.name?.charAt(0) || user.email?.charAt(0).toUpperCase()}
                 </div>
                 <div className="text-left">
-                  <div className="text-sm font-medium text-gray-900">{user.user_metadata?.name || user.email}</div>
-                  <div className="text-xs text-gray-500">Criador</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-gray-100">{user.user_metadata?.name || user.email}</div>
+                  <div className="text-xs text-gray-500 dark:text-gray-400">Criador</div>
                 </div>
               </button>
 
@@ -383,14 +385,14 @@ function CreatorApp() {
                     className="fixed inset-0 z-10"
                     onClick={() => setShowUserDropdown(false)}
                   />
-                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-20">
+                  <div className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-200 bg-white shadow-lg dark:border-gray-700 dark:bg-gray-900 z-20">
                     <div className="py-1">
                       <button
                         onClick={() => {
                           navigate('/creators/profile');
                           setShowUserDropdown(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
                       >
                         Meu Perfil
                       </button>
@@ -399,7 +401,7 @@ function CreatorApp() {
                           navigate('/creators/settings');
                           setShowUserDropdown(false);
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-100 dark:text-gray-200 dark:hover:bg-gray-800"
                       >
                         Configurações da Conta
                       </button>
@@ -409,7 +411,7 @@ function CreatorApp() {
                           setShowUserDropdown(false);
                           signOut();
                         }}
-                        className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        className="w-full text-left px-4 py-2 text-sm text-red-600 transition-colors hover:bg-red-50 dark:hover:bg-red-500/10"
                       >
                         Sair
                       </button>

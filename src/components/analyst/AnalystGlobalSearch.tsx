@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Search, X, Target, Users, Building, MessageCircle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
@@ -9,7 +9,7 @@ interface SearchResult {
   title: string;
   subtitle: string;
   avatar?: string;
-  data: any;
+  data: Record<string, unknown>;
 }
 
 interface AnalystGlobalSearchProps {
@@ -40,16 +40,7 @@ const AnalystGlobalSearch: React.FC<AnalystGlobalSearchProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    if (searchTerm.length >= 2) {
-      performSearch();
-    } else {
-      setResults([]);
-      setIsOpen(false);
-    }
-  }, [searchTerm]);
-
-  const performSearch = async () => {
+  const performSearch = useCallback(async () => {
     setLoading(true);
     const searchResults: SearchResult[] = [];
 
@@ -142,7 +133,16 @@ const AnalystGlobalSearch: React.FC<AnalystGlobalSearchProps> = ({
     } finally {
       setLoading(false);
     }
-  };
+  }, [analyst, searchTerm]);
+
+  useEffect(() => {
+    if (searchTerm.length >= 2) {
+      performSearch();
+    } else {
+      setResults([]);
+      setIsOpen(false);
+    }
+  }, [searchTerm, performSearch]);
 
   const getIcon = (type: string) => {
     switch (type) {
@@ -177,7 +177,7 @@ const AnalystGlobalSearch: React.FC<AnalystGlobalSearchProps> = ({
     }
 
     return (
-      <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
+      <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
         {getIcon(result.type)}
       </div>
     );
@@ -214,12 +214,12 @@ const AnalystGlobalSearch: React.FC<AnalystGlobalSearchProps> = ({
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           onFocus={() => searchTerm.length >= 2 && setIsOpen(true)}
-          className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+          className="w-full rounded-lg border border-gray-300 bg-white pl-10 pr-10 py-2 text-sm transition-colors focus:border-transparent focus:ring-2 focus:ring-purple-500 placeholder:text-gray-400 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-100 dark:placeholder:text-gray-500 dark:focus:ring-purple-400"
         />
         {searchTerm && (
           <button
             onClick={clearSearch}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 transition-colors hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
           >
             <X className="h-4 w-4" />
           </button>
@@ -227,9 +227,9 @@ const AnalystGlobalSearch: React.FC<AnalystGlobalSearchProps> = ({
       </div>
 
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-96 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-2 max-h-96 overflow-hidden rounded-lg border border-gray-200 bg-white shadow-lg transition-colors dark:border-gray-700 dark:bg-gray-900 z-50">
           {/* Category Filters */}
-          <div className="p-4 border-b border-gray-200">
+          <div className="p-4 border-b border-gray-200 dark:border-gray-700">
             <div className="flex gap-2 flex-wrap">
               {categories.map(category => (
                 <button
@@ -237,8 +237,8 @@ const AnalystGlobalSearch: React.FC<AnalystGlobalSearchProps> = ({
                   onClick={() => setActiveCategory(category)}
                   className={`px-3 py-1 text-sm rounded-full transition-colors ${
                     activeCategory === category
-                      ? 'bg-purple-100 text-purple-700 font-medium'
-                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                      ? 'bg-purple-100 text-purple-700 font-medium dark:bg-purple-900/30 dark:text-purple-300'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700'
                   }`}
                 >
                   {category}
@@ -254,8 +254,8 @@ const AnalystGlobalSearch: React.FC<AnalystGlobalSearchProps> = ({
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-purple-600 mx-auto"></div>
               </div>
             ) : filteredResults.length === 0 ? (
-              <div className="p-4 text-center text-gray-500">
-                <Search className="h-8 w-8 mx-auto mb-2 text-gray-300" />
+              <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                <Search className="h-8 w-8 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
                 <p>Nenhum resultado encontrado</p>
               </div>
             ) : (
@@ -263,16 +263,16 @@ const AnalystGlobalSearch: React.FC<AnalystGlobalSearchProps> = ({
                 {/* Creators */}
                 {groupedResults.creators.length > 0 && (
                   <div className="mb-4">
-                    <h3 className="text-sm font-medium text-gray-500 px-3 py-2">Criadores</h3>
+                    <h3 className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">Criadores</h3>
                     {groupedResults.creators.map(result => (
                       <div
                         key={result.id}
-                        className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                        className="flex items-center gap-3 p-3 transition-colors rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/80"
                       >
                         {getAvatar(result)}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{result.title}</p>
-                          <p className="text-sm text-gray-600 truncate">{result.subtitle}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{result.title}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{result.subtitle}</p>
                         </div>
                         <MessageCircle className="h-4 w-4 text-blue-600" />
                       </div>
@@ -283,16 +283,16 @@ const AnalystGlobalSearch: React.FC<AnalystGlobalSearchProps> = ({
                 {/* Opportunities */}
                 {groupedResults.opportunities.length > 0 && (
                   <div className="mb-4">
-                    <h3 className="text-sm font-medium text-gray-500 px-3 py-2">Minhas Oportunidades</h3>
+                    <h3 className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">Minhas Oportunidades</h3>
                     {groupedResults.opportunities.map(result => (
                       <div
                         key={result.id}
-                        className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                        className="flex items-center gap-3 p-3 transition-colors rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/80"
                       >
                         {getAvatar(result)}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{result.title}</p>
-                          <p className="text-sm text-gray-600 truncate">{result.subtitle}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{result.title}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{result.subtitle}</p>
                         </div>
                         <Target className="h-4 w-4 text-purple-600" />
                       </div>
@@ -303,16 +303,16 @@ const AnalystGlobalSearch: React.FC<AnalystGlobalSearchProps> = ({
                 {/* Companies */}
                 {groupedResults.companies.length > 0 && (
                   <div className="mb-4">
-                    <h3 className="text-sm font-medium text-gray-500 px-3 py-2">Empresas</h3>
+                    <h3 className="px-3 py-2 text-sm font-medium text-gray-500 dark:text-gray-400">Empresas</h3>
                     {groupedResults.companies.map(result => (
                       <div
                         key={result.id}
-                        className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer transition-colors"
+                        className="flex items-center gap-3 p-3 transition-colors rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/80"
                       >
                         {getAvatar(result)}
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 truncate">{result.title}</p>
-                          <p className="text-sm text-gray-600 truncate">{result.subtitle}</p>
+                          <p className="font-medium text-gray-900 dark:text-gray-100 truncate">{result.title}</p>
+                          <p className="text-sm text-gray-600 dark:text-gray-400 truncate">{result.subtitle}</p>
                         </div>
                         <Building className="h-4 w-4 text-green-600" />
                       </div>

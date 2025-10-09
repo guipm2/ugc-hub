@@ -1,3 +1,101 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+:root {
+	color-scheme: light;
+}
+
+.dark {
+	color-scheme: dark;
+}
+
+body {
+	background-color: #f9fafb;
+	color: #111827;
+	transition: background-color 0.3s ease-in-out, color 0.3s ease-in-out;
+}
+
+.dark body {
+	background-color: #020617;
+	color: #e2e8f0;
+}
+
+@layer base {
+	.dark .bg-white,
+	.dark .bg-gray-50,
+	.dark .bg-gray-100 {
+		background-color: #0f172a;
+	}
+
+	.dark .bg-gray-200,
+	.dark .bg-gray-300 {
+		background-color: #1e293b;
+	}
+
+	.dark .bg-white\/80,
+	.dark .bg-white\/70,
+	.dark .bg-white\/60 {
+		background-color: rgba(15, 23, 42, 0.8);
+	}
+
+	.dark .bg-blue-50 {
+		background-color: rgba(59, 130, 246, 0.12);
+	}
+
+	.dark .bg-purple-50 {
+		background-color: rgba(168, 85, 247, 0.12);
+	}
+
+	.dark .bg-green-50 {
+		background-color: rgba(34, 197, 94, 0.14);
+	}
+
+	.dark .bg-red-50 {
+		background-color: rgba(248, 113, 113, 0.14);
+	}
+
+	.dark .bg-yellow-50 {
+		background-color: rgba(234, 179, 8, 0.14);
+	}
+
+	.dark .text-gray-900,
+	.dark .text-gray-800,
+	.dark .text-gray-700 {
+		color: #f8fafc;
+	}
+
+	.dark .text-gray-600 {
+		color: #cbd5f5;
+	}
+
+	.dark .text-gray-500 {
+		color: #94a3b8;
+	}
+
+	.dark .text-gray-400 {
+		color: #94a3b8;
+	}
+
+	.dark .border-gray-100,
+	.dark .border-gray-200,
+	.dark .border-gray-300 {
+		border-color: #1f2937;
+	}
+
+	.dark .shadow-lg,
+	.dark .shadow-xl,
+	.dark .shadow-2xl {
+		--tw-shadow-color: rgba(15, 23, 42, 0.8);
+		--tw-shadow: 0 20px 45px -18px var(--tw-shadow-color);
+	}
+
+	.dark .hover\:bg-gray-50:hover,
+	.dark .hover\:bg-gray-100:hover {
+		background-color: #1e293b;
+	}
+
+	.dark .hover\:bg-red-50:hover {
+		background-color: rgba(248, 113, 113, 0.18);
+	}
+}

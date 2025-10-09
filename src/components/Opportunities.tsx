@@ -41,67 +41,55 @@ const Opportunities = () => {
   const { navigate } = useRouter();
 
   const fetchOpportunities = useCallback(async () => {
+    setLoading(true);
+
     try {
-      // First get opportunities
-      const { data: opportunitiesData, error: opportunitiesError } = await supabase
-        .from('opportunities')
-        .select('*')
-        .eq('status', 'ativo')
-        .order('created_at', { ascending: false });
+      const [opportunitiesResponse, applicationsResponse] = await Promise.all([
+        supabase
+          .from('opportunities')
+          .select('*')
+          .eq('status', 'ativo')
+          .order('created_at', { ascending: false }),
+        user
+          ? supabase
+              .from('opportunity_applications')
+              .select('id, opportunity_id, status')
+              .eq('creator_id', user.id)
+          : Promise.resolve({ data: [], error: null })
+      ]);
+
+      const { data: opportunitiesData, error: opportunitiesError } = opportunitiesResponse;
+      const { data: applicationsData, error: applicationsError } = applicationsResponse;
 
       if (opportunitiesError) {
         console.error('Erro ao buscar oportunidades:', opportunitiesError);
+        setOpportunities([]);
         return;
       }
 
-      // Get user applications if user is logged in
-      let userApplications: UserApplication[] = [];
-      if (user) {
-        const { data: applicationsData, error: applicationsError } = await supabase
-          .from('opportunity_applications')
-          .select('id, opportunity_id, status')
-          .eq('creator_id', user.id);
-
-        if (applicationsError) {
-          console.error('Erro ao buscar candidaturas:', applicationsError);
-        } else {
-          userApplications = applicationsData || [];
-        }
+      if (applicationsError) {
+        console.error('Erro ao buscar candidaturas:', applicationsError);
       }
 
-      // Get candidates count for each opportunity
-      const opportunitiesWithCounts = await Promise.all(
-        (opportunitiesData || []).map(async (opp) => {
-          const { count, error: countError } = await supabase
-            .from('opportunity_applications')
-            .select('*', { count: 'exact', head: true })
-            .eq('opportunity_id', opp.id);
+      const userApplications: UserApplication[] = applicationsData || [];
 
-          if (countError) {
-            console.error('Erro ao buscar contagem de candidatos:', countError);
-          }
-
-          return {
-            ...opp,
-            candidates_count: count || 0
-          };
-        })
-      );
-
-      // Combine data
-      const formattedOpportunities = opportunitiesWithCounts?.map(opp => {
+      const formattedOpportunities = (opportunitiesData || []).map(opp => {
         const deadline = new Date(opp.deadline);
         const today = new Date();
         const diffTime = deadline.getTime() - today.getTime();
-        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+        const diffDays = Math.max(0, Math.ceil(diffTime / (1000 * 60 * 60 * 24)));
+        const budgetMin = Number(opp.budget_min ?? 0);
+        const budgetMax = Number(opp.budget_max ?? 0);
         
         // Find user application for this opportunity
         const userApplication = userApplications.find(app => app.opportunity_id === opp.id);
         
         // Format budget display
-        const budgetDisplay = opp.budget_min === 0 && opp.budget_max === 0 
+        const budgetDisplay = budgetMin === 0 && budgetMax === 0 
           ? 'Permuta' 
-          : `R$ ${opp.budget_min} - R$ ${opp.budget_max}`;
+          : budgetMin === budgetMax
+            ? `R$ ${budgetMin.toLocaleString('pt-BR')}`
+            : `R$ ${budgetMin.toLocaleString('pt-BR')} - R$ ${budgetMax.toLocaleString('pt-BR')}`;
         
         return {
           id: opp.id,
@@ -122,11 +110,12 @@ const Opportunities = () => {
             status: userApplication.status
           } : undefined
         };
-      }) || [];
-      
+      });
+
       setOpportunities(formattedOpportunities);
     } catch (err) {
       console.error('Erro ao buscar oportunidades:', err);
+      setOpportunities([]);
     } finally {
       setLoading(false);
     }
