@@ -65,30 +65,35 @@ export const useAnalystNotifications = () => {
 
   const markAsRead = useCallback(async (notificationId: string) => {
     if (!user) return;
+    const wasUnread = notifications.some(n => n.id === notificationId && !n.read);
 
     
     try {
-      const { error } = await supabase
+      const { data, error } = await supabase
         .from('notifications')
         .update({ read: true })
         .eq('id', notificationId)
-        .eq('analyst_id', user.id); // ✅ Garantir que só modifica notificações do analista
+        .eq('user_id', user.id)
+        .select('id, read')
+        .maybeSingle();
 
       if (error) {
         console.error('❌ Erro ao marcar notificação como lida:', error);
-      } else {
-                // Atualizar estado local
-        setNotifications(prev => 
-          prev.map(n => 
+      } else if (data) {
+        // Atualizar estado local apenas se a notificação realmente pertencer ao analista
+        setNotifications(prev =>
+          prev.map(n =>
             n.id === notificationId ? { ...n, read: true } : n
           )
         );
-        setUnreadCount(prev => Math.max(0, prev - 1));
+        if (wasUnread) {
+          setUnreadCount(prev => Math.max(0, prev - 1));
+        }
       }
     } catch (err) {
       console.error('❌ Erro geral ao marcar notificação:', err);
     }
-  }, [user]);
+  }, [user, notifications]);
 
   const markAllAsRead = useCallback(async () => {
     if (!user) return;
@@ -96,10 +101,10 @@ export const useAnalystNotifications = () => {
     
     try {
       const { error } = await supabase
-        .from('notifications')
-        .update({ read: true })
-        .eq('analyst_id', user.id) // ✅ Só marcar notificações do analista
-        .eq('read', false);
+  .from('notifications')
+  .update({ read: true })
+  .eq('user_id', user.id)
+  .eq('read', false);
 
       if (error) {
         console.error('❌ Erro ao marcar todas as notificações como lidas:', error);
@@ -128,7 +133,7 @@ export const useAnalystNotifications = () => {
             event: 'INSERT',
             schema: 'public',
             table: 'notifications',
-            filter: `analyst_id=eq.${user.id}` // ✅ Corrigido: analyst_id ao invés de user_id
+            filter: `user_id=eq.${user.id}`
           },
           (payload) => {
                         const newNotification = payload.new as AnalystNotification;
@@ -144,7 +149,7 @@ export const useAnalystNotifications = () => {
             event: 'UPDATE',
             schema: 'public',
             table: 'notifications',
-            filter: `analyst_id=eq.${user.id}` // ✅ Filtro para updates também
+            filter: `user_id=eq.${user.id}`
           },
           (payload) => {
                         const updatedNotification = payload.new as AnalystNotification;

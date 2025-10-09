@@ -259,8 +259,29 @@ const DeliverableManagement: React.FC = () => {
     }
   };
 
+  const normalizeStatus = (value: string) => {
+    const lowered = value?.toLowerCase();
+    if (lowered === 'in_progress' || lowered === 'em_andamento') {
+      return 'pending';
+    }
+    if (lowered === 'pendente') {
+      return 'pending';
+    }
+    if (lowered === 'entregue') {
+      return 'submitted';
+    }
+    if (lowered === 'aprovado') {
+      return 'approved';
+    }
+    if (lowered === 'rejeitado') {
+      return 'rejected';
+    }
+    return lowered;
+  };
+
   const getStatusBadge = (status: string, dueDate: string) => {
-    const isOverdue = new Date(dueDate) < new Date() && status !== 'approved';
+    const normalizedStatus = normalizeStatus(status);
+    const isOverdue = new Date(dueDate) < new Date() && normalizedStatus !== 'approved';
     
     const configs = {
       pending: { 
@@ -268,13 +289,8 @@ const DeliverableManagement: React.FC = () => {
         color: isOverdue ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-800',
         icon: isOverdue ? AlertCircle : Clock
       },
-      in_progress: { 
-        label: isOverdue ? 'Atrasado (Em andamento)' : 'Em andamento', 
-        color: isOverdue ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800',
-        icon: isOverdue ? AlertCircle : Clock
-      },
       submitted: { 
-        label: 'Aguardando Revisão', 
+        label: 'Enviado', 
         color: 'bg-purple-100 text-purple-800',
         icon: Eye
       },
@@ -290,7 +306,7 @@ const DeliverableManagement: React.FC = () => {
       }
     };
 
-    const config = configs[status as keyof typeof configs] || configs.pending;
+    const config = configs[normalizedStatus as keyof typeof configs] || configs.pending;
     const Icon = config.icon;
 
     return (
@@ -324,7 +340,7 @@ const DeliverableManagement: React.FC = () => {
     
     switch (filter) {
       case 'pending':
-        return deliverable.status === 'pending' || deliverable.status === 'in_progress';
+        return normalizeStatus(deliverable.status) === 'pending';
       case 'overdue':
         return isOverdue;
       case 'completed':

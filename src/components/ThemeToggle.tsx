@@ -2,7 +2,11 @@ import { Moon, Sun } from 'lucide-react';
 import { useTheme } from '../hooks/useTheme';
 
 const ThemeToggle = () => {
-  const { theme, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isDarkModeAvailable } = useTheme();
+
+  if (!isDarkModeAvailable) {
+    return null;
+  }
 
   const isDark = theme === 'dark';
 

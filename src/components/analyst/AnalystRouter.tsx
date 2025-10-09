@@ -9,6 +9,7 @@ import AnalystMessages from './AnalystMessages';
 import AnalystAccountSettings from './AnalystAccountSettings';
 import EnhancedDeliverableManagement from './EnhancedDeliverableManagement';
 import EnhancedProjectDashboard from './EnhancedProjectDashboard';
+import CreatorProfilePage from './CreatorProfilePage';
 
 interface AnalystRouterProps {
   onOpenConversation: (conversationId: string) => void;
@@ -30,6 +31,10 @@ const AnalystRouter: React.FC<AnalystRouterProps> = ({
   if (route.startsWith('/projects/') && route !== '/projects') {
     const projectId = route.split('/')[2];
     return <ProjectManagement onOpenConversation={onOpenConversation} selectedProjectId={projectId} />;
+  }
+
+  if (route.startsWith('/creators/') && route !== '/creators') {
+    return <CreatorProfilePage />;
   }
   
   switch (route) {

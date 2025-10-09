@@ -136,6 +136,10 @@ const OpportunityManagement: React.FC = () => {
   const [showViewModal, setShowViewModal] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showFilters, setShowFilters] = useState(false);
+  const [statusFilter, setStatusFilter] = useState<'all' | 'ativo' | 'inativo'>('all');
+  const [contentTypeFilter, setContentTypeFilter] = useState('');
+  const [deadlineFilter, setDeadlineFilter] = useState<'all' | 'upcoming' | 'past'>('all');
   const { profile } = useAnalystAuth();
 
   const fetchOpportunities = useCallback(async () => {
@@ -251,10 +255,46 @@ const OpportunityManagement: React.FC = () => {
     setShowEditModal(true);
   };
 
-  const filteredOpportunities = opportunities.filter(opportunity =>
-    opportunity.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    opportunity.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredOpportunities = opportunities.filter((opportunity) => {
+    const normalizedSearch = searchTerm.trim().toLowerCase();
+    const matchesSearch =
+      normalizedSearch.length === 0 ||
+      opportunity.title.toLowerCase().includes(normalizedSearch) ||
+      opportunity.description.toLowerCase().includes(normalizedSearch) ||
+      opportunity.company.toLowerCase().includes(normalizedSearch);
+
+    if (!matchesSearch) {
+      return false;
+    }
+
+    if (statusFilter !== 'all' && opportunity.status !== statusFilter) {
+      return false;
+    }
+
+    if (contentTypeFilter && opportunity.content_type !== contentTypeFilter) {
+      return false;
+    }
+
+    if (deadlineFilter !== 'all') {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const deadlineDate = new Date(opportunity.deadline);
+
+      if (deadlineFilter === 'upcoming' && deadlineDate < today) {
+        return false;
+      }
+
+      if (deadlineFilter === 'past' && deadlineDate >= today) {
+        return false;
+      }
+    }
+
+    return true;
+  });
+
+  const contentTypes = Array.from(new Set(opportunities.map((opp) => opp.content_type).filter(Boolean)));
+
+  const hasActiveFilters = statusFilter !== 'all' || contentTypeFilter !== '' || deadlineFilter !== 'all';
 
   if (loading) {
     return (
@@ -295,12 +335,83 @@ const OpportunityManagement: React.FC = () => {
             />
           </div>
         </div>
-        
-        <button className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+
+        <button
+          onClick={() => setShowFilters(prev => !prev)}
+          className="flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+        >
           <Filter className="h-4 w-4" />
           Filtros
+          {hasActiveFilters && <span className="inline-block w-2 h-2 rounded-full bg-purple-600" />}
         </button>
       </div>
+
+      {showFilters && (
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+              <select
+                value={statusFilter}
+                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="all">Todos</option>
+                <option value="ativo">Ativas</option>
+                <option value="inativo">Inativas</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Tipo de conteúdo</label>
+              <select
+                value={contentTypeFilter}
+                onChange={(e) => setContentTypeFilter(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="">Todos</option>
+                {contentTypes.map((type) => (
+                  <option key={type} value={type}>
+                    {type}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Prazo</label>
+              <select
+                value={deadlineFilter}
+                onChange={(e) => setDeadlineFilter(e.target.value as typeof deadlineFilter)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              >
+                <option value="all">Todos</option>
+                <option value="upcoming">Próximos prazos</option>
+                <option value="past">Prazo vencido</option>
+              </select>
+            </div>
+          </div>
+
+          <div className="flex justify-end gap-3 mt-4">
+            <button
+              onClick={() => {
+                setStatusFilter('all');
+                setContentTypeFilter('');
+                setDeadlineFilter('all');
+              }}
+              className="px-4 py-2 text-sm text-gray-600 hover:text-gray-900"
+            >
+              Limpar filtros
+            </button>
+            <button
+              onClick={() => setShowFilters(false)}
+              className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+            >
+              Aplicar
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Opportunities List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

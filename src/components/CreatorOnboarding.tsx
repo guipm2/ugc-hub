@@ -3,6 +3,7 @@ import { ArrowRight, ArrowLeft, User, CreditCard, FileText, Check, Camera, Trend
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { detectDocumentType, formatCEP, formatDocument, formatPhone, stripFormatting } from '../utils/formatters';
+import { useTheme } from '../hooks/useTheme';
 
 interface OnboardingData {
   // Etapa 1 - Qualificação
@@ -96,6 +97,27 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
   const { user } = useAuth();
   const lastFetchedCepRef = useRef('');
   const addressFetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const { theme, setTheme } = useTheme();
+  const initialThemeRef = useRef<'light' | 'dark' | null>(null);
+
+  useEffect(() => {
+    if (initialThemeRef.current === null) {
+      initialThemeRef.current = theme;
+    }
+
+    if (theme !== 'light') {
+      setTheme('light');
+    }
+  }, [theme, setTheme]);
+
+  useEffect(() => {
+    return () => {
+      const previousTheme = initialThemeRef.current;
+      if (previousTheme && previousTheme !== 'light') {
+        setTheme(previousTheme);
+      }
+    };
+  }, [setTheme]);
 
   const maxBirthDate = useMemo(() => {
     const date = new Date();

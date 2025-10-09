@@ -2,10 +2,21 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { 
   Plus, Edit3, Trash2, Clock, CheckCircle, AlertCircle, FileText, 
   Calendar, User, Building2, Tag, Link2, Copy, ChevronDown, ChevronRight,
-  Search, MoreHorizontal, ArrowUp, ArrowDown
+  Search, MoreHorizontal, ArrowUp, ArrowDown, X
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
+import { useRouter } from '../../hooks/useRouter';
+
+interface DeliverableFile {
+  id?: string;
+  name?: string;
+  url?: string | null;
+  path?: string;
+  size?: number;
+  type?: string;
+  uploaded_at?: string;
+}
 
 interface ProjectDeliverable {
   id: string;
@@ -27,6 +38,7 @@ interface ProjectDeliverable {
   template_id?: string; // If created from template
   estimated_hours?: number;
   tags?: string[];
+  deliverable_files?: DeliverableFile[];
   created_at: string;
   updated_at: string;
 }
@@ -46,6 +58,17 @@ interface DeliverableTemplate {
   }[];
   created_at: string;
 }
+
+const EMPTY_EDIT_FORM = {
+  title: '',
+  description: '',
+  due_date: '',
+  priority: 1,
+  estimated_hours: 0,
+  tags: '' as string,
+  status: 'pending' as ProjectDeliverable['status'],
+  depends_on: ''
+};
 
 interface Application {
   id: string;
@@ -232,18 +255,73 @@ const EnhancedDeliverableManagement: React.FC = () => {
   const [deliverables, setDeliverables] = useState<ProjectDeliverable[]>([]);
   const [loading, setLoading] = useState(true);
   const [applications, setApplications] = useState<Application[]>([]);
+  const { navigate } = useRouter();
   
   // Estados de UI
   const [showTemplateModal, setShowTemplateModal] = useState(false);
   const [showCustomModal, setShowCustomModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [selectedDeliverables, setSelectedDeliverables] = useState<Set<string>>(new Set());
   const [expandedRows, setExpandedRows] = useState<Set<string>>(new Set());
+  const [editingDeliverable, setEditingDeliverable] = useState<ProjectDeliverable | null>(null);
+  const [editForm, setEditForm] = useState({ ...EMPTY_EDIT_FORM });
   
   // Estados de filtros e busca
   const [searchTerm, setSearchTerm] = useState('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'overdue' | 'completed' | 'in_progress'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'submitted' | 'approved' | 'rejected' | 'overdue' | 'completed'>('all');
+  const normalizeDeliverableStatus = (status?: string): ProjectDeliverable['status'] => {
+    if (!status) return 'pending';
+    const value = status.toLowerCase();
+
+    if (value === 'in_progress' || value === 'em_andamento') {
+      return 'pending';
+    }
+
+    if (value === 'pendente') {
+      return 'pending';
+    }
+
+    if (value === 'entregue') {
+      return 'submitted';
+    }
+
+    if (value === 'aprovado') {
+      return 'approved';
+    }
+
+    if (value === 'rejeitado') {
+      return 'rejected';
+    }
+
+    if (value === 'pending' || value === 'submitted' || value === 'approved' || value === 'rejected') {
+      return value as ProjectDeliverable['status'];
+    }
+
+    return 'pending';
+  };
   const [creatorFilter, setCreatorFilter] = useState<string>('all');
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
+
+  const openEditModal = (deliverable: ProjectDeliverable) => {
+    setEditingDeliverable(deliverable);
+    setEditForm({
+      title: deliverable.title,
+      description: deliverable.description || '',
+      due_date: deliverable.due_date ? deliverable.due_date.split('T')[0] : '',
+      priority: deliverable.priority || 1,
+      estimated_hours: deliverable.estimated_hours || 0,
+      tags: (deliverable.tags || []).join(', '),
+      status: normalizeDeliverableStatus(deliverable.status),
+      depends_on: deliverable.depends_on || ''
+    });
+    setShowEditModal(true);
+  };
+
+  const closeEditModal = () => {
+    setShowEditModal(false);
+    setEditingDeliverable(null);
+    setEditForm({ ...EMPTY_EDIT_FORM });
+  };
   
   // Estados de formulário
   const [selectedApplication, setSelectedApplication] = useState<string>('');
@@ -282,11 +360,14 @@ const EnhancedDeliverableManagement: React.FC = () => {
 
       const mappedDeliverables = data.map(item => ({
         ...item,
+        status: normalizeDeliverableStatus(item.status),
         creator_name: item.creator?.name || 'Desconhecido',
         opportunity_title: item.opportunity?.title || 'Sem título',
         company: item.opportunity?.company || 'Sem empresa',
-        tags: item.tags || [],
-        estimated_hours: item.estimated_hours || 0
+        tags: Array.isArray(item.tags) ? item.tags : [],
+        estimated_hours: item.estimated_hours || 0,
+        priority: item.priority || 1,
+        deliverable_files: Array.isArray(item.deliverable_files) ? item.deliverable_files : []
       }));
 
       setDeliverables(mappedDeliverables);
@@ -438,7 +519,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
       const tags = customForm.tags ? customForm.tags.split(',').map(tag => tag.trim()).filter(Boolean) : [];
       
       
-      const { data, error } = await supabase
+      const { error } = await supabase
         .from('project_deliverables')
         .insert({
           application_id: selectedApplication,
@@ -452,9 +533,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
           estimated_hours: customForm.estimated_hours || 0,
           tags,
           status: 'pending'
-        })
-        .select()
-        .single();
+        });
 
       if (error) {
         console.error('❌ Erro ao criar deliverable:', error);
@@ -483,17 +562,119 @@ const EnhancedDeliverableManagement: React.FC = () => {
     }
   };
 
+  const handleUpdateDeliverable = async () => {
+    if (!editingDeliverable) return;
+
+    const trimmedTitle = editForm.title.trim();
+    if (!trimmedTitle) {
+      alert('❌ O título é obrigatório');
+      return;
+    }
+
+    if (!editForm.due_date) {
+      alert('❌ A data de entrega é obrigatória');
+      return;
+    }
+
+    try {
+      const normalizedStatus = normalizeDeliverableStatus(editForm.status);
+      const tags = editForm.tags
+        ? editForm.tags.split(',').map(tag => tag.trim()).filter(Boolean)
+        : [];
+
+      const existingStatus = normalizeDeliverableStatus(editingDeliverable.status);
+      const statusChanged = existingStatus !== normalizedStatus;
+
+      const payload: Record<string, unknown> = {};
+      let hasChanges = false;
+
+      if (trimmedTitle !== editingDeliverable.title) {
+        payload.title = trimmedTitle;
+        hasChanges = true;
+      }
+
+      const trimmedDescription = editForm.description.trim();
+      const existingDescription = (editingDeliverable.description || '').trim();
+      if (trimmedDescription !== existingDescription) {
+        payload.description = trimmedDescription;
+        hasChanges = true;
+      }
+
+      const dueDateValue = editForm.due_date;
+      const existingDueDate = editingDeliverable.due_date ? editingDeliverable.due_date.split('T')[0] : '';
+      if (dueDateValue !== existingDueDate) {
+        payload.due_date = dueDateValue;
+        hasChanges = true;
+      }
+
+      const boundedPriority = Math.min(Math.max(editForm.priority, 1), 5);
+      if ((editingDeliverable.priority || 1) !== boundedPriority) {
+        payload.priority = boundedPriority;
+        hasChanges = true;
+      }
+
+      const boundedHours = Math.max(editForm.estimated_hours || 0, 0);
+      if ((editingDeliverable.estimated_hours || 0) !== boundedHours) {
+        payload.estimated_hours = boundedHours;
+        hasChanges = true;
+      }
+
+      const existingTags = (editingDeliverable.tags || []).map(tag => tag.trim()).filter(Boolean);
+      const tagsChanged = JSON.stringify([...existingTags].sort()) !== JSON.stringify([...tags].sort());
+      if (tagsChanged) {
+        payload.tags = tags;
+        hasChanges = true;
+      }
+
+      if ((editingDeliverable.depends_on || '') !== (editForm.depends_on || '')) {
+        payload.depends_on = editForm.depends_on ? editForm.depends_on : null;
+        hasChanges = true;
+      }
+
+      if (statusChanged) {
+        payload.status = normalizedStatus;
+        payload.reviewed_at = (normalizedStatus === 'approved' || normalizedStatus === 'rejected')
+          ? new Date().toISOString()
+          : null;
+        hasChanges = true;
+      }
+
+      if (!hasChanges) {
+        closeEditModal();
+        return;
+      }
+
+      payload.updated_at = new Date().toISOString();
+
+      const { error } = await supabase
+        .from('project_deliverables')
+        .update(payload)
+        .eq('id', editingDeliverable.id);
+
+      if (error) throw error;
+
+      await fetchDeliverables();
+      closeEditModal();
+    } catch (error) {
+      console.error('Erro ao atualizar deliverable:', error);
+      alert('❌ Não foi possível atualizar o deliverable. Tente novamente.');
+    }
+  };
+
   // Bulk actions
   const handleBulkStatusUpdate = async (status: ProjectDeliverable['status']) => {
     if (selectedDeliverables.size === 0) return;
 
     try {
+      const now = new Date().toISOString();
+      const reviewedAt = status === 'approved' || status === 'rejected' ? now : null;
+
       const { error } = await supabase
         .from('project_deliverables')
         .update({ 
           status,
-          updated_at: new Date().toISOString(),
-          ...(status === 'approved' || status === 'rejected' ? { reviewed_at: new Date().toISOString() } : {})
+          updated_at: now,
+          reviewed_at: reviewedAt
         })
         .in('id', Array.from(selectedDeliverables));
 
@@ -527,13 +708,52 @@ const EnhancedDeliverableManagement: React.FC = () => {
 
   // Inline editing
   const handleInlineEdit = async (id: string, field: string, value: string | number) => {
+    const target = deliverables.find(d => d.id === id);
+    if (!target) return;
+
+    let normalizedValue: string | number = value;
+
+    if (field === 'status') {
+      const incomingStatus = normalizeDeliverableStatus(typeof value === 'string' ? value : undefined);
+      const currentStatus = normalizeDeliverableStatus(target.status);
+      if (incomingStatus === currentStatus) {
+        return;
+      }
+      normalizedValue = incomingStatus;
+    } else if (field === 'priority') {
+      const numericValue = typeof value === 'number' ? value : parseInt(String(value), 10);
+      const boundedValue = Math.min(Math.max(Number.isNaN(numericValue) ? 1 : numericValue, 1), 5);
+      if (target.priority === boundedValue) {
+        return;
+      }
+      normalizedValue = boundedValue;
+    } else if (field === 'analyst_feedback') {
+      const newFeedback = typeof value === 'string' ? value.trim() : '';
+      const currentFeedback = (target.analyst_feedback || '').trim();
+      if (newFeedback === currentFeedback) {
+        return;
+      }
+      normalizedValue = newFeedback;
+    }
+
     try {
+      const payload: Record<string, unknown> = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (field === 'status') {
+        const normalized = normalizedValue as ProjectDeliverable['status'];
+        payload.status = normalized;
+        payload.reviewed_at = normalized === 'approved' || normalized === 'rejected'
+          ? new Date().toISOString()
+          : null;
+      } else {
+        payload[field] = normalizedValue;
+      }
+
       const { error } = await supabase
         .from('project_deliverables')
-        .update({ 
-          [field]: value,
-          updated_at: new Date().toISOString()
-        })
+        .update(payload)
         .eq('id', id);
 
       if (error) throw error;
@@ -578,7 +798,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
       } else if (statusFilter === 'completed') {
         if (deliverable.status !== 'approved') return false;
       } else {
-        if (deliverable.status !== statusFilter) return false;
+        if (normalizeDeliverableStatus(deliverable.status) !== statusFilter) return false;
       }
     }
 
@@ -603,12 +823,17 @@ const EnhancedDeliverableManagement: React.FC = () => {
 
   // Status styling
   const getStatusStyle = (status: string) => {
-    switch (status) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800';
-      case 'in_progress': return 'bg-blue-100 text-blue-800';
-      case 'submitted': return 'bg-purple-100 text-purple-800';
-      case 'approved': return 'bg-green-100 text-green-800';
-      case 'rejected': return 'bg-red-100 text-red-800';
+    const normalized = normalizeDeliverableStatus(status);
+
+    switch (normalized) {
+      case 'pending':
+        return 'bg-yellow-100 text-yellow-800';
+      case 'submitted':
+        return 'bg-purple-100 text-purple-800';
+      case 'approved':
+        return 'bg-green-100 text-green-800';
+      case 'rejected':
+        return 'bg-red-100 text-red-800';
       default: return 'bg-gray-100 text-gray-800';
     }
   };
@@ -617,6 +842,14 @@ const EnhancedDeliverableManagement: React.FC = () => {
     if (priority <= 2) return 'text-red-600 bg-red-50';
     if (priority <= 3) return 'text-yellow-600 bg-yellow-50';
     return 'text-green-600 bg-green-50';
+  };
+
+  const formatFileSize = (bytes?: number) => {
+    if (!bytes || bytes <= 0) return '—';
+    const units = ['B', 'KB', 'MB', 'GB'];
+    const exponent = Math.min(Math.floor(Math.log(bytes) / Math.log(1024)), units.length - 1);
+    const value = bytes / Math.pow(1024, exponent);
+    return `${value.toFixed(exponent === 0 ? 0 : 1)} ${units[exponent]}`;
   };
 
   const isOverdue = (dueDate: string, status: string) => {
@@ -739,7 +972,6 @@ const EnhancedDeliverableManagement: React.FC = () => {
             >
               <option value="all">Todos os Status</option>
               <option value="pending">Pendente</option>
-              <option value="in_progress">Em Andamento</option>
               <option value="submitted">Enviado</option>
               <option value="approved">Aprovado</option>
               <option value="rejected">Rejeitado</option>
@@ -964,7 +1196,6 @@ const EnhancedDeliverableManagement: React.FC = () => {
                           className={`text-xs px-2 py-1 rounded-full border-0 ${getStatusStyle(deliverable.status)}`}
                         >
                           <option value="pending">Pendente</option>
-                          <option value="in_progress">Em Andamento</option>
                           <option value="submitted">Enviado</option>
                           <option value="approved">Aprovado</option>
                           <option value="rejected">Rejeitado</option>
@@ -998,10 +1229,14 @@ const EnhancedDeliverableManagement: React.FC = () => {
                       <td className="px-4 py-4">
                         <div className="flex items-center space-x-2">
                           <button
-                            onClick={() => {
-                              // TODO: Implement edit modal
-                              alert('Funcionalidade de edição em desenvolvimento');
-                            }}
+                            onClick={() => navigate(`/analysts/projects/${deliverable.application_id}`)}
+                            className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded"
+                            title="Ver projeto"
+                          >
+                            <Link2 className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => openEditModal(deliverable)}
                             className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
                           >
                             <Edit3 className="h-4 w-4" />
@@ -1046,6 +1281,35 @@ const EnhancedDeliverableManagement: React.FC = () => {
                                 <span className="font-medium">
                                   {deliverables.find(d => d.id === deliverable.depends_on)?.title || 'Deliverable não encontrado'}
                                 </span>
+                              </div>
+                            )}
+
+                            {/* Files */}
+                            {deliverable.deliverable_files && deliverable.deliverable_files.length > 0 && (
+                              <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                  Arquivos enviados pelo creator:
+                                </label>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                                  {deliverable.deliverable_files.map((file, index) => (
+                                    <a
+                                      key={file.id || `${deliverable.id}-file-${index}`}
+                                      href={file.url || undefined}
+                                      target={file.url ? '_blank' : undefined}
+                                      rel={file.url ? 'noopener noreferrer' : undefined}
+                                      className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:border-purple-400 hover:shadow-sm transition"
+                                    >
+                                      <FileText className="h-4 w-4 text-purple-500" />
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium text-gray-900 truncate">{file.name || 'Arquivo'}</p>
+                                        <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                                      </div>
+                                      <span className={`text-xs font-medium ${file.url ? 'text-purple-600' : 'text-gray-400'}`}>
+                                        {file.url ? 'Abrir' : 'Sem link'}
+                                      </span>
+                                    </a>
+                                  ))}
+                                </div>
                               </div>
                             )}
                             
@@ -1103,6 +1367,180 @@ const EnhancedDeliverableManagement: React.FC = () => {
           )}
         </div>
       </div>
+
+      {/* Edit Deliverable Modal */}
+      {showEditModal && editingDeliverable && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Editar Deliverable</h3>
+                <p className="text-sm text-gray-500">
+                  {(editingDeliverable.creator_name || 'Creator')} · {(editingDeliverable.opportunity_title || 'Projeto')}
+                </p>
+              </div>
+              <button
+                onClick={closeEditModal}
+                className="text-gray-400 hover:text-gray-600"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Título *</label>
+                  <input
+                    type="text"
+                    value={editForm.title}
+                    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                  <select
+                    value={editForm.status}
+                    onChange={(e) => setEditForm({ ...editForm, status: e.target.value as ProjectDeliverable['status'] })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value="pending">Pendente</option>
+                    <option value="submitted">Enviado</option>
+                    <option value="approved">Aprovado</option>
+                    <option value="rejected">Rejeitado</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Descrição</label>
+                <textarea
+                  value={editForm.description}
+                  onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  rows={3}
+                  placeholder="Descreva o que deve ser entregue..."
+                />
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Data de Entrega *</label>
+                  <input
+                    type="date"
+                    value={editForm.due_date}
+                    onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Prioridade</label>
+                  <select
+                    value={editForm.priority}
+                    onChange={(e) => {
+                      const parsed = parseInt(e.target.value, 10);
+                      setEditForm({ ...editForm, priority: Number.isNaN(parsed) ? 1 : parsed });
+                    }}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  >
+                    <option value={1}>1 - Mais Alta</option>
+                    <option value={2}>2 - Alta</option>
+                    <option value={3}>3 - Média</option>
+                    <option value={4}>4 - Baixa</option>
+                    <option value={5}>5 - Mais Baixa</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Horas Estimadas</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editForm.estimated_hours}
+                    onChange={(e) => {
+                      const parsed = parseInt(e.target.value, 10);
+                      setEditForm({ ...editForm, estimated_hours: Number.isNaN(parsed) ? 0 : parsed });
+                    }}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Tags (separadas por vírgula)</label>
+                  <input
+                    type="text"
+                    value={editForm.tags}
+                    onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    placeholder="design, roteiro"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Dependência</label>
+                <select
+                  value={editForm.depends_on}
+                  onChange={(e) => setEditForm({ ...editForm, depends_on: e.target.value })}
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                >
+                  <option value="">Sem dependência</option>
+                  {deliverables
+                    .filter((d) => d.application_id === editingDeliverable.application_id && d.id !== editingDeliverable.id)
+                    .map((option) => (
+                      <option key={option.id} value={option.id}>
+                        {option.title}
+                      </option>
+                    ))}
+                </select>
+              </div>
+
+              {editingDeliverable.deliverable_files && editingDeliverable.deliverable_files.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Arquivos Enviados</label>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                    {editingDeliverable.deliverable_files.map((file, index) => (
+                      <a
+                        key={file.id || `${editingDeliverable.id}-modal-file-${index}`}
+                        href={file.url || undefined}
+                        target={file.url ? '_blank' : undefined}
+                        rel={file.url ? 'noopener noreferrer' : undefined}
+                        className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200 hover:border-purple-500 transition"
+                      >
+                        <FileText className="h-4 w-4 text-purple-500" />
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-medium text-gray-900 truncate">{file.name || 'Arquivo'}</p>
+                          <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
+                        </div>
+                        <span className={`text-xs font-medium ${file.url ? 'text-purple-600' : 'text-gray-400'}`}>
+                          {file.url ? 'Abrir' : 'Sem link'}
+                        </span>
+                      </a>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="flex justify-end space-x-3 mt-6">
+              <button
+                onClick={closeEditModal}
+                className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleUpdateDeliverable}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              >
+                Salvar Alterações
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Template Modal */}
       {showTemplateModal && (

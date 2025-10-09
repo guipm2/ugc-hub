@@ -56,11 +56,115 @@ interface Deliverable {
 interface ProjectFile {
   id: string;
   name: string;
-  url: string;
+  url: string | null;
   type: string;
   size: number;
   uploaded_at: string;
+  path?: string;
 }
+
+const DELIVERABLES_BUCKET = 'deliverables';
+
+const generateFileId = () => {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `file_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
+};
+
+const normalizeDeliverableStatus = (status?: string): Deliverable['status'] => {
+  if (!status) return 'pending';
+  const normalized = status.toLowerCase();
+
+  if (normalized === 'in_progress' || normalized === 'em_andamento') {
+    return 'pending';
+  }
+
+  if (normalized === 'pendente') {
+    return 'pending';
+  }
+
+  if (normalized === 'entregue') {
+    return 'submitted';
+  }
+
+  if (normalized === 'aprovado') {
+    return 'approved';
+  }
+
+  if (normalized === 'rejeitado') {
+    return 'rejected';
+  }
+
+  if (
+    normalized === 'pending' ||
+    normalized === 'submitted' ||
+    normalized === 'approved' ||
+    normalized === 'rejected'
+  ) {
+    return normalized as Deliverable['status'];
+  }
+
+  return 'pending';
+};
+
+const parseDeliverableFiles = (files: unknown): ProjectFile[] => {
+  if (!Array.isArray(files)) return [];
+
+  return files.map((file) => {
+    if (file && typeof file === 'object') {
+      const typedFile = file as Record<string, unknown>;
+      const path = typeof typedFile.path === 'string' ? typedFile.path : undefined;
+      const id = typeof typedFile.id === 'string' ? typedFile.id : path ?? generateFileId();
+
+      return {
+        id,
+        path,
+        name: typeof typedFile.name === 'string' ? typedFile.name : 'Arquivo',
+        url: typeof typedFile.url === 'string' ? typedFile.url : null,
+        type: typeof typedFile.type === 'string' ? typedFile.type : 'application/octet-stream',
+        size: typeof typedFile.size === 'number' ? typedFile.size : Number(typedFile.size) || 0,
+        uploaded_at: typeof typedFile.uploaded_at === 'string'
+          ? typedFile.uploaded_at
+          : new Date().toISOString()
+      } satisfies ProjectFile;
+    }
+
+    return {
+      id: generateFileId(),
+      name: 'Arquivo',
+      url: null,
+      type: 'application/octet-stream',
+      size: 0,
+      uploaded_at: new Date().toISOString()
+    } satisfies ProjectFile;
+  });
+};
+
+const mapDeliverableFromDb = (deliverable: Record<string, unknown>): Deliverable => {
+  const typedDeliverable = deliverable as Record<string, unknown>;
+
+  return {
+    id: String(typedDeliverable.id),
+    application_id: typedDeliverable.application_id ? String(typedDeliverable.application_id) : undefined,
+    title: typeof typedDeliverable.title === 'string' ? typedDeliverable.title : 'Deliverable',
+    description: typeof typedDeliverable.description === 'string' ? typedDeliverable.description : '',
+    briefing: typeof typedDeliverable.briefing === 'string' ? typedDeliverable.briefing : '',
+    due_date: String(typedDeliverable.due_date ?? new Date().toISOString().split('T')[0]),
+    priority: typeof typedDeliverable.priority === 'number'
+      ? typedDeliverable.priority
+      : typeof typedDeliverable.priority === 'string'
+        ? Number(typedDeliverable.priority)
+        : undefined,
+    status: normalizeDeliverableStatus(typeof typedDeliverable.status === 'string' ? typedDeliverable.status : undefined),
+    analyst_feedback: typeof typedDeliverable.analyst_feedback === 'string' ? typedDeliverable.analyst_feedback : undefined,
+    reviewed_at: typeof typedDeliverable.reviewed_at === 'string' ? typedDeliverable.reviewed_at : undefined,
+    files: parseDeliverableFiles(typedDeliverable.deliverable_files),
+    created_at: typeof typedDeliverable.created_at === 'string' ? typedDeliverable.created_at : undefined,
+    updated_at: typeof typedDeliverable.updated_at === 'string' ? typedDeliverable.updated_at : undefined,
+    feedback: typeof typedDeliverable.feedback === 'string' ? typedDeliverable.feedback : undefined
+  };
+};
 
 const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProjectId }) => {
   const [projects, setProjects] = useState<Project[]>([]);
@@ -69,6 +173,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
   const [fetching, setFetching] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState<string | null>(null);
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
+  const [uploadingDeliverableId, setUploadingDeliverableId] = useState<string | null>(null);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [hideCompleted, setHideCompleted] = useState(false);
@@ -83,6 +188,15 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
       }
     }
   }, [selectedProjectId, projects]);
+
+  useEffect(() => {
+    if (!selectedProject) return;
+
+    const current = projects.find(project => project.id === selectedProject.id);
+    if (current && current !== selectedProject) {
+      setSelectedProject(current);
+    }
+  }, [projects, selectedProject]);
 
   const fetchProjects = useCallback(async () => {
     if (!user || fetching) return;
@@ -139,8 +253,8 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
           console.error('❌ [PROJECTS] Erro ao buscar conversa:', conversationError);
         }
 
-        // Buscar deliverables customizados do banco para esta candidatura
-        const { data: customDeliverables, error: deliverablesError } = await supabase
+        // Buscar deliverables cadastrados no banco para esta candidatura
+        const { data: dbDeliverables, error: deliverablesError } = await supabase
           .from('project_deliverables')
           .select('*')
           .eq('application_id', app.id)
@@ -150,31 +264,30 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
           console.error('❌ [PROJECTS] Erro ao buscar deliverables:', deliverablesError);
         }
 
-        // Gerar deliverables padrão baseados no tipo de conteúdo
-        const standardDeliverables = generateDeliverables(opportunity.content_type, app.id);
-        
-        // Mapear deliverables customizados para a interface local
-        const mappedCustomDeliverables: Deliverable[] = customDeliverables ? customDeliverables.map(d => ({
-          id: d.id,
-          application_id: d.application_id,
-          title: d.title,
-          description: d.description || '',
-          briefing: d.briefing || '',
-          due_date: d.due_date,
-          priority: d.priority,
-          status: d.status,
-          analyst_feedback: d.analyst_feedback,
-          reviewed_at: d.reviewed_at,
-          files: [],
-          created_at: d.created_at,
-          updated_at: d.updated_at
-        })) : [];
+        // Mapear deliverables vindos do banco para a interface local
+        const mappedDbDeliverables: Deliverable[] = (dbDeliverables ?? []).map(mapDeliverableFromDb);
 
-        // ✅ Combinar deliverables padrão e customizados em uma lista unificada
-        const allDeliverables = [
-          ...standardDeliverables,
-          ...mappedCustomDeliverables
-        ].sort((a, b) => (a.priority || 999) - (b.priority || 999));
+        // Só gerar deliverables padrão caso ainda não exista nenhum cadastrado no banco
+        const fallbackDeliverables = mappedDbDeliverables.length === 0
+          ? generateDeliverables(opportunity.content_type, app.id)
+          : [];
+
+        const allDeliverables = [...mappedDbDeliverables, ...fallbackDeliverables].sort((a, b) => {
+          const aDate = new Date(a.due_date).getTime();
+          const bDate = new Date(b.due_date).getTime();
+
+          if (!Number.isNaN(aDate) && !Number.isNaN(bDate) && aDate !== bDate) {
+            return aDate - bDate;
+          }
+
+          const aPriority = a.priority ?? 999;
+          const bPriority = b.priority ?? 999;
+          if (aPriority !== bPriority) {
+            return aPriority - bPriority;
+          }
+
+          return a.title.localeCompare(b.title);
+        });
 
         projectsData.push({
           id: app.id,
@@ -227,11 +340,9 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
     const today = new Date();
     
     if (deliverables) {
-      const allApproved = deliverables.every(d => d.status === 'approved' || d.status === 'aprovado');
-      const allSubmitted = deliverables.every(d => 
-        d.status === 'submitted' || d.status === 'entregue' || 
-        d.status === 'approved' || d.status === 'aprovado'
-      );
+      const normalizedStatuses = deliverables.map(d => normalizeDeliverableStatus(d.status));
+      const allApproved = normalizedStatuses.every(status => status === 'approved');
+      const allSubmitted = normalizedStatuses.every(status => status === 'submitted' || status === 'approved');
       
       if (allApproved) return 'aprovado';
       if (allSubmitted) return 'entregue';
@@ -256,7 +367,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
         briefing: 'O briefing para desenvolvimento do roteiro será fornecido após aprovação do conceito inicial. Incluirá direcionamentos sobre narrativa, duração, elementos visuais e chamadas para ação.',
         due_date: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
         priority: 2,
-        status: 'pendente' as const,
+        status: 'pending' as const,
         files: []
       });
     }
@@ -265,21 +376,24 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
   };
 
   const getStatusBadge = (status: string) => {
+    const normalizedStatus = normalizeDeliverableStatus(status);
+
     const statusConfig = {
-      em_andamento: { color: 'bg-blue-100 text-blue-700', label: 'Em Andamento', icon: Clock },
+      em_andamento: { color: 'bg-blue-100 text-blue-700', label: 'Em andamento', icon: Clock },
       entregue: { color: 'bg-yellow-100 text-yellow-700', label: 'Entregue', icon: Upload },
       aprovado: { color: 'bg-green-100 text-green-700', label: 'Aprovado', icon: CheckCircle },
       atrasado: { color: 'bg-red-100 text-red-700', label: 'Atrasado', icon: AlertCircle },
       pending: { color: 'bg-gray-100 text-gray-700', label: 'Pendente', icon: Clock },
-      pendente: { color: 'bg-gray-100 text-gray-700', label: 'Pendente', icon: Clock },
-      in_progress: { color: 'bg-blue-100 text-blue-700', label: 'Em Progresso', icon: Clock },
       submitted: { color: 'bg-yellow-100 text-yellow-700', label: 'Enviado', icon: Upload },
       approved: { color: 'bg-green-100 text-green-700', label: 'Aprovado', icon: CheckCircle },
-      rejected: { color: 'bg-red-100 text-red-700', label: 'Rejeitado', icon: X },
-      rejeitado: { color: 'bg-red-100 text-red-700', label: 'Rejeitado', icon: X }
-    };
+      rejected: { color: 'bg-red-100 text-red-700', label: 'Rejeitado', icon: X }
+    } as const;
 
-    const config = statusConfig[status as keyof typeof statusConfig] || statusConfig.pending;
+    const statusKey = (statusConfig as Record<string, (typeof statusConfig)[keyof typeof statusConfig]>)[status]
+      ? status
+      : normalizedStatus;
+
+    const config = statusConfig[statusKey as keyof typeof statusConfig] || statusConfig.pending;
     const Icon = config.icon;
 
     return (
@@ -293,35 +407,107 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
   const handleFileUpload = async (deliverableId: string) => {
     if (!uploadFiles || uploadFiles.length === 0) return;
 
-    
-    // Simular upload de arquivos (TODO: Implementar upload real para Supabase Storage)
-    const newFiles: ProjectFile[] = Array.from(uploadFiles).map((file, index) => ({
-      id: `file_${Date.now()}_${index}`,
-      name: file.name,
-      url: URL.createObjectURL(file),
-      type: file.type,
-      size: file.size,
-      uploaded_at: new Date().toISOString()
-    }));
+    const filesArray = Array.from(uploadFiles);
+    setUploadingDeliverableId(deliverableId);
 
-    // Atualizar o projeto com os novos arquivos
-    if (selectedProject) {
-      const updatedProject = {
-        ...selectedProject,
-        deliverables: selectedProject.deliverables.map(d =>
-          d.id === deliverableId
-            ? { ...d, files: [...d.files, ...newFiles], status: 'submitted' as const }
-            : d
+    const findProjectContainingDeliverable = () => {
+      if (selectedProject && selectedProject.deliverables.some(d => d.id === deliverableId)) {
+        return selectedProject;
+      }
+
+      return projects.find(project => project.deliverables.some(d => d.id === deliverableId)) ?? null;
+    };
+
+    const projectWithDeliverable = findProjectContainingDeliverable();
+    const existingDeliverable = projectWithDeliverable?.deliverables.find(d => d.id === deliverableId);
+    const existingFiles = existingDeliverable?.files ?? [];
+
+    try {
+      const uploadedFiles: ProjectFile[] = [];
+
+      for (const file of filesArray) {
+        const sanitizedName = file.name.replace(/[^a-zA-Z0-9._-]/g, '-');
+        const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+        const path = `${deliverableId}/${uniqueSuffix}-${sanitizedName}`;
+
+        const { error: uploadError } = await supabase.storage
+          .from(DELIVERABLES_BUCKET)
+          .upload(path, file, { upsert: true });
+
+        if (uploadError) {
+          console.error('❌ [PROJECTS] Erro ao enviar arquivo do deliverable:', uploadError);
+          throw uploadError;
+        }
+
+        const { data: publicUrlData } = supabase.storage
+          .from(DELIVERABLES_BUCKET)
+          .getPublicUrl(path);
+
+        uploadedFiles.push({
+          id: path,
+          path,
+          name: file.name,
+          url: publicUrlData?.publicUrl ?? null,
+          type: file.type,
+          size: file.size,
+          uploaded_at: new Date().toISOString()
+        });
+      }
+
+      const updatedFiles = [...existingFiles, ...uploadedFiles];
+
+      const { data: updatedDeliverable, error: updateError } = await supabase
+        .from('project_deliverables')
+        .update({
+          deliverable_files: updatedFiles,
+          status: 'submitted'
+        })
+        .eq('id', deliverableId)
+        .select()
+        .single();
+
+      if (updateError) {
+        console.error('❌ [PROJECTS] Erro ao atualizar deliverable após upload:', updateError);
+        throw updateError;
+      }
+
+      const deliverableFromDb = mapDeliverableFromDb(updatedDeliverable as Record<string, unknown>);
+
+      const updateProjectDeliverables = (project: Project): Project => {
+        const updatedDeliverables = project.deliverables.map(deliverable =>
+          deliverable.id === deliverableId ? { ...deliverable, ...deliverableFromDb } : deliverable
+        );
+
+        return {
+          ...project,
+          deliverables: updatedDeliverables,
+          status: getProjectStatus(project.deadline, updatedDeliverables)
+        };
+      };
+
+      setProjects(prevProjects =>
+        prevProjects.map(project =>
+          project.deliverables.some(deliverable => deliverable.id === deliverableId)
+            ? updateProjectDeliverables(project)
+            : project
         )
-      };
+      );
 
-      setSelectedProject(updatedProject);
-      setProjects(projects.map(p => p.id === selectedProject.id ? updatedProject : p));
+      if (selectedProject?.deliverables.some(deliverable => deliverable.id === deliverableId)) {
+        setSelectedProject(prev => (prev ? updateProjectDeliverables(prev) : prev));
+      }
+
+      await fetchProjects();
+
+      setShowUploadModal(null);
+      setUploadFiles(null);
+    } catch (err) {
+      console.error('❌ [PROJECTS] Falha ao enviar arquivos do deliverable:', err);
+      alert('Não foi possível enviar os arquivos. Verifique sua conexão e tente novamente.');
+    } finally {
+      setUploadingDeliverableId(null);
     }
-
-    setShowUploadModal(null);
-    setUploadFiles(null);
-      };
+  };
 
   const formatFileSize = (bytes: number) => {
     if (bytes === 0) return '0 Bytes';
@@ -488,9 +674,18 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                                 <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
                                 <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                               </div>
-                              <button className="p-1 hover:bg-gray-200 rounded">
-                                <Eye className="h-4 w-4 text-gray-400" />
-                              </button>
+                              {file.url ? (
+                                <a
+                                  href={file.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-1 hover:bg-gray-200 rounded"
+                                >
+                                  <Eye className="h-4 w-4 text-gray-400" />
+                                </a>
+                              ) : (
+                                <span className="text-xs text-gray-400">URL indisponível</span>
+                              )}
                             </div>
                           ))}
                         </div>
@@ -498,7 +693,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                     )}
 
                     {/* Botão de Upload - Apenas para deliverables customizados */}
-                    {(deliverable.status === 'pending' || deliverable.status === 'pendente') && 
+                    {(deliverable.status === 'pending' || deliverable.status === 'pendente' || deliverable.status === 'rejected') && 
                      isCustom && (
                       <button
                         onClick={() => setShowUploadModal(deliverable.id)}
@@ -514,6 +709,14 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                       <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
                         <p className="text-sm font-medium text-yellow-800">Feedback do Analista:</p>
                         <p className="text-sm text-yellow-700">{deliverable.analyst_feedback}</p>
+                      </div>
+                    )}
+
+                    {deliverable.status === 'rejected' && !deliverable.analyst_feedback && (
+                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded">
+                        <p className="text-sm text-red-700">
+                          Sua última entrega foi rejeitada. Revise os arquivos e envie uma nova versão para continuar o projeto.
+                        </p>
                       </div>
                     )}
                   </div>
@@ -574,10 +777,17 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                   </button>
                   <button
                     onClick={() => handleFileUpload(showUploadModal)}
-                    disabled={!uploadFiles || uploadFiles.length === 0}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                    disabled={!uploadFiles || uploadFiles.length === 0 || uploadingDeliverableId === showUploadModal}
+                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                   >
-                    Enviar
+                    {uploadingDeliverableId === showUploadModal ? (
+                      <>
+                        <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                        Enviando...
+                      </>
+                    ) : (
+                      <>Enviar</>
+                    )}
                   </button>
                 </div>
               </div>

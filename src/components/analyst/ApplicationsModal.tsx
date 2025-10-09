@@ -37,13 +37,54 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
   const [updating, setUpdating] = useState<string | null>(null);
   const { analyst } = useAnalystAuth();
 
+  const openCreatorProfile = (creatorId: string) => {
+    if (typeof window === 'undefined' || !creatorId) return;
+    const baseUrl = window.location.origin;
+    const profileUrl = `${baseUrl}/analysts/creators/${creatorId}`;
+    window.open(profileUrl, '_blank', 'noopener,noreferrer');
+  };
+
+  const normalizeApplication = useCallback((raw: Record<string, unknown>): Application => {
+    const creatorRaw = raw.creator;
+    const parsedCreator = (Array.isArray(creatorRaw) ? creatorRaw[0] : creatorRaw) as Record<string, unknown> | undefined;
+    const getString = (source: Record<string, unknown> | undefined, key: string, fallback = ''): string => {
+      const value = source?.[key];
+      return typeof value === 'string' ? value : fallback;
+    };
+
+    return {
+      id: String(raw.id),
+      creator_id: String(raw.creator_id),
+      status: (raw.status as Application['status']) ?? 'pending',
+      message: typeof raw.message === 'string' ? raw.message : '',
+      applied_at: String(raw.applied_at ?? new Date().toISOString()),
+      creator: {
+        name: (() => {
+          const value = getString(parsedCreator, 'name');
+          return value.trim().length > 0 ? value : 'Nome não informado';
+        })(),
+        email: getString(parsedCreator, 'email', 'Email não informado'),
+        bio: getString(parsedCreator, 'bio'),
+        location: getString(parsedCreator, 'location'),
+        niche: getString(parsedCreator, 'niche'),
+        followers: getString(parsedCreator, 'followers'),
+        website: getString(parsedCreator, 'website'),
+        avatar_url: getString(parsedCreator, 'avatar_url')
+      }
+    };
+  }, []);
+
   const fetchApplications = useCallback(async () => {
     try {
       const { data, error } = await supabase
         .from('opportunity_applications')
         .select(`
-          *,
-          creator:profiles!creator_id (
+          id,
+          creator_id,
+          status,
+          message,
+          applied_at,
+          creator:profiles!opportunity_applications_creator_id_fkey (
             name,
             email,
             bio,
@@ -60,14 +101,15 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
       if (error) {
         console.error('Erro ao buscar candidaturas:', error);
       } else {
-        setApplications(data || []);
+        const normalized = (data || []).map(normalizeApplication);
+        setApplications(normalized);
       }
     } catch (err) {
       console.error('Erro ao buscar candidaturas:', err);
     } finally {
       setLoading(false);
     }
-  }, [opportunityId]);
+  }, [opportunityId, normalizeApplication]);
 
   useEffect(() => {
     fetchApplications();
@@ -224,6 +266,13 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
+                      <button
+                        onClick={() => openCreatorProfile(application.creator_id)}
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-purple-600 border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
+                      >
+                        <ExternalLink className="h-3.5 w-3.5" />
+                        Ver perfil
+                      </button>
                       {getStatusBadge(application.status)}
                     </div>
                   </div>
