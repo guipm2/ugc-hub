@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { X, Users, Check, XIcon, ExternalLink, MapPin } from 'lucide-react';
+import { X, Users, Check, XIcon, ExternalLink, MapPin, AlertTriangle } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 
@@ -14,7 +14,8 @@ interface Application {
     email: string;
     bio: string;
     location: string;
-    niche: string;
+    niche?: string;
+    niches?: string[];
     followers: string;
     website: string;
     avatar_url: string;
@@ -25,16 +26,21 @@ interface ApplicationsModalProps {
   opportunityId: string;
   opportunityTitle: string;
   onClose: () => void;
+  onOpportunityStatusChange?: (opportunityId: string, status: string) => void;
+  onCandidatesCountChange?: (opportunityId: string, count: number) => void;
 }
 
 const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
   opportunityId,
   opportunityTitle,
-  onClose
+  onClose,
+  onOpportunityStatusChange,
+  onCandidatesCountChange
 }) => {
   const [applications, setApplications] = useState<Application[]>([]);
   const [loading, setLoading] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const { analyst } = useAnalystAuth();
 
   const openCreatorProfile = (creatorId: string) => {
@@ -51,6 +57,24 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
       const value = source?.[key];
       return typeof value === 'string' ? value : fallback;
     };
+    const getStringArray = (source: Record<string, unknown> | undefined, key: string): string[] => {
+      const value = source?.[key];
+      if (Array.isArray(value)) {
+        return value
+          .map((item) => (typeof item === 'string' ? item : String(item ?? '')).trim())
+          .filter((item) => item.length > 0);
+      }
+      return [];
+    };
+
+    const niches = getStringArray(parsedCreator, 'niches');
+    const primaryNiche = (() => {
+      const legacyNiche = getString(parsedCreator, 'niche');
+      if (legacyNiche) {
+        return legacyNiche;
+      }
+      return niches[0] ?? '';
+    })();
 
     return {
       id: String(raw.id),
@@ -66,7 +90,8 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
         email: getString(parsedCreator, 'email', 'Email não informado'),
         bio: getString(parsedCreator, 'bio'),
         location: getString(parsedCreator, 'location'),
-        niche: getString(parsedCreator, 'niche'),
+        niche: primaryNiche,
+        niches,
         followers: getString(parsedCreator, 'followers'),
         website: getString(parsedCreator, 'website'),
         avatar_url: getString(parsedCreator, 'avatar_url')
@@ -74,7 +99,11 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
     };
   }, []);
 
-  const fetchApplications = useCallback(async () => {
+  const fetchApplications = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
+    if (!silent) {
+      setLoading(true);
+    }
+    setErrorMessage(null);
     try {
       const { data, error } = await supabase
         .from('opportunity_applications')
@@ -89,7 +118,7 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
             email,
             bio,
             location,
-            niche,
+            niches,
             followers,
             website,
             avatar_url
@@ -100,19 +129,36 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
 
       if (error) {
         console.error('Erro ao buscar candidaturas:', error);
+        setErrorMessage('Não foi possível carregar as candidaturas desta oportunidade.');
+        setApplications([]);
+        onCandidatesCountChange?.(opportunityId, 0);
       } else {
         const normalized = (data || []).map(normalizeApplication);
         setApplications(normalized);
+        onCandidatesCountChange?.(opportunityId, normalized.length);
       }
     } catch (err) {
       console.error('Erro ao buscar candidaturas:', err);
+      setErrorMessage('Ocorreu um erro inesperado ao carregar as candidaturas.');
+      setApplications([]);
+      onCandidatesCountChange?.(opportunityId, 0);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
-  }, [opportunityId, normalizeApplication]);
+  }, [normalizeApplication, onCandidatesCountChange, opportunityId]);
 
   useEffect(() => {
-    fetchApplications();
+    void fetchApplications();
+  }, [fetchApplications]);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      void fetchApplications({ silent: true });
+    }, 15000);
+
+    return () => clearInterval(interval);
   }, [fetchApplications]);
 
   const updateApplicationStatus = async (applicationId: string, status: 'approved' | 'rejected') => {
@@ -141,15 +187,23 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
         // If approved, create a conversation for the project
         if (status === 'approved') {
           await createProjectConversation(opportunityId, application.creator_id);
+          const now = new Date().toISOString();
+          const { error: opportunityError } = await supabase
+            .from('opportunities')
+            .update({
+              status: 'inativo',
+              updated_at: now
+            })
+            .eq('id', opportunityId);
+
+          if (opportunityError) {
+            console.error('Erro ao encerrar oportunidade após aprovação:', opportunityError);
+          } else if (onOpportunityStatusChange) {
+            onOpportunityStatusChange(opportunityId, 'inativo');
+          }
         }
 
-        setApplications(prev =>
-          prev.map(app =>
-            app.id === applicationId
-              ? { ...app, status }
-              : app
-          )
-        );
+        await fetchApplications({ silent: true });
         // REMOVIDO: alert(`Candidatura ${status === 'approved' ? 'aprovada' : 'rejeitada'} com sucesso! O criador será notificado.`);
       }
     } catch (err) {
@@ -237,6 +291,21 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
             <div className="flex items-center justify-center h-64">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
             </div>
+          ) : errorMessage ? (
+            <div className="text-center py-12">
+              <AlertTriangle className="h-14 w-14 text-red-500 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">Erro ao carregar candidaturas</h3>
+              <p className="text-gray-600 mb-6">{errorMessage}</p>
+              <button
+                onClick={() => {
+                  setLoading(true);
+                  void fetchApplications();
+                }}
+                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              >
+                Tentar novamente
+              </button>
+            </div>
           ) : applications.length === 0 ? (
             <div className="text-center py-12">
               <Users className="h-16 w-16 text-gray-400 mx-auto mb-4" />
@@ -285,14 +354,28 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
                       </div>
                     )}
                     
-                    {application.creator.niche && (
+                    {application.creator.niches && application.creator.niches.length > 0 ? (
+                      <div className="md:col-span-2 flex items-start gap-2 text-sm text-gray-600">
+                        <span className="font-medium mt-1">Nichos:</span>
+                        <div className="flex flex-wrap gap-2">
+                          {application.creator.niches.map((niche) => (
+                            <span
+                              key={niche}
+                              className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs"
+                            >
+                              {niche}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    ) : application.creator.niche ? (
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span className="font-medium">Nicho:</span>
                         <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
                           {application.creator.niche.charAt(0).toUpperCase() + application.creator.niche.slice(1)}
                         </span>
                       </div>
-                    )}
+                    ) : null}
                     
                     {application.creator.location && (
                       <div className="flex items-center gap-2 text-sm text-gray-600">

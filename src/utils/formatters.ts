@@ -77,3 +77,46 @@ export const formatPhone = (value: string) => {
 };
 
 export const stripFormatting = (value: string) => onlyDigits(value);
+
+const sanitizeHandle = (value: string) =>
+  value.replace(/^@+/, '').split(/[/?#]/)[0]?.trim() ?? '';
+
+const ensureHttps = (value: string) =>
+  /^https?:\/\//i.test(value) ? value : `https://${value.replace(/^https?:\/\//i, '')}`;
+
+const isLikelyDomain = (value: string) => /[a-z0-9-]+\.[a-z]{2,}(?:\.[a-z]{2,})?$/i.test(value);
+
+/**
+ * Normaliza links informados para oportunidades, aceitando @handles, domínios sem protocolo
+ * e URLs do Instagram. Retorna string vazia para valores inválidos ou vazios.
+ */
+export const normalizeCompanyLink = (raw?: string | null) => {
+  if (!raw) return '';
+
+  const trimmed = raw.trim();
+  if (!trimmed) return '';
+
+  if (/^https?:\/\//i.test(trimmed)) {
+    return trimmed;
+  }
+
+  if (/^@/.test(trimmed)) {
+    const handle = sanitizeHandle(trimmed);
+    return handle ? `https://instagram.com/${handle}` : '';
+  }
+
+  if (/^(?:www\.)?instagram\.com\//i.test(trimmed)) {
+    const withoutWww = trimmed.replace(/^www\./i, '');
+    return ensureHttps(withoutWww);
+  }
+
+  if (/^www\./i.test(trimmed) || isLikelyDomain(trimmed)) {
+    return ensureHttps(trimmed);
+  }
+
+  const handle = sanitizeHandle(trimmed);
+  return handle ? `https://instagram.com/${handle}` : '';
+};
+
+export const isInstagramUrl = (url?: string | null) =>
+  typeof url === 'string' && /instagram\.com/i.test(url);

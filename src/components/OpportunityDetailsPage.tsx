@@ -3,6 +3,7 @@ import { ArrowLeft, MapPin, Calendar, DollarSign, Tag, Users, Building2, Send, H
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
+import { isInstagramUrl, normalizeCompanyLink } from '../utils/formatters';
 
 interface OpportunityDetails {
   id: string;
@@ -69,6 +70,8 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
       // Atualizar dados da oportunidade com contagem dinâmica
       const updatedOpportunity = {
         ...oppData,
+        company_link: normalizeCompanyLink((oppData?.company_link as string) ?? ''),
+        requirements: Array.isArray(oppData?.requirements) ? oppData.requirements : [],
         candidates_count: candidatesCount || 0
       };
 
@@ -102,6 +105,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
 
   const handleApply = async () => {
     if (!user || !opportunity) return;
+    if (opportunity.status !== 'ativo') return;
     
     setApplying(true);
     try {
@@ -218,6 +222,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
   }
 
   const daysLeft = getDaysLeft(opportunity.deadline);
+  const isClosed = opportunity.status !== 'ativo' || daysLeft <= 0;
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -245,6 +250,12 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
           <div className="lg:col-span-2 space-y-8">
             {/* Title and Header Info */}
             <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+              {isClosed && (
+                <div className="mb-6 flex items-center gap-3 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+                  <Clock className="h-4 w-4" />
+                  Esta oportunidade não está mais aceitando candidaturas.
+                </div>
+              )}
               <div className="flex flex-wrap items-center gap-3 mb-6">
                 <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
                   daysLeft <= 3 
@@ -264,6 +275,11 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                   <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
                     <Star className="h-4 w-4 mr-2" />
                     Popular
+                  </span>
+                )}
+                {opportunity.status !== 'ativo' && (
+                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-200 text-gray-700">
+                    Encerrada
                   </span>
                 )}
                 {userApplication && (
@@ -371,7 +387,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
             {/* Horizontal Cards - Actions and Company Info */}
             <div className="grid md:grid-cols-2 gap-6">
               {/* Actions */}
-              {user && !userApplication && daysLeft > 0 && (
+              {user && !userApplication && !isClosed && (
                 <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
                   <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
                     <div className="p-2 bg-blue-100 rounded-lg">
@@ -440,12 +456,12 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                         }}
                         className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
                       >
-                        {opportunity.company_link?.includes('instagram.com') ? (
+                        {isInstagramUrl(opportunity.company_link) ? (
                           <Instagram className="h-5 w-5" />
                         ) : (
                           <Globe className="h-5 w-5" />
                         )}
-                        {opportunity.company_link?.includes('instagram.com') ? 'Ver Instagram' : 'Visitar Site'}
+                        {isInstagramUrl(opportunity.company_link) ? 'Ver Instagram' : 'Visitar Site'}
                         <ExternalLink className="h-4 w-4" />
                       </button>
                       <p className="text-xs text-blue-700 mt-2 text-center">

@@ -1,11 +1,13 @@
 import React, { useState } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
+import { normalizeCompanyLink } from '../../utils/formatters';
 
 interface Opportunity {
   id: string;
   title: string;
   company: string;
+  company_link?: string;
   description: string;
   budget_min: number;
   budget_max: number;
@@ -33,6 +35,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
 }) => {
   const [formData, setFormData] = useState({
     title: opportunity.title,
+    company_link: opportunity.company_link ?? '',
     description: opportunity.description,
     budget_min: opportunity.budget_min,
     budget_max: opportunity.budget_max,
@@ -52,10 +55,12 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
     setLoading(true);
 
     try {
+      const normalizedLink = normalizeCompanyLink(formData.company_link);
       const { error } = await supabase
         .from('opportunities')
         .update({
           title: formData.title,
+          company_link: normalizedLink,
           description: formData.description,
           budget_min: formData.budget_min,
           budget_max: formData.budget_max,
@@ -74,7 +79,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
         console.error('Erro ao atualizar oportunidade:', error);
         // REMOVIDO: alert('Erro ao atualizar oportunidade');
       } else {
-        onSubmit(formData);
+        onSubmit({ ...formData, company_link: normalizedLink });
         // REMOVIDO: alert('Oportunidade atualizada com sucesso!');
       }
     } catch (err) {
@@ -143,6 +148,19 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
               rows={4}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
               required
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Link da Empresa
+            </label>
+            <input
+              type="text"
+              value={formData.company_link}
+              onChange={(e) => setFormData(prev => ({ ...prev, company_link: e.target.value }))}
+              placeholder="https://instagram.com/empresa ou https://empresa.com"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
             />
           </div>
 

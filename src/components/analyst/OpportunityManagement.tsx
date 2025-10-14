@@ -1,8 +1,24 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Plus, Search, Filter, Edit, Trash2, Eye, Users, Target, UserCheck } from 'lucide-react';
+import {
+  Plus,
+  Search,
+  Filter,
+  Edit,
+  Trash2,
+  Eye,
+  Users,
+  Target,
+  UserCheck,
+  Clock,
+  DollarSign,
+  MapPin,
+  Tag
+} from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { resolveSiteUrl } from '../../utils/siteUrl';
+import { normalizeCompanyLink } from '../../utils/formatters';
+import { useAutoRefresh } from '../../hooks/useAutoRefresh';
 import CreateOpportunityModal from './CreateOpportunityModal';
 import ApplicationsModal from './ApplicationsModal';
 import ViewOpportunityModal from './ViewOpportunityModal';
@@ -51,6 +67,105 @@ const OPPORTUNITY_CREATED_WEBHOOK_URL =
 
 type RawOpportunity = Partial<Opportunity> & Record<string, unknown>;
 
+const formatBudgetRange = (min?: number, max?: number): string => {
+  const hasMin = typeof min === 'number' && min > 0;
+  const hasMax = typeof max === 'number' && max > 0;
+  const formatCurrency = (value: number) =>
+    value.toLocaleString('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    });
+
+  if (!hasMin && !hasMax) {
+    return 'Permuta';
+  }
+
+  if (hasMin && hasMax) {
+    if (min === max) {
+      return formatCurrency(min as number);
+    }
+
+    return `${formatCurrency(min as number)} - ${formatCurrency(max as number)}`;
+  }
+
+  if (hasMin) {
+    return `A partir de ${formatCurrency(min as number)}`;
+  }
+
+  return `Até ${formatCurrency(max as number)}`;
+};
+
+type DeadlineInfo = {
+  formattedDate: string;
+  statusText: string;
+  badgeClass: string;
+};
+
+const getDeadlineInfo = (deadline?: string): DeadlineInfo => {
+  if (!deadline) {
+    return {
+      formattedDate: 'Sem prazo definido',
+      statusText: 'Sem prazo',
+      badgeClass: 'bg-gray-100 text-gray-600'
+    };
+  }
+
+  const deadlineDate = new Date(deadline);
+
+  if (Number.isNaN(deadlineDate.getTime())) {
+    return {
+      formattedDate: 'Prazo inválido',
+      statusText: 'Verifique a data',
+      badgeClass: 'bg-red-100 text-red-700'
+    };
+  }
+
+  const normalizedDeadline = new Date(deadlineDate);
+  normalizedDeadline.setHours(0, 0, 0, 0);
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  const diffDays = Math.ceil((normalizedDeadline.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  const formattedDate = normalizedDeadline.toLocaleDateString('pt-BR', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  });
+
+  if (diffDays < 0) {
+    return {
+      formattedDate,
+      statusText: `Encerrada há ${Math.abs(diffDays)}d`,
+      badgeClass: 'bg-gray-200 text-gray-600'
+    };
+  }
+
+  if (diffDays === 0) {
+    return {
+      formattedDate,
+      statusText: 'Encerra hoje',
+      badgeClass: 'bg-red-100 text-red-700'
+    };
+  }
+
+  if (diffDays <= 7) {
+    return {
+      formattedDate,
+      statusText: `Encerra em ${diffDays}d`,
+      badgeClass: 'bg-orange-100 text-orange-700'
+    };
+  }
+
+  return {
+    formattedDate,
+    statusText: `Em ${diffDays}d`,
+    badgeClass: 'bg-emerald-100 text-emerald-700'
+  };
+};
+
 const normalizeOpportunity = (raw: RawOpportunity, overrides: Partial<Opportunity> = {}): Opportunity => {
   const safeArray = (value?: string[] | null) => (Array.isArray(value) ? value : []);
 
@@ -58,7 +173,7 @@ const normalizeOpportunity = (raw: RawOpportunity, overrides: Partial<Opportunit
     id: (raw?.id as string) ?? overrides.id ?? '',
     title: (raw?.title as string) ?? overrides.title ?? '',
     company: (raw?.company as string) ?? overrides.company ?? '',
-    company_link: (raw?.company_link as string) ?? overrides.company_link ?? '',
+    company_link: normalizeCompanyLink((raw?.company_link as string) ?? overrides.company_link ?? ''),
     description: (raw?.description as string) ?? overrides.description ?? '',
     budget_min: typeof raw?.budget_min === 'number' ? (raw.budget_min as number) : overrides.budget_min ?? 0,
     budget_max: typeof raw?.budget_max === 'number' ? (raw.budget_max as number) : overrides.budget_max ?? 0,
@@ -142,58 +257,84 @@ const OpportunityManagement: React.FC = () => {
   const [deadlineFilter, setDeadlineFilter] = useState<'all' | 'upcoming' | 'past'>('all');
   const { profile } = useAnalystAuth();
 
-  const fetchOpportunities = useCallback(async () => {
+  const fetchOpportunities = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!profile) return;
+
+    if (!silent) {
+      setLoading(true);
+    }
 
     try {
       const { data, error } = await supabase
         .from('opportunities')
-        .select('*')
+        .select(`
+          *,
+          application_metrics:opportunity_applications!opportunity_applications_opportunity_id_fkey(count)
+        `)
         .eq('created_by', profile.id)
         .order('created_at', { ascending: false });
 
       if (error) {
         console.error('Erro ao buscar oportunidades:', error);
       } else {
-        // Calculate dynamic candidates count for each opportunity
-        const opportunitiesWithCount = await Promise.all(
-          (data || []).map(async (opp) => {
-            const { count, error: countError } = await supabase
-              .from('opportunity_applications')
-              .select('*', { count: 'exact', head: true })
-              .eq('opportunity_id', opp.id);
+        const next = (data || []).map((raw) => {
+          const record = raw as Record<string, unknown> & {
+            application_metrics?: Array<Record<string, unknown>> | Record<string, unknown> | null;
+          };
 
-            if (countError) {
-              console.error('Erro ao buscar contagem de candidatos:', countError);
-            }
+          let applicationsCount = 0;
+          const metrics = record.application_metrics;
+          const parseCount = (value: unknown): number => {
+            const numeric = Number(value);
+            return Number.isFinite(numeric) ? numeric : 0;
+          };
 
-            return normalizeOpportunity(opp as RawOpportunity, {
-              candidates_count: count || 0
-            });
-          })
-        );
+          if (Array.isArray(metrics)) {
+            const firstEntry = metrics[0];
+            const rawCount = firstEntry?.count;
+            applicationsCount = parseCount(rawCount);
+          } else if (metrics && typeof metrics === 'object') {
+            const rawCount = (metrics as { count?: unknown }).count;
+            applicationsCount = parseCount(rawCount);
+          }
 
-        setOpportunities(opportunitiesWithCount);
+          const opportunityFields = { ...record } as Record<string, unknown>;
+          delete opportunityFields.application_metrics;
+
+          return normalizeOpportunity(opportunityFields as RawOpportunity, {
+            candidates_count: applicationsCount
+          });
+        });
+
+        setOpportunities(next);
       }
     } catch (err) {
       console.error('Erro ao buscar oportunidades:', err);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [profile]);
 
   useEffect(() => {
-    fetchOpportunities();
+    void fetchOpportunities();
   }, [fetchOpportunities]);
+
+  useAutoRefresh(() => fetchOpportunities({ silent: true }), 20000, true);
 
   const handleCreateOpportunity = async (opportunityData: NewOpportunityPayload) => {
     if (!profile) return;
 
     try {
+      const sanitizedData = {
+        ...opportunityData,
+        company_link: normalizeCompanyLink(opportunityData.company_link)
+      };
       const { data, error } = await supabase
         .from('opportunities')
         .insert({
-          ...opportunityData,
+          ...sanitizedData,
           // Usar analyst_id para referenciar tabela analysts
           analyst_id: profile.id,
           company: profile.company,
@@ -212,7 +353,7 @@ const OpportunityManagement: React.FC = () => {
           candidates_count: 0
         });
 
-        setOpportunities([createdOpportunity, ...opportunities]);
+        setOpportunities(prev => [createdOpportunity, ...prev]);
         setShowCreateModal(false);
         void notifyOpportunityCreated(createdOpportunity);
         // REMOVIDO: alert('Oportunidade criada com sucesso!');
@@ -236,7 +377,7 @@ const OpportunityManagement: React.FC = () => {
         console.error('Erro ao excluir oportunidade:', error);
         // REMOVIDO: alert('Erro ao excluir oportunidade');
       } else {
-        setOpportunities(opportunities.filter(opp => opp.id !== id));
+        setOpportunities(prev => prev.filter(opp => opp.id !== id));
         // REMOVIDO: alert('Oportunidade excluída com sucesso!');
       }
     } catch (err) {
@@ -254,6 +395,16 @@ const OpportunityManagement: React.FC = () => {
     setSelectedOpportunity(opportunity);
     setShowEditModal(true);
   };
+
+  const handleCandidatesCountChange = useCallback((opportunityId: string, count: number) => {
+    setOpportunities(prev =>
+      prev.map((opportunity) =>
+        opportunity.id === opportunityId
+          ? { ...opportunity, candidates_count: count }
+          : opportunity
+      )
+    );
+  }, []);
 
   const filteredOpportunities = opportunities.filter((opportunity) => {
     const normalizedSearch = searchTerm.trim().toLowerCase();
@@ -415,106 +566,168 @@ const OpportunityManagement: React.FC = () => {
 
       {/* Opportunities List */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {filteredOpportunities.map((opportunity) => (
-          <div
-            key={opportunity.id}
-            className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all duration-200"
-          >
-            {/* Header */}
-            <div className="flex items-start justify-between mb-4">
-              <div>
-                <h3 className="font-semibold text-gray-900">{opportunity.title}</h3>
-                <p className="text-gray-600 text-sm">{opportunity.company}</p>
+        {filteredOpportunities.map((opportunity) => {
+          const deadlineInfo = getDeadlineInfo(opportunity.deadline);
+          const requirementCount = opportunity.requirements?.length ?? 0;
+          const hasAudienceDetail = Boolean(opportunity.age_range || opportunity.gender);
+          const candidateLabel = opportunity.candidates_count === 1 ? 'candidato' : 'candidatos';
+
+          return (
+            <div
+              key={opportunity.id}
+              className="flex flex-col gap-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm transition-shadow duration-200 hover:shadow-lg"
+            >
+              <div className="flex flex-wrap items-start justify-between gap-4">
+                <div className="space-y-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <h3 className="text-lg font-semibold text-gray-900">{opportunity.title}</h3>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2 text-sm text-gray-500">
+                    <span className="font-medium text-gray-700">{opportunity.company || 'Empresa não informada'}</span>
+                    {opportunity.location && (
+                      <>
+                        <span className="hidden h-1.5 w-1.5 rounded-full bg-gray-300 sm:inline-block" />
+                        <span className="inline-flex items-center gap-1">
+                          <MapPin className="h-4 w-4 text-gray-400" />
+                          {opportunity.location}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+                <div className="flex flex-col items-end gap-2">
+                  <span
+                    className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold uppercase ${
+                      opportunity.status === 'ativo'
+                        ? 'bg-emerald-100 text-emerald-700'
+                        : 'bg-gray-100 text-gray-600'
+                    }`}
+                  >
+                    <span className="inline-block h-2 w-2 rounded-full bg-current"></span>
+                    {opportunity.status === 'ativo' ? 'Ativa' : 'Inativa'}
+                  </span>
+                  <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700">
+                    <Users className="h-4 w-4" />
+                    <span>{opportunity.candidates_count}</span>
+                    <span className="text-xs font-medium uppercase tracking-wide text-blue-600">{candidateLabel}</span>
+                  </div>
+                </div>
               </div>
-              
-              <div className="flex items-center gap-2">
-                <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                  opportunity.status === 'ativo' 
-                    ? 'bg-green-100 text-green-700' 
-                    : 'bg-gray-100 text-gray-700'
-                }`}>
-                  {opportunity.status === 'ativo' ? 'Ativa' : 'Inativa'}
-                </span>
+
+              <p className="text-sm leading-relaxed text-gray-600 line-clamp-3">
+                {opportunity.description || 'Sem descrição disponível para esta oportunidade.'}
+              </p>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-emerald-50">
+                    <DollarSign className="h-5 w-5 text-emerald-600" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Investimento</p>
+                    <p className="text-sm font-semibold text-gray-900">{formatBudgetRange(opportunity.budget_min, opportunity.budget_max)}</p>
+                    <p className="text-xs text-gray-500">Valores previstos para o criador</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-orange-50">
+                    <Clock className="h-5 w-5 text-orange-500" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Prazo</p>
+                    <p className="text-sm font-semibold text-gray-900">{deadlineInfo.formattedDate}</p>
+                    <span className={`mt-1 inline-flex rounded-full px-2.5 py-0.5 text-xs font-medium ${deadlineInfo.badgeClass}`}>
+                      {deadlineInfo.statusText}
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-50">
+                    <Tag className="h-5 w-5 text-purple-500" />
+                  </span>
+                  <div>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Formato</p>
+                    <p className="text-sm font-semibold text-gray-900">{opportunity.content_type || 'Não informado'}</p>
+                    <p className="text-xs text-gray-500">
+                      {opportunity.company_link ? 'Briefing disponível' : 'Sem link cadastrado'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {(requirementCount > 0 || hasAudienceDetail) && (
+                <div className="flex flex-wrap gap-2 text-xs font-medium text-gray-600">
+                  {requirementCount > 0 && (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1">
+                      {requirementCount} {requirementCount === 1 ? 'requisito' : 'requisitos'}
+                    </span>
+                  )}
+                  {opportunity.age_range && (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1">
+                      <UserCheck className="h-3.5 w-3.5" />
+                      Público: {opportunity.age_range}
+                    </span>
+                  )}
+                  {opportunity.gender && (
+                    <span className="inline-flex items-center gap-2 rounded-full bg-gray-100 px-3 py-1">
+                      Perfil: {opportunity.gender}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 pt-4">
+                <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-gray-500">
+                  {opportunity.company_link && (
+                    <a
+                      href={opportunity.company_link}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1 rounded-full border border-purple-200 px-3 py-1 text-purple-600 transition-colors hover:bg-purple-50"
+                    >
+                      Ver briefing
+                    </a>
+                  )}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <button
+                    onClick={() =>
+                      setShowApplicationsModal({
+                        opportunityId: opportunity.id,
+                        opportunityTitle: opportunity.title
+                      })
+                    }
+                    className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-purple-700"
+                  >
+                    <UserCheck className="h-4 w-4 text-white" />
+                    Candidaturas
+                  </button>
+                  <button
+                    onClick={() => handleViewOpportunity(opportunity)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                  >
+                    <Eye className="h-4 w-4" />
+                    Ver detalhes
+                  </button>
+                  <button
+                    onClick={() => handleEditOpportunity(opportunity)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm font-medium text-gray-700 transition-colors hover:border-gray-300 hover:bg-gray-50"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Editar
+                  </button>
+                  <button
+                    onClick={() => handleDeleteOpportunity(opportunity.id)}
+                    className="inline-flex items-center gap-2 rounded-lg border border-red-200 px-3 py-2 text-sm font-medium text-red-600 transition-colors hover:bg-red-50"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                    Excluir
+                  </button>
+                </div>
               </div>
             </div>
-
-            {/* Description */}
-            <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-              {opportunity.description}
-            </p>
-
-            {/* Details */}
-            <div className="grid grid-cols-2 gap-4 mb-4 text-sm text-gray-600">
-              <div>
-                <span className="font-medium">Valor para Criador:</span>
-                <br />
-                {opportunity.budget_min === 0 && opportunity.budget_max === 0 
-                  ? 'Permuta' 
-                  : `R$ ${opportunity.budget_min.toFixed(2)}`
-                }
-              </div>
-              <div>
-                <span className="font-medium">Localização:</span>
-                <br />
-                {opportunity.location}
-              </div>
-              <div>
-                <span className="font-medium">Tipo:</span>
-                <br />
-                {opportunity.content_type}
-              </div>
-              <div>
-                <span className="font-medium">Prazo:</span>
-                <br />
-                {new Date(opportunity.deadline).toLocaleDateString('pt-BR')}
-              </div>
-            </div>
-
-            {/* Candidates */}
-            <div className="flex items-center gap-2 mb-4 text-sm text-gray-600">
-              <Users className="h-4 w-4" />
-              {opportunity.candidates_count} candidatos
-            </div>
-
-            {/* Actions */}
-            <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setShowApplicationsModal({
-                    opportunityId: opportunity.id,
-                    opportunityTitle: opportunity.title
-                  })}
-                  className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  <UserCheck className="h-4 w-4" />
-                  Candidaturas
-                </button>
-                <button 
-                  onClick={() => handleViewOpportunity(opportunity)}
-                  className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  <Eye className="h-4 w-4" />
-                  Ver
-                </button>
-                <button 
-                  onClick={() => handleEditOpportunity(opportunity)}
-                  className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
-                >
-                  <Edit className="h-4 w-4" />
-                  Editar
-                </button>
-              </div>
-              
-              <button
-                onClick={() => handleDeleteOpportunity(opportunity.id)}
-                className="flex items-center gap-1 text-red-500 hover:text-red-700 transition-colors"
-              >
-                <Trash2 className="h-4 w-4" />
-                Excluir
-              </button>
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       {filteredOpportunities.length === 0 && (
@@ -553,7 +766,21 @@ const OpportunityManagement: React.FC = () => {
         <ApplicationsModal
           opportunityId={showApplicationsModal.opportunityId}
           opportunityTitle={showApplicationsModal.opportunityTitle}
-          onClose={() => setShowApplicationsModal(null)}
+          onClose={() => {
+            setShowApplicationsModal(null);
+            void fetchOpportunities({ silent: true });
+          }}
+          onCandidatesCountChange={handleCandidatesCountChange}
+          onOpportunityStatusChange={(id, status) => {
+            setOpportunities(prev =>
+              prev.map(opportunity =>
+                opportunity.id === id ? { ...opportunity, status } : opportunity
+              )
+            );
+            if (status === 'inativo') {
+              void fetchOpportunities({ silent: true });
+            }
+          }}
         />
       )}
 
@@ -572,9 +799,13 @@ const OpportunityManagement: React.FC = () => {
           onClose={() => setShowEditModal(false)}
           onSubmit={(updatedData: Partial<Opportunity>) => {
             // Atualizar a oportunidade na lista
-            setOpportunities(opportunities.map(opp => 
+            setOpportunities(prev => prev.map(opp => 
               opp.id === selectedOpportunity.id 
-                ? { ...opp, ...updatedData }
+                ? {
+                    ...opp,
+                    ...updatedData,
+                    company_link: normalizeCompanyLink(updatedData.company_link ?? opp.company_link)
+                  }
                 : opp
             ));
             setShowEditModal(false);

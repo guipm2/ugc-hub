@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
+import { normalizeCompanyLink } from '../../utils/formatters';
 
 interface CreateOpportunityModalProps {
   onClose: () => void;
@@ -109,7 +110,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
     const opportunityData = {
       title: formData.title,
       company: formData.company || 'Empresa não informada',
-      company_link: formData.company_link,
+      company_link: normalizeCompanyLink(formData.company_link),
       description: formData.description,
       budget_min: budget.min,
       budget_max: budget.max,
