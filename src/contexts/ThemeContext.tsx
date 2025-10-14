@@ -1,7 +1,6 @@
-import { createContext, useEffect, useMemo, useState, type ReactNode } from 'react';
-import { useRouter } from '../hooks/useRouter';
+import { createContext, useEffect, useMemo, type ReactNode } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'dark';
 
 type ThemeContextValue = {
   theme: Theme;
@@ -13,54 +12,29 @@ type ThemeContextValue = {
 
 export const ThemeContext = createContext<ThemeContextValue | undefined>(undefined);
 
-const STORAGE_KEY = 'ugc-hub-theme';
-
 interface ThemeProviderProps {
   children: ReactNode;
 }
 
 export function ThemeProvider({ children }: ThemeProviderProps) {
-  const [theme, setThemeState] = useState<Theme>(() => {
-    if (typeof window === 'undefined') {
-      return 'light';
-    }
-
-    const storedTheme = window.localStorage.getItem(STORAGE_KEY) as Theme | null;
-    if (storedTheme === 'light' || storedTheme === 'dark') {
-      return storedTheme;
-    }
-
-    const prefersDark = window.matchMedia?.('(prefers-color-scheme: dark)').matches;
-    return prefersDark ? 'dark' : 'light';
-  });
-  const { currentPath } = useRouter();
-
-  const isDarkModeAvailable = useMemo(() => {
-    if (!currentPath) return false;
-    return currentPath.startsWith('/creators') || currentPath.startsWith('/analysts');
-  }, [currentPath]);
-
-  const effectiveTheme: Theme = isDarkModeAvailable ? theme : 'light';
+  const theme: Theme = 'dark';
+  const effectiveTheme: Theme = 'dark';
+  const isDarkModeAvailable = true;
 
   useEffect(() => {
     if (typeof document === 'undefined') {
       return;
     }
 
-    const root = document.documentElement;
-    root.classList.remove('light', 'dark');
-    root.classList.add(effectiveTheme);
-    if (typeof window !== 'undefined') {
-      window.localStorage.setItem(STORAGE_KEY, theme);
-    }
-  }, [theme, effectiveTheme]);
+    document.documentElement.classList.add('dark');
+  }, []);
 
-  const setTheme = (value: Theme) => {
-    setThemeState(value);
+  const setTheme = () => {
+    // no-op: single dark theme
   };
 
   const toggleTheme = () => {
-    setThemeState(current => (current === 'light' ? 'dark' : 'light'));
+    // no-op: single dark theme
   };
 
   const value = useMemo(

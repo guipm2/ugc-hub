@@ -226,88 +226,119 @@ const Dashboard = () => {
     }
   }, [user]);
 
+  const approvedCount = applications.filter(app => app.status === 'approved').length;
+  const pendingCount = applications.filter(app => app.status === 'pending').length;
+  const activeDeliverablesCount = deliverables.filter(d => ['pending', 'in_progress'].includes(d.status)).length;
+  const today = new Date();
+  const threeDaysFromNow = new Date();
+  threeDaysFromNow.setDate(today.getDate() + 3);
+  const urgentDeliverablesCount = deliverables.filter(d => {
+    if (!['pending', 'in_progress'].includes(d.status)) return false;
+    const dueDate = new Date(d.due_date);
+    return dueDate <= threeDaysFromNow;
+  }).length;
+  const completedDeliverablesCount = deliverables.filter(d => d.status === 'completed').length;
+
   const stats = [
-    { 
-      label: 'Oportunidades Aplicadas', 
-      value: applications.length.toString(), 
-      icon: Target, 
-      color: 'text-blue-600', 
-      bg: 'bg-blue-100',
+    {
+      label: 'Oportunidades Aplicadas',
+      value: applications.length.toString(),
+      icon: Target,
+      accent: 'info',
       description: 'Total de candidaturas enviadas'
     },
-    { 
-      label: 'Propostas Aceitas', 
-      value: applications.filter(app => app.status === 'approved').length.toString(), 
-      icon: Award, 
-      color: 'text-green-600', 
-      bg: 'bg-green-100',
+    {
+      label: 'Propostas Aceitas',
+      value: approvedCount.toString(),
+      icon: Award,
+      accent: 'success',
       description: 'Projetos aprovados ativos'
     },
-    { 
-      label: 'Candidaturas Pendentes', 
-      value: applications.filter(app => app.status === 'pending').length.toString(), 
-      icon: Clock, 
-      color: 'text-yellow-600', 
-      bg: 'bg-yellow-100',
+    {
+      label: 'Candidaturas Pendentes',
+      value: pendingCount.toString(),
+      icon: Clock,
+      accent: 'warning',
       description: 'Aguardando análise'
     },
-    { 
-      label: 'Earnings Estimados', 
-      value: totalEarnings > 0 ? `R$ ${(totalEarnings / 1000).toFixed(1)}k` : 'R$ 0', 
-      icon: DollarSign, 
-      color: 'text-emerald-600', 
-      bg: 'bg-emerald-100',
+    {
+      label: 'Earnings Estimados',
+      value: totalEarnings > 0 ? `R$ ${(totalEarnings / 1000).toFixed(1)}k` : 'R$ 0',
+      icon: DollarSign,
+      accent: 'success',
       description: 'Baseado em projetos completados'
     },
-    { 
-      label: 'Tarefas Ativas', 
-      value: deliverables.filter(d => ['pending', 'in_progress'].includes(d.status)).length.toString(), 
-      icon: TrendingUp, 
-      color: 'text-purple-600', 
-      bg: 'bg-purple-100',
+    {
+      label: 'Tarefas Ativas',
+      value: activeDeliverablesCount.toString(),
+      icon: TrendingUp,
+      accent: 'purple',
       description: 'Deliverables em andamento'
     },
-    { 
-      label: 'Prazos Urgentes', 
-      value: (() => {
-        const today = new Date();
-        const threeDaysFromNow = new Date();
-        threeDaysFromNow.setDate(today.getDate() + 3);
-        return deliverables.filter(d => {
-          if (!['pending', 'in_progress'].includes(d.status)) return false;
-          const dueDate = new Date(d.due_date);
-          return dueDate <= threeDaysFromNow;
-        }).length.toString();
-      })(), 
-      icon: AlertCircle, 
-      color: 'text-red-600', 
-      bg: 'bg-red-100',
+    {
+      label: 'Prazos Urgentes',
+      value: urgentDeliverablesCount.toString(),
+      icon: AlertCircle,
+      accent: 'danger',
       description: 'Entrega em até 3 dias'
     }
-  ];
+  ] as const;
+
+  const accentTokens: Record<
+    typeof stats[number]['accent'],
+    { icon: string; chip: string; ring: string }
+  > = {
+    info: { icon: 'text-indigo-200', chip: 'chip-info', ring: 'ring-indigo-400/35' },
+    success: { icon: 'text-emerald-200', chip: 'chip-success', ring: 'ring-emerald-400/35' },
+    warning: { icon: 'text-amber-200', chip: 'chip-warning', ring: 'ring-amber-400/35' },
+    purple: { icon: 'text-fuchsia-200', chip: 'chip-info', ring: 'ring-fuchsia-400/35' },
+    danger: { icon: 'text-rose-200', chip: 'chip-danger', ring: 'ring-rose-400/35' }
+  };
+
+  const statusTokens: Record<Application['status'], { label: string; chip: string; dot: string; ring: string }> = {
+    approved: { label: 'Aprovado', chip: 'chip-success', dot: 'bg-emerald-300', ring: 'ring-emerald-400/30' },
+    pending: { label: 'Pendente', chip: 'chip-warning', dot: 'bg-amber-300', ring: 'ring-amber-400/30' },
+    rejected: { label: 'Rejeitado', chip: 'chip-danger', dot: 'bg-rose-300', ring: 'ring-rose-400/30' }
+  };
+
+  const urgencyTokens = {
+    high: { chip: 'chip-danger', icon: 'text-rose-200', ring: 'ring-rose-400/30' },
+    medium: { chip: 'chip-warning', icon: 'text-amber-200', ring: 'ring-amber-400/30' },
+    low: { chip: 'chip-info', icon: 'text-indigo-200', ring: 'ring-indigo-400/30' }
+  } as const;
+
+  const getUrgencyTokens = (days: number) => {
+    if (days <= 3) return urgencyTokens.high;
+    if (days <= 7) return urgencyTokens.medium;
+    return urgencyTokens.low;
+  };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Dashboard</h1>
-          <p className="text-gray-600 mt-1">Acompanhe suas atividades e métricas de performance</p>
+    <div className="space-y-10">
+      <div className="glass-card p-6 md:p-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="space-y-3">
+          <span className="badge-pill">Visão geral</span>
+          <div>
+            <h1 className="text-2xl font-semibold text-white tracking-tight md:text-3xl">Dashboard</h1>
+            <p className="text-sm text-gray-400 mt-2">
+              Acompanhe suas atividades, projetos e indicadores críticos em tempo real
+            </p>
+          </div>
         </div>
-        <div className="flex gap-3">
-          <button 
+        <div className="flex flex-wrap gap-3">
+          <button
             onClick={() => navigate('/creators/opportunities')}
-            className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+            className="btn-primary-glow px-5 py-2"
           >
             <Target className="h-4 w-4" />
-            Ver Oportunidades
+            Ver oportunidades
           </button>
-          <button 
+          <button
             onClick={() => navigate('/creators/projects')}
-            className="px-4 py-2 border border-gray-300 hover:bg-gray-50 text-gray-700 rounded-lg font-medium transition-colors flex items-center gap-2"
+            className="btn-ghost-glass"
           >
             <Eye className="h-4 w-4" />
-            Meus Projetos
+            Meus projetos
           </button>
         </div>
       </div>
@@ -330,23 +361,25 @@ const Dashboard = () => {
                 return '/creators/dashboard';
             }
           };
+
+          const accent = accentTokens[stat.accent];
           
           return (
             <div 
               key={index} 
-              className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-all duration-200 cursor-pointer group hover:border-blue-200"
+              className={`glass-card group p-6 flex flex-col gap-4 cursor-pointer transition-all duration-300 hover:border-white/35 hover:-translate-y-1 ring-1 ring-transparent ${accent.ring}`}
               onClick={() => navigate(getNavigationPath())}
             >
               <div className="flex items-center justify-between mb-3">
-                <div className={`p-2.5 rounded-lg ${stat.bg} group-hover:scale-105 transition-transform`}>
-                  <Icon className={`h-5 w-5 ${stat.color}`} />
+                <div className="h-11 w-11 rounded-2xl surface-muted border border-white/15 flex items-center justify-center shadow-inner shadow-black/20">
+                  <Icon className={`h-5 w-5 ${accent.icon}`} />
                 </div>
-                <ArrowRight className="h-4 w-4 text-gray-400 group-hover:text-blue-500 transition-colors" />
+                <ArrowRight className="h-4 w-4 text-gray-500 group-hover:text-white/80 transition-colors" />
               </div>
               <div>
-                <p className="text-2xl font-bold text-gray-900 mb-1">{stat.value}</p>
-                <p className="text-sm font-medium text-gray-600 mb-1">{stat.label}</p>
-                <p className="text-xs text-gray-500">{stat.description}</p>
+                <span className={`glass-chip ${accent.chip} text-[0.58rem] mb-2 inline-flex md:text-[0.65rem]`}>{stat.label}</span>
+                <p className="text-2xl font-semibold text-white mb-1 leading-tight md:text-3xl">{stat.value}</p>
+                <p className="text-[0.7rem] text-gray-400 md:text-xs">{stat.description}</p>
               </div>
             </div>
           );
@@ -355,90 +388,78 @@ const Dashboard = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* My Applications */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6 lg:col-span-2">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Minhas Candidaturas</h3>
+        <div className="glass-card p-6 lg:col-span-2 flex flex-col gap-5">
+          <div className="glass-section-title">
+            <div className="icon-wrap">
+              <Target className="h-5 w-5" />
+            </div>
+            <div>
+              <h3>Minhas Candidaturas</h3>
+              <p className="text-sm text-gray-400">Visão rápida das últimas aplicações e seus status</p>
+            </div>
+          </div>
           {loadingApplications ? (
-            <div className="flex items-center justify-center h-32">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/15 border-t-transparent"></div>
             </div>
           ) : applications.length === 0 ? (
-            <div className="text-center py-8">
-              <Target className="h-12 w-12 text-gray-400 mx-auto mb-3" />
-              <p className="text-gray-600">Nenhuma candidatura ainda</p>
-              <p className="text-sm text-gray-500">Candidate-se a oportunidades para vê-las aqui</p>
+            <div className="surface-muted rounded-2xl border border-dashed border-white/15 py-12 text-center space-y-3">
+              <Target className="h-12 w-12 text-gray-500 mx-auto" />
+              <div>
+                <p className="font-medium text-white/90">Nenhuma candidatura ainda</p>
+                <p className="text-sm text-gray-400">Candidate-se a oportunidades para acompanhar seu progresso</p>
+              </div>
             </div>
           ) : (
             <>
-              <div className="space-y-4 max-h-80 overflow-y-auto">
-                {applications.slice(0, 5).map((application) => (
-                  <div 
-                    key={application.id} 
-                    className="flex items-start space-x-3 p-3 hover:bg-gray-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-gray-200"
-                    onClick={() => {
-                      if (application.status === 'approved') {
-                        navigate('/creators/projects');
-                      } else {
-                        navigate('/creators/opportunities');
-                      }
-                    }}
-                  >
-                    <div className="flex-shrink-0">
-                      <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                        application.status === 'approved' 
-                          ? 'bg-green-100' 
-                          : application.status === 'rejected'
-                          ? 'bg-red-100'
-                          : 'bg-yellow-100'
-                      }`}>
-                        <div className={`w-2 h-2 rounded-full ${
-                          application.status === 'approved' 
-                            ? 'bg-green-600' 
-                            : application.status === 'rejected'
-                            ? 'bg-red-600'
-                            : 'bg-yellow-600'
-                        }`}></div>
-                      </div>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <p className="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors">
-                            {application.opportunity.title}
-                          </p>
-                          <p className="text-sm text-gray-600">{application.opportunity.company}</p>
-                          <div className="flex items-center justify-between mt-1">
-                            <p className="text-xs text-gray-500">
-                              {new Date(application.applied_at).toLocaleDateString('pt-BR')}
-                            </p>
-                            <span className={`px-2 py-1 text-xs font-medium rounded-full ${
-                              application.status === 'approved' 
-                                ? 'bg-green-100 text-green-700' 
-                                : application.status === 'rejected'
-                                ? 'bg-red-100 text-red-700'
-                                : 'bg-yellow-100 text-yellow-700'
-                            }`}>
-                              {application.status === 'approved' 
-                                ? 'Aprovado' 
-                                : application.status === 'rejected'
-                                ? 'Rejeitado'
-                                : 'Pendente'
-                              }
-                            </span>
-                          </div>
+              <div className="space-y-4 max-h-80 overflow-y-auto pr-1">
+                {applications.slice(0, 5).map((application) => {
+                  const statusToken = statusTokens[application.status];
+
+                  return (
+                    <div 
+                      key={application.id} 
+                      className={`surface-muted border border-white/10 rounded-2xl p-4 flex items-start gap-3 transition-all duration-300 cursor-pointer ring-1 ring-transparent ${statusToken.ring} hover:border-white/35 hover:ring-white/15`}
+                      onClick={() => {
+                        if (application.status === 'approved') {
+                          navigate('/creators/projects');
+                        } else {
+                          navigate('/creators/opportunities');
+                        }
+                      }}
+                    >
+                      <div className="flex-shrink-0">
+                        <div className="h-10 w-10 rounded-xl border border-white/10 flex items-center justify-center shadow-inner shadow-black/30">
+                          <div className={`h-2.5 w-2.5 rounded-full ${statusToken.dot}`}></div>
                         </div>
-                        <ArrowRight className="w-4 h-4 text-gray-400 ml-2 flex-shrink-0" />
+                      </div>
+                      <div className="flex-1 min-w-0 space-y-2">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="space-y-1">
+                            <p className="text-xs font-semibold text-white leading-snug sm:text-sm line-clamp-2">
+                              {application.opportunity.title}
+                            </p>
+                            <p className="text-xs text-gray-400">{application.opportunity.company}</p>
+                          </div>
+                          <ArrowRight className="w-4 h-4 text-gray-500 mt-1 flex-shrink-0" />
+                        </div>
+                        <div className="flex items-center justify-between text-xs text-gray-500">
+                          <span>{new Date(application.applied_at).toLocaleDateString('pt-BR')}</span>
+                          <span className={`glass-chip ${statusToken.chip} text-[0.65rem]`}>{statusToken.label}</span>
+                        </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
               {applications.length > 5 && (
-                <div className="pt-4 border-t border-gray-200">
+                <div className="pt-4 border-t border-white/10">
                   <button 
                     onClick={() => navigate('/creators/opportunities')}
-                    className="w-full text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center justify-center gap-1 py-2"
+                    className="w-full btn-ghost-glass justify-center text-sm gap-2"
                   >
-                    Ver todas as candidaturas <ArrowRight className="w-4 h-4" />
+                    Ver todas as candidaturas
+                    <ArrowRight className="w-4 h-4" />
                   </button>
                 </div>
               )}
@@ -448,20 +469,29 @@ const Dashboard = () => {
       </div>
 
       {/* Upcoming Deadlines */}
-      <div className="bg-white rounded-xl border border-gray-200 p-6">
-        <div className="flex items-center justify-between mb-6">
-          <h3 className="text-lg font-semibold text-gray-900">Próximos Prazos</h3>
+      <div className="glass-card p-6 space-y-6">
+        <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
+          <div className="glass-section-title mb-0">
+            <div className="icon-wrap">
+              <Calendar className="h-5 w-5" />
+            </div>
+            <div>
+              <h3>Próximos Prazos</h3>
+              <p className="text-sm text-gray-400">Fique de olho nas entregas com vencimento em breve</p>
+            </div>
+          </div>
           <button 
             onClick={() => navigate('/creators/projects')}
-            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+            className="btn-ghost-glass text-sm gap-2"
           >
-            Ver todos <ArrowRight className="w-4 h-4" />
+            Ver todos
+            <ArrowRight className="w-4 h-4" />
           </button>
         </div>
         
         {loadingDeadlines ? (
-          <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/15 border-t-transparent"></div>
           </div>
         ) : upcomingDeadlines.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -469,120 +499,85 @@ const Dashboard = () => {
               const deadlineDate = new Date(deadline.deadline);
               const today = new Date();
               const daysLeft = Math.ceil((deadlineDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-              
-              // Cor baseada na urgência
-              const getUrgencyColor = (days: number) => {
-                if (days <= 3) return { border: 'border-red-200', bg: 'bg-red-50', text: 'text-red-800', icon: 'text-red-600', hover: 'hover:border-red-300' };
-                if (days <= 7) return { border: 'border-orange-200', bg: 'bg-orange-50', text: 'text-orange-800', icon: 'text-orange-600', hover: 'hover:border-orange-300' };
-                return { border: 'border-blue-200', bg: 'bg-blue-50', text: 'text-blue-800', icon: 'text-blue-600', hover: 'hover:border-blue-300' };
-              };
-              
-              const colors = getUrgencyColor(daysLeft);
+              const urgency = getUrgencyTokens(daysLeft);
               
               return (
                 <div 
                   key={deadline.id}
-                  className={`border ${colors.border} ${colors.bg} rounded-lg p-4 hover:shadow-sm transition-all cursor-pointer ${colors.hover}`}
+                  className={`surface-muted border border-white/10 rounded-2xl p-5 flex flex-col gap-3 transition-all cursor-pointer ring-1 ring-transparent ${urgency.ring} hover:border-white/35 hover:ring-white/15`}
                   onClick={() => navigate('/creators/projects')}
                 >
-                  <div className="flex items-center mb-2">
-                    <Calendar className={`h-4 w-4 ${colors.icon} mr-2`} />
-                    <span className={`text-sm font-medium ${colors.text}`}>
-                      {deadlineDate.toLocaleDateString('pt-BR')}
-                      {daysLeft <= 7 && (
-                        <span className="ml-2 text-xs">
-                          ({daysLeft === 0 ? 'Hoje' : daysLeft === 1 ? 'Amanhã' : `${daysLeft} dias`})
-                        </span>
-                      )}
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-sm text-gray-300">
+                      <Calendar className={`h-4 w-4 ${urgency.icon}`} />
+                      <span className="font-medium text-white/90">
+                        {deadlineDate.toLocaleDateString('pt-BR')}
+                      </span>
+                    </div>
+                    <span className={`glass-chip ${urgency.chip} text-[0.65rem]`}> 
+                      {daysLeft <= 0 ? 'Hoje' : daysLeft === 1 ? 'Amanhã' : `${daysLeft} dias`}
                     </span>
                   </div>
-                  <p className="font-semibold text-gray-900">{deadline.title}</p>
-                  <p className="text-sm text-gray-600">{deadline.company}</p>
+                  <div className="space-y-1">
+                    <p className="text-base font-semibold text-white leading-tight">{deadline.title}</p>
+                    <p className="text-sm text-gray-400">{deadline.company}</p>
+                  </div>
                   {deadline.description && (
-                    <p className="text-xs text-gray-500 mt-1 line-clamp-2">{deadline.description}</p>
+                    <p className="text-xs text-gray-500 line-clamp-2">{deadline.description}</p>
                   )}
                 </div>
               );
             })}
           </div>
         ) : (
-          <div className="text-center py-8 text-gray-500">
-            <Calendar className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-            <p className="text-sm">Nenhum prazo próximo encontrado</p>
-            <p className="text-xs text-gray-400 mt-1">Prazos aparecerão aqui quando você tiver projetos aprovados</p>
+          <div className="surface-muted border border-dashed border-white/15 rounded-2xl py-12 text-center space-y-3 text-gray-400">
+            <Calendar className="h-12 w-12 mx-auto text-gray-500" />
+            <div>
+              <p className="text-sm font-medium text-white/80">Nenhum prazo próximo encontrado</p>
+              <p className="text-xs text-gray-500 mt-1">Prazos aparecerão aqui quando você tiver projetos aprovados</p>
+            </div>
           </div>
         )}
       </div>
 
       {/* Creator Performance Insights */}
       {applications.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Insights de Performance</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            {/* Success Rate */}
-            <div className="text-center">
-              <div className="mx-auto w-16 h-16 rounded-full bg-green-100 flex items-center justify-center mb-3">
-                <TrendingUp className="h-8 w-8 text-green-600" />
-              </div>
-              <div className="text-2xl font-bold text-gray-900">
-                {applications.length > 0 
-                  ? `${Math.round((applications.filter(app => app.status === 'approved').length / applications.length) * 100)}%`
-                  : '0%'
-                }
-              </div>
-              <div className="text-sm font-medium text-gray-600">Taxa de Aprovação</div>
-              <div className="text-xs text-gray-500 mt-1">
-                {applications.filter(app => app.status === 'approved').length} de {applications.length} candidaturas
-              </div>
+        <div className="glass-card p-6 space-y-6">
+          <div className="glass-section-title">
+            <div className="icon-wrap">
+              <TrendingUp className="h-5 w-5" />
             </div>
-
-            {/* Active Projects */}
-            <div className="text-center">
-              <div className="mx-auto w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-3">
-                <Target className="h-8 w-8 text-blue-600" />
-              </div>
-              <div className="text-2xl font-bold text-gray-900">
-                {applications.filter(app => app.status === 'approved').length}
-              </div>
-              <div className="text-sm font-medium text-gray-600">Projetos Ativos</div>
-              <div className="text-xs text-gray-500 mt-1">
-                {deliverables.filter(d => d.status === 'completed').length} deliverables concluídos
-              </div>
+            <div>
+              <h3>Insights de Performance</h3>
+              <p className="text-sm text-gray-400">Métricas-chave para acompanhar sua evolução na plataforma</p>
             </div>
-
-            {/* Response Time */}
-            <div className="text-center">
-              <div className="mx-auto w-16 h-16 rounded-full bg-purple-100 flex items-center justify-center mb-3">
-                <Clock className="h-8 w-8 text-purple-600" />
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="surface-muted border border-white/10 rounded-2xl p-6 text-center space-y-3 ring-1 ring-transparent hover:ring-white/15 transition-all duration-300">
+              <div className="h-14 w-14 mx-auto rounded-2xl bg-gradient-to-br from-emerald-400/20 via-emerald-500/10 to-transparent border border-white/10 flex items-center justify-center shadow-inner shadow-black/30">
+                <TrendingUp className="h-7 w-7 text-emerald-200" />
               </div>
-              <div className="text-2xl font-bold text-gray-900">
-                {(() => {
-                  const urgentTasks = deliverables.filter(d => {
-                    if (!['pending', 'in_progress'].includes(d.status)) return false;
-                    const today = new Date();
-                    const dueDate = new Date(d.due_date);
-                    const daysLeft = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                    return daysLeft <= 3;
-                  }).length;
-                  
-                  if (urgentTasks > 0) return `${urgentTasks}`;
-                  return '✓';
-                })()}
+              <div className="text-3xl font-semibold text-white">
+                {applications.length > 0 ? `${Math.round((approvedCount / applications.length) * 100)}%` : '0%'}
               </div>
-              <div className="text-sm font-medium text-gray-600">Prazos Urgentes</div>
-              <div className="text-xs text-gray-500 mt-1">
-                {(() => {
-                  const urgentTasks = deliverables.filter(d => {
-                    if (!['pending', 'in_progress'].includes(d.status)) return false;
-                    const today = new Date();
-                    const dueDate = new Date(d.due_date);
-                    const daysLeft = Math.ceil((dueDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                    return daysLeft <= 3;
-                  }).length;
-                  
-                  return urgentTasks > 0 ? 'Requer atenção imediata' : 'Todos os prazos em dia';
-                })()}
+              <div className="text-sm font-medium text-gray-300">Taxa de aprovação</div>
+              <div className="text-xs text-gray-500">{approvedCount} de {applications.length} candidaturas</div>
+            </div>
+            <div className="surface-muted border border-white/10 rounded-2xl p-6 text-center space-y-3 ring-1 ring-transparent hover:ring-white/15 transition-all duration-300">
+              <div className="h-14 w-14 mx-auto rounded-2xl bg-gradient-to-br from-indigo-400/20 via-indigo-500/10 to-transparent border border-white/10 flex items-center justify-center shadow-inner shadow-black/30">
+                <Target className="h-7 w-7 text-indigo-200" />
               </div>
+              <div className="text-3xl font-semibold text-white">{approvedCount}</div>
+              <div className="text-sm font-medium text-gray-300">Projetos ativos</div>
+              <div className="text-xs text-gray-500">{completedDeliverablesCount} deliverables concluídos</div>
+            </div>
+            <div className="surface-muted border border-white/10 rounded-2xl p-6 text-center space-y-3 ring-1 ring-transparent hover:ring-white/15 transition-all duration-300">
+              <div className="h-14 w-14 mx-auto rounded-2xl bg-gradient-to-br from-amber-400/25 via-orange-500/10 to-transparent border border-white/10 flex items-center justify-center shadow-inner shadow-black/30">
+                <Clock className="h-7 w-7 text-amber-200" />
+              </div>
+              <div className="text-3xl font-semibold text-white">{urgentDeliverablesCount > 0 ? urgentDeliverablesCount : '✓'}</div>
+              <div className="text-sm font-medium text-gray-300">Prazos urgentes</div>
+              <div className="text-xs text-gray-500">{urgentDeliverablesCount > 0 ? 'Requer atenção imediata' : 'Todos os prazos em dia'}</div>
             </div>
           </div>
         </div>

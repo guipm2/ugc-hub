@@ -1,6 +1,7 @@
 import React from 'react';
 import { X, Clock, Settings } from 'lucide-react';
 import { useRouter } from '../../hooks/useRouter';
+import ModalPortal from '../common/ModalPortal';
 
 interface ComingSoonModalProps {
   title?: string;
@@ -25,8 +26,9 @@ const ComingSoonModal: React.FC<ComingSoonModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-md w-full mx-auto shadow-2xl border border-gray-200">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+        <div className="bg-white rounded-xl max-w-md w-full mx-auto shadow-2xl border border-gray-200">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200">
           <div className="flex items-center gap-3">
@@ -105,7 +107,8 @@ const ComingSoonModal: React.FC<ComingSoonModalProps> = ({
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </ModalPortal>
   );
 };
 

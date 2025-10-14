@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, MapPin, Calendar, DollarSign, Tag } from 'lucide-react';
+import ModalPortal from '../common/ModalPortal';
 
 interface Opportunity {
   id: string;
@@ -24,8 +25,9 @@ interface ViewOpportunityModalProps {
 
 const ViewOpportunityModal: React.FC<ViewOpportunityModalProps> = ({ opportunity, onClose }) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+        <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b">
           <div>
@@ -136,7 +138,8 @@ const ViewOpportunityModal: React.FC<ViewOpportunityModalProps> = ({ opportunity
           </button>
         </div>
       </div>
-    </div>
+      </div>
+    </ModalPortal>
   );
 };
 

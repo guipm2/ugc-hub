@@ -3,7 +3,6 @@ import { ArrowRight, ArrowLeft, User, CreditCard, FileText, Check, Camera, Trend
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { detectDocumentType, formatCEP, formatDocument, formatPhone, stripFormatting } from '../utils/formatters';
-import { useTheme } from '../hooks/useTheme';
 
 interface OnboardingData {
   // Etapa 1 - Qualificação
@@ -97,27 +96,6 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
   const { user } = useAuth();
   const lastFetchedCepRef = useRef('');
   const addressFetchTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const { theme, setTheme } = useTheme();
-  const initialThemeRef = useRef<'light' | 'dark' | null>(null);
-
-  useEffect(() => {
-    if (initialThemeRef.current === null) {
-      initialThemeRef.current = theme;
-    }
-
-    if (theme !== 'light') {
-      setTheme('light');
-    }
-  }, [theme, setTheme]);
-
-  useEffect(() => {
-    return () => {
-      const previousTheme = initialThemeRef.current;
-      if (previousTheme && previousTheme !== 'light') {
-        setTheme(previousTheme);
-      }
-    };
-  }, [setTheme]);
 
   const maxBirthDate = useMemo(() => {
     const date = new Date();
@@ -260,6 +238,12 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     }));
     clearFieldError('birth_date');
   };
+
+  const inputClass = (hasError: boolean, extra = '') =>
+    ['input-glass', extra, hasError ? 'input-error' : ''].filter(Boolean).join(' ');
+
+  const selectClass = (hasError: boolean, extra = '') =>
+    ['select-glass', extra, hasError ? 'input-error' : ''].filter(Boolean).join(' ');
 
   const handleSimpleFieldChange = (field: keyof OnboardingData, value: string) => {
     setData(prev => ({
@@ -463,631 +447,594 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <div className="bg-white rounded-xl shadow-lg max-w-2xl w-full p-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">Complete seu perfil</h1>
-          <p className="text-gray-600">Para começar a se candidatar às oportunidades, precisamos conhecer você melhor</p>
-          
-          {/* Progress Bar */}
-          <div className="flex items-center justify-center mt-6 space-x-4">
-            {[1, 2, 3].map((step) => (
-              <div key={step} className="flex items-center">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center text-sm font-medium ${
-                  currentStep >= step 
-                    ? 'bg-blue-600 text-white' 
-                    : 'bg-gray-200 text-gray-600'
-                }`}>
-                  {currentStep > step ? <Check className="h-5 w-5" /> : step}
-                </div>
-                {step < 3 && (
-                  <div className={`w-16 h-1 mx-2 ${
-                    currentStep > step ? 'bg-blue-600' : 'bg-gray-200'
-                  }`} />
-                )}
-              </div>
-            ))}
-          </div>
-          
-          <div className="flex justify-center mt-2 space-x-8 text-sm">
-            <span className={currentStep >= 1 ? 'text-blue-600 font-medium' : 'text-gray-500'}>
-              Qualificação
-            </span>
-            <span className={currentStep >= 2 ? 'text-blue-600 font-medium' : 'text-gray-500'}>
-              Dados Bancários
-            </span>
-            <span className={currentStep >= 3 ? 'text-blue-600 font-medium' : 'text-gray-500'}>
-              Dados Contratuais
-            </span>
-          </div>
-        </div>
+    <div className="relative min-h-screen overflow-hidden px-4 py-12 text-slate-100">
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-24 -left-[8%] h-[420px] w-[420px] rounded-full bg-gradient-to-br from-[#4A5BFF]/35 via-[#6E4FFF]/28 to-transparent blur-[180px]" />
+        <div className="absolute top-[35%] -right-[12%] h-[480px] w-[480px] rounded-full bg-gradient-to-br from-[#2ED3FF]/32 via-transparent to-transparent blur-[220px]" />
+      </div>
 
-        {/* Step 1 - Qualificação */}
-        {currentStep === 1 && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-blue-100 rounded-lg">
-                <User className="h-6 w-6 text-blue-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Dados de Qualificação</h2>
-                <p className="text-gray-600">Conte-nos mais sobre você e seu trabalho</p>
-              </div>
+      <div className="mx-auto w-full max-w-4xl">
+        <div className="glass-panel space-y-12 px-8 py-10 md:px-12 md:py-12">
+          <div className="text-center">
+            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] font-semibold uppercase tracking-[0.3em] text-white">
+              UGC
             </div>
+            <h1 className="text-3xl font-bold tracking-tight text-white">Complete seu perfil</h1>
+            <p className="mt-3 text-sm text-slate-300">
+              Avance pelas etapas para desbloquear oportunidades com a estética neon do hub.
+            </p>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Data de nascimento *
-                </label>
-                <div className="relative">
-                  <Calendar className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="date"
-                    value={data.birth_date || ''}
-                    max={maxBirthDate}
-                    min={minBirthDate}
-                    onChange={(e) => handleBirthDateChange(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                      fieldErrors.birth_date
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
+            <div className="mt-8 flex items-center justify-center space-x-5">
+              {[1, 2, 3].map(step => (
+                <div key={step} className="flex items-center">
+                  <div
+                    className={`flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold transition ${
+                      currentStep >= step
+                        ? 'bg-gradient-to-br from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] text-white shadow-[0_18px_45px_-22px_rgba(91,99,255,0.75)]'
+                        : 'border border-white/15 bg-white/5 text-slate-400'
                     }`}
-                    required
-                  />
-                </div>
-                {data.birth_date && (
-                  <p className="mt-2 text-sm text-gray-500">
-                    Idade calculada:{' '}
-                    <span className="font-medium">
-                      {data.age !== undefined ? `${data.age} anos` : '—'}
-                    </span>
-                  </p>
-                )}
-                {fieldErrors.birth_date && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    {fieldErrors.birth_date}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Gênero *
-                </label>
-                <div className="relative">
-                  <Users className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <select
-                    value={data.gender || ''}
-                    onChange={(e) => handleSimpleFieldChange('gender', e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                      fieldErrors.gender
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                    required
                   >
-                    <option value="">Selecione</option>
-                    {GENDER_OPTIONS.map((option) => (
-                      <option key={option.value} value={option.value}>
-                        {option.label}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                {fieldErrors.gender && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    {fieldErrors.gender}
-                  </p>
-                )}
-              </div>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Perfil Instagram *
-                </label>
-                <div className="relative">
-                  <Camera className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="url"
-                    value={data.instagram_url || ''}
-                    onChange={(e) => handleSimpleFieldChange('instagram_url', e.target.value)}
-                    onBlur={(e) => handleInstagramChange(e.target.value)}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                      fieldErrors.instagram_url
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                    placeholder="https://instagram.com/seuperfil"
-                    required
-                  />
-                </div>
-                <p className="mt-2 text-sm text-gray-500">Informe o link completo ou seu @. Usamos isso para entender seu alcance.</p>
-                {fieldErrors.instagram_url && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    {fieldErrors.instagram_url}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Perfil TikTok (opcional)
-                </label>
-                <div className="relative">
-                  <TrendingUp className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="url"
-                    value={data.tiktok_url || ''}
-                    onChange={(e) => handleSimpleFieldChange('tiktok_url', e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="https://tiktok.com/@seuperfil"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Site ou Portfólio (opcional)
-                </label>
-                <div className="relative">
-                  <Globe className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="url"
-                    value={data.portfolio_url || ''}
-                    onChange={(e) => handleSimpleFieldChange('portfolio_url', e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="https://seusite.com"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-3">
-                Seus nichos * <span className="text-sm text-gray-500">(escolha pelo menos um)</span>
-              </label>
-              <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                {NICHE_OPTIONS.map((niche) => {
-                  const active = data.niches?.includes(niche);
-                  return (
-                    <button
-                      key={niche}
-                      type="button"
-                      onClick={() => handleNicheToggle(niche)}
-                      className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors border ${
-                        active
-                          ? 'bg-blue-600 text-white border-blue-600'
-                          : 'bg-gray-100 text-gray-700 border-transparent hover:bg-gray-200'
+                    {currentStep > step ? <Check className="h-5 w-5" /> : step}
+                  </div>
+                  {step < 3 && (
+                    <div
+                      className={`mx-3 h-[2px] w-20 rounded-full ${
+                        currentStep > step
+                          ? 'bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF]'
+                          : 'bg-white/10'
                       }`}
+                    />
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 flex justify-center gap-10 text-xs uppercase tracking-[0.35em]">
+              <span className={currentStep >= 1 ? 'text-[#B7C5FF]' : 'text-slate-500'}>Qualificação</span>
+              <span className={currentStep >= 2 ? 'text-[#B7C5FF]' : 'text-slate-500'}>Dados Bancários</span>
+              <span className={currentStep >= 3 ? 'text-[#B7C5FF]' : 'text-slate-500'}>Dados Contratuais</span>
+            </div>
+          </div>
+
+          {currentStep === 1 && (
+            <div className="space-y-10">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[#9FA8FF]">
+                  <User className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-white">Dados de Qualificação</h2>
+                  <p className="text-sm text-slate-300">Conte-nos mais sobre você e seu trabalho</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Data de nascimento *
+                  </label>
+                  <div className="relative">
+                    <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <input
+                      type="date"
+                      value={data.birth_date || ''}
+                      max={maxBirthDate}
+                      min={minBirthDate}
+                      onChange={event => handleBirthDateChange(event.target.value)}
+                      className={inputClass(Boolean(fieldErrors.birth_date), '!pl-12 !pr-4')}
+                      required
+                    />
+                  </div>
+                  {data.birth_date && (
+                    <p className="mt-2 text-xs uppercase tracking-[0.25em] text-slate-400">
+                      Idade calculada:
+                      <span className="ml-2 text-slate-200">
+                        {data.age !== undefined ? `${data.age} anos` : '—'}
+                      </span>
+                    </p>
+                  )}
+                  {fieldErrors.birth_date && (
+                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                      <AlertTriangle className="h-4 w-4" />
+                      {fieldErrors.birth_date}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Gênero *
+                  </label>
+                  <div className="relative">
+                    <Users className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <select
+                      value={data.gender || ''}
+                      onChange={event => handleSimpleFieldChange('gender', event.target.value)}
+                      className={selectClass(Boolean(fieldErrors.gender), '!pl-12')}
+                      required
                     >
-                      {niche}
-                    </button>
-                  );
-                })}
+                      <option value="">Selecione</option>
+                      {GENDER_OPTIONS.map(option => (
+                        <option key={option.value} value={option.value}>
+                          {option.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  {fieldErrors.gender && (
+                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                      <AlertTriangle className="h-4 w-4" />
+                      {fieldErrors.gender}
+                    </p>
+                  )}
+                </div>
               </div>
-              {fieldErrors.niches && (
-                <p className="mt-3 text-sm text-red-600 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  {fieldErrors.niches}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
 
-        {/* Step 2 - Dados Bancários */}
-        {currentStep === 2 && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <CreditCard className="h-6 w-6 text-green-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Dados Bancários</h2>
-                <p className="text-gray-600">Para receber seus pagamentos</p>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Chave PIX *
-              </label>
-              <div className="relative">
-                <Hash className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                <input
-                  type="text"
-                  value={data.pix_key || ''}
-                  onChange={(e) => handleSimpleFieldChange('pix_key', e.target.value)}
-                  className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                    fieldErrors.pix_key
-                      ? 'border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
-                  }`}
-                  placeholder="Sua chave PIX (CPF, email, telefone ou chave aleatória)"
-                  required
-                />
-              </div>
-              <p className="mt-2 text-sm text-gray-500">
-                Pode ser seu CPF, email, telefone ou uma chave aleatória
-              </p>
-              {fieldErrors.pix_key && (
-                <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                  <AlertTriangle className="h-4 w-4" />
-                  {fieldErrors.pix_key}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* Step 3 - Dados para Contrato */}
-        {currentStep === 3 && (
-          <div className="space-y-6">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <FileText className="h-6 w-6 text-purple-600" />
-              </div>
-              <div>
-                <h2 className="text-xl font-semibold text-gray-900">Dados para Contrato</h2>
-                <p className="text-gray-600">Informações necessárias para formalização</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome Completo *
-                </label>
-                <input
-                  type="text"
-                  value={data.full_name || ''}
-                  onChange={(e) => handleSimpleFieldChange('full_name', e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                    fieldErrors.full_name
-                      ? 'border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
-                  }`}
-                  placeholder="Seu nome completo"
-                  required
-                />
-                {fieldErrors.full_name && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    {fieldErrors.full_name}
+              <div className="space-y-4">
+                <div>
+                  <label className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Perfil Instagram *
+                  </label>
+                  <div className="relative">
+                    <Camera className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <input
+                      type="url"
+                      value={data.instagram_url || ''}
+                      onChange={event => handleSimpleFieldChange('instagram_url', event.target.value)}
+                      onBlur={event => handleInstagramChange(event.target.value)}
+                      className={inputClass(Boolean(fieldErrors.instagram_url), '!pl-12')}
+                      placeholder="https://instagram.com/seuperfil"
+                      required
+                    />
+                  </div>
+                  <p className="mt-2 text-xs text-slate-400">
+                    Informe o link completo ou seu @. Usamos isso para entender seu alcance.
                   </p>
-                )}
+                  {fieldErrors.instagram_url && (
+                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                      <AlertTriangle className="h-4 w-4" />
+                      {fieldErrors.instagram_url}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Perfil TikTok (opcional)
+                  </label>
+                  <div className="relative">
+                    <TrendingUp className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <input
+                      type="url"
+                      value={data.tiktok_url || ''}
+                      onChange={event => handleSimpleFieldChange('tiktok_url', event.target.value)}
+                      className={inputClass(false, '!pl-12')}
+                      placeholder="https://tiktok.com/@seuperfil"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Site ou Portfólio (opcional)
+                  </label>
+                  <div className="relative">
+                    <Globe className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <input
+                      type="url"
+                      value={data.portfolio_url || ''}
+                      onChange={event => handleSimpleFieldChange('portfolio_url', event.target.value)}
+                      className={inputClass(false, '!pl-12')}
+                      placeholder="https://seusite.com"
+                    />
+                  </div>
+                </div>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Telefone *
-                </label>
-                <div className="relative">
-                  <Phone className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-                  <input
-                    type="tel"
-                    value={data.phone || ''}
-                    onChange={(e) => handleSimpleFieldChange('phone', formatPhone(e.target.value))}
-                    className={`w-full pl-10 pr-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                      fieldErrors.phone
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                    placeholder="(11) 99999-9999"
-                    required
-                  />
-                </div>
-                {fieldErrors.phone && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    {fieldErrors.phone}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email *
-                </label>
-                <input
-                  type="email"
-                  value={data.email || ''}
-                  readOnly
-                  className={`w-full px-4 py-3 border rounded-lg bg-gray-100 text-gray-600 cursor-not-allowed focus:outline-none ${
-                    fieldErrors.email ? 'border-red-500' : 'border-gray-300'
-                  }`}
-                  placeholder="seu@email.com"
-                  required
-                />
-                <p className="mt-2 text-sm text-gray-500">Usamos o email da sua conta. Caso precise alterar, atualize em configurações.</p>
-                {fieldErrors.email && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    {fieldErrors.email}
-                  </p>
-                )}
-              </div>
-
-              <div className="md:col-span-2">
-                <div className="flex items-center justify-between mb-2">
-                  <label className="block text-sm font-medium text-gray-700">
-                    CPF ou CNPJ *
+                <div className="mb-3 flex items-center justify-between">
+                  <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Seus nichos *
                   </label>
-                  {data.document_number && (
-                    <span
-                      className={`text-xs px-2 py-1 rounded-full border ${
-                        data.document_type
-                          ? 'border-blue-600 text-blue-600 bg-blue-50'
-                          : 'border-red-500 text-red-600 bg-red-50'
-                      }`}
-                    >
-                      {data.document_type === 'cnpj'
-                        ? 'CNPJ detectado'
-                        : data.document_type === 'cpf'
-                        ? 'CPF detectado'
-                        : 'Tipo não identificado'}
-                    </span>
-                  )}
+                  <span className="text-[10px] uppercase tracking-[0.45em] text-slate-500">escolha pelo menos um</span>
                 </div>
-                <input
-                  type="text"
-                  value={data.document_number || ''}
-                  onChange={(e) => handleDocumentChange(e.target.value)}
-                  className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                    fieldErrors.document_number || fieldErrors.document_type
-                      ? 'border-red-500 focus:ring-red-500'
-                      : 'border-gray-300 focus:ring-blue-500'
-                  }`}
-                  placeholder="Digite seu CPF ou CNPJ"
-                  maxLength={18}
-                  required
-                />
-                {fieldErrors.document_number && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
+                <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
+                  {NICHE_OPTIONS.map(niche => {
+                    const active = data.niches?.includes(niche);
+                    return (
+                      <button
+                        key={niche}
+                        type="button"
+                        onClick={() => handleNicheToggle(niche)}
+                        className={`rounded-2xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] transition ${
+                          active
+                            ? 'bg-gradient-to-r from-[#4A5BFF]/85 via-[#6E4FFF]/80 to-[#B249FF]/70 text-white shadow-[0_16px_45px_-25px_rgba(91,99,255,0.65)]'
+                            : 'border border-white/10 bg-white/5 text-slate-200 hover:border-white/20'
+                        }`}
+                      >
+                        {niche}
+                      </button>
+                    );
+                  })}
+                </div>
+                {fieldErrors.niches && (
+                  <p className="mt-3 flex items-center gap-2 text-xs text-rose-300">
                     <AlertTriangle className="h-4 w-4" />
-                    {fieldErrors.document_number}
-                  </p>
-                )}
-                {!fieldErrors.document_number && fieldErrors.document_type && (
-                  <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                    <AlertTriangle className="h-4 w-4" />
-                    {fieldErrors.document_type}
+                    {fieldErrors.niches}
                   </p>
                 )}
               </div>
             </div>
-
-            {/* Endereço */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-medium text-gray-900 flex items-center gap-2">
-                <MapPin className="h-5 w-5" />
-                Endereço
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2">
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rua *
-                  </label>
-                  <input
-                    type="text"
-                    value={data.address?.street || ''}
-                    onChange={(e) => handleAddressChange('street', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                      fieldErrors['address.street']
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                    placeholder="Nome da rua"
-                    required
-                  />
-                  {fieldErrors['address.street'] && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      {fieldErrors['address.street']}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Número *
-                  </label>
-                  <input
-                    type="text"
-                    value={data.address?.number || ''}
-                    onChange={(e) => handleAddressChange('number', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                      fieldErrors['address.number']
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                    placeholder="123"
-                    required
-                  />
-                  {fieldErrors['address.number'] && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      {fieldErrors['address.number']}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Complemento
-                  </label>
-                  <input
-                    type="text"
-                    value={data.address?.complement || ''}
-                    onChange={(e) => handleAddressChange('complement', e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Apto, casa, etc."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Bairro *
-                  </label>
-                  <input
-                    type="text"
-                    value={data.address?.neighborhood || ''}
-                    onChange={(e) => handleAddressChange('neighborhood', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                      fieldErrors['address.neighborhood']
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                    placeholder="Nome do bairro"
-                    required
-                  />
-                  {fieldErrors['address.neighborhood'] && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      {fieldErrors['address.neighborhood']}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Cidade *
-                  </label>
-                  <input
-                    type="text"
-                    value={data.address?.city || ''}
-                    onChange={(e) => handleAddressChange('city', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                      fieldErrors['address.city']
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                    placeholder="Nome da cidade"
-                    required
-                  />
-                  {fieldErrors['address.city'] && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      {fieldErrors['address.city']}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Estado *
-                  </label>
-                  <select
-                    value={data.address?.state || ''}
-                    onChange={(e) => handleAddressChange('state', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                      fieldErrors['address.state']
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                    required
-                  >
-                    <option value="">UF</option>
-                    {STATES.map((state) => (
-                      <option key={state} value={state}>
-                        {state}
-                      </option>
-                    ))}
-                  </select>
-                  {fieldErrors['address.state'] && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      {fieldErrors['address.state']}
-                    </p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    CEP *
-                  </label>
-                  <input
-                    type="text"
-                    value={data.address?.zipCode || ''}
-                    onChange={(e) => handleAddressChange('zipCode', e.target.value)}
-                    className={`w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:border-transparent ${
-                      fieldErrors['address.zipCode']
-                        ? 'border-red-500 focus:ring-red-500'
-                        : 'border-gray-300 focus:ring-blue-500'
-                    }`}
-                    placeholder="00000-000"
-                    maxLength={9}
-                    required
-                  />
-                  {isFetchingAddress && (
-                    <p className="mt-2 text-sm text-blue-600 flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                      Buscando endereço automaticamente...
-                    </p>
-                  )}
-                  {fieldErrors['address.zipCode'] && (
-                    <p className="mt-2 text-sm text-red-600 flex items-center gap-2">
-                      <AlertTriangle className="h-4 w-4" />
-                      {fieldErrors['address.zipCode']}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* Actions */}
-        <div className="flex items-center justify-between pt-8 border-t border-gray-200 mt-8">
-          <button
-            onClick={handleBack}
-            disabled={currentStep === 1}
-            className="flex items-center gap-2 px-6 py-3 text-gray-600 hover:text-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            Voltar
-          </button>
-
-          {currentStep < 3 ? (
-            <button
-              onClick={handleNext}
-              disabled={!validateStep(currentStep)}
-              className="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed transition-colors"
-            >
-              Próximo
-              <ArrowRight className="h-4 w-4" />
-            </button>
-          ) : (
-            <button
-              onClick={handleComplete}
-              disabled={!validateStep(3) || loading}
-              className="flex items-center gap-2 px-8 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:bg-green-400 disabled:cursor-not-allowed transition-colors"
-            >
-              {loading ? (
-                <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  Salvando...
-                </>
-              ) : (
-                <>
-                  <Check className="h-4 w-4" />
-                  Finalizar
-                </>
-              )}
-            </button>
           )}
+
+          {currentStep === 2 && (
+            <div className="space-y-10">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[#7CFEEE]">
+                  <CreditCard className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-white">Dados Bancários</h2>
+                  <p className="text-sm text-slate-300">Para receber seus pagamentos</p>
+                </div>
+              </div>
+
+              <div className="space-y-3">
+                <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                  Chave PIX *
+                </label>
+                <div className="relative">
+                  <Hash className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7CFEEE]" />
+                  <input
+                    type="text"
+                    value={data.pix_key || ''}
+                    onChange={event => handleSimpleFieldChange('pix_key', event.target.value)}
+                    className={inputClass(Boolean(fieldErrors.pix_key), '!pl-12')}
+                    placeholder="CPF, email, telefone ou chave aleatória"
+                    required
+                  />
+                </div>
+                <p className="text-xs text-slate-400">Pode ser seu CPF, email, telefone ou uma chave aleatória.</p>
+                {fieldErrors.pix_key && (
+                  <p className="flex items-center gap-2 text-xs text-rose-300">
+                    <AlertTriangle className="h-4 w-4" />
+                    {fieldErrors.pix_key}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {currentStep === 3 && (
+            <div className="space-y-12">
+              <div className="flex items-center gap-4">
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[#B58CFF]">
+                  <FileText className="h-6 w-6" />
+                </div>
+                <div>
+                  <h2 className="text-xl font-semibold text-white">Dados para Contrato</h2>
+                  <p className="text-sm text-slate-300">Informações necessárias para formalização</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                <div className="md:col-span-2">
+                  <label className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Nome Completo *
+                  </label>
+                  <input
+                    type="text"
+                    value={data.full_name || ''}
+                    onChange={event => handleSimpleFieldChange('full_name', event.target.value)}
+                    className={inputClass(Boolean(fieldErrors.full_name))}
+                    placeholder="Seu nome completo"
+                    required
+                  />
+                  {fieldErrors.full_name && (
+                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                      <AlertTriangle className="h-4 w-4" />
+                      {fieldErrors.full_name}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Telefone *
+                  </label>
+                  <div className="relative">
+                    <Phone className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7CFEEE]" />
+                    <input
+                      type="tel"
+                      value={data.phone || ''}
+                      onChange={event => handleSimpleFieldChange('phone', formatPhone(event.target.value))}
+                      className={inputClass(Boolean(fieldErrors.phone), '!pl-12')}
+                      placeholder="(11) 99999-9999"
+                      required
+                    />
+                  </div>
+                  {fieldErrors.phone && (
+                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                      <AlertTriangle className="h-4 w-4" />
+                      {fieldErrors.phone}
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Email *
+                  </label>
+                  <input
+                    type="email"
+                    value={data.email || ''}
+                    readOnly
+                    className={`${inputClass(Boolean(fieldErrors.email))} cursor-not-allowed bg-white/10 text-slate-300 opacity-75`}
+                    placeholder="seu@email.com"
+                    required
+                  />
+                  <p className="mt-2 text-xs text-slate-400">
+                    Usamos o email da sua conta. Caso precise alterar, atualize em configurações.
+                  </p>
+                  {fieldErrors.email && (
+                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                      <AlertTriangle className="h-4 w-4" />
+                      {fieldErrors.email}
+                    </p>
+                  )}
+                </div>
+
+                <div className="md:col-span-2">
+                  <div className="mb-2 flex items-center justify-between">
+                    <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                      CPF ou CNPJ *
+                    </label>
+                    {data.document_number && (
+                      <span
+                        className={`badge-pill ${
+                          data.document_type === 'cnpj'
+                            ? 'bg-gradient-to-r from-[#2ED3B7]/30 to-[#55A0FF]/20 text-[#CFFBEF]'
+                            : data.document_type === 'cpf'
+                            ? 'bg-gradient-to-r from-[#4A5BFF]/35 to-[#B249FF]/25 text-[#E6E9FF]'
+                            : 'bg-gradient-to-r from-[#FF7B73]/30 to-[#FF4471]/20 text-[#FFD6DA]'
+                        }`}
+                      >
+                        {data.document_type === 'cnpj'
+                          ? 'CNPJ detectado'
+                          : data.document_type === 'cpf'
+                          ? 'CPF detectado'
+                          : 'Tipo não identificado'}
+                      </span>
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={data.document_number || ''}
+                    onChange={event => handleDocumentChange(event.target.value)}
+                    className={inputClass(Boolean(fieldErrors.document_number || fieldErrors.document_type))}
+                    placeholder="Digite seu CPF ou CNPJ"
+                    maxLength={18}
+                    required
+                  />
+                  {fieldErrors.document_number && (
+                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                      <AlertTriangle className="h-4 w-4" />
+                      {fieldErrors.document_number}
+                    </p>
+                  )}
+                  {!fieldErrors.document_number && fieldErrors.document_type && (
+                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                      <AlertTriangle className="h-4 w-4" />
+                      {fieldErrors.document_type}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-8 rounded-3xl border border-white/10 bg-white/5 p-6">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[#7AD3FF]">
+                    <MapPin className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-semibold uppercase tracking-[0.35em] text-slate-300">Endereço</h3>
+                    <p className="text-xs text-slate-400">Informações necessárias para emissão de contratos e NF.</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className="md:col-span-2 space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                      Rua *
+                    </label>
+                    <input
+                      type="text"
+                      value={data.address?.street || ''}
+                      onChange={event => handleAddressChange('street', event.target.value)}
+                      className={inputClass(Boolean(fieldErrors['address.street']))}
+                      placeholder="Nome da rua"
+                      required
+                    />
+                    {fieldErrors['address.street'] && (
+                      <p className="flex items-center gap-2 text-xs text-rose-300">
+                        <AlertTriangle className="h-4 w-4" />
+                        {fieldErrors['address.street']}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                      Número *
+                    </label>
+                    <input
+                      type="text"
+                      value={data.address?.number || ''}
+                      onChange={event => handleAddressChange('number', event.target.value)}
+                      className={inputClass(Boolean(fieldErrors['address.number']))}
+                      placeholder="123"
+                      required
+                    />
+                    {fieldErrors['address.number'] && (
+                      <p className="flex items-center gap-2 text-xs text-rose-300">
+                        <AlertTriangle className="h-4 w-4" />
+                        {fieldErrors['address.number']}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                      Complemento
+                    </label>
+                    <input
+                      type="text"
+                      value={data.address?.complement || ''}
+                      onChange={event => handleAddressChange('complement', event.target.value)}
+                      className={inputClass(false)}
+                      placeholder="Apto, casa, etc."
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                      Bairro *
+                    </label>
+                    <input
+                      type="text"
+                      value={data.address?.neighborhood || ''}
+                      onChange={event => handleAddressChange('neighborhood', event.target.value)}
+                      className={inputClass(Boolean(fieldErrors['address.neighborhood']))}
+                      placeholder="Nome do bairro"
+                      required
+                    />
+                    {fieldErrors['address.neighborhood'] && (
+                      <p className="flex items-center gap-2 text-xs text-rose-300">
+                        <AlertTriangle className="h-4 w-4" />
+                        {fieldErrors['address.neighborhood']}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                      Cidade *
+                    </label>
+                    <input
+                      type="text"
+                      value={data.address?.city || ''}
+                      onChange={event => handleAddressChange('city', event.target.value)}
+                      className={inputClass(Boolean(fieldErrors['address.city']))}
+                      placeholder="Nome da cidade"
+                      required
+                    />
+                    {fieldErrors['address.city'] && (
+                      <p className="flex items-center gap-2 text-xs text-rose-300">
+                        <AlertTriangle className="h-4 w-4" />
+                        {fieldErrors['address.city']}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                      Estado *
+                    </label>
+                    <select
+                      value={data.address?.state || ''}
+                      onChange={event => handleAddressChange('state', event.target.value)}
+                      className={selectClass(Boolean(fieldErrors['address.state']))}
+                      required
+                    >
+                      <option value="">UF</option>
+                      {STATES.map(state => (
+                        <option key={state} value={state}>
+                          {state}
+                        </option>
+                      ))}
+                    </select>
+                    {fieldErrors['address.state'] && (
+                      <p className="flex items-center gap-2 text-xs text-rose-300">
+                        <AlertTriangle className="h-4 w-4" />
+                        {fieldErrors['address.state']}
+                      </p>
+                    )}
+                  </div>
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                      CEP *
+                    </label>
+                    <input
+                      type="text"
+                      value={data.address?.zipCode || ''}
+                      onChange={event => handleAddressChange('zipCode', event.target.value)}
+                      className={inputClass(Boolean(fieldErrors['address.zipCode']))}
+                      placeholder="00000-000"
+                      maxLength={9}
+                      required
+                    />
+                    {isFetchingAddress && (
+                      <p className="flex items-center gap-2 text-xs text-cyan-300">
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Buscando endereço automaticamente...
+                      </p>
+                    )}
+                    {fieldErrors['address.zipCode'] && (
+                      <p className="flex items-center gap-2 text-xs text-rose-300">
+                        <AlertTriangle className="h-4 w-4" />
+                        {fieldErrors['address.zipCode']}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          <div className="mt-4 flex items-center justify-between border-t border-white/10 pt-8">
+            <button
+              onClick={handleBack}
+              disabled={currentStep === 1}
+              className="group flex items-center gap-3 rounded-full border border-white/10 px-6 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-slate-300 transition hover:border-white/30 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              <ArrowLeft className="h-4 w-4 transition group-hover:-translate-x-1" />
+              Voltar
+            </button>
+
+            {currentStep < 3 ? (
+              <button
+                onClick={handleNext}
+                disabled={!validateStep(currentStep)}
+                className="group flex items-center gap-3 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#764BFF] to-[#B249FF] px-8 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-white shadow-[0_22px_60px_-28px_rgba(91,99,255,0.75)] transition hover:shadow-[0_22px_70px_-24px_rgba(91,99,255,0.85)] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                Próximo
+                <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
+              </button>
+            ) : (
+              <button
+                onClick={handleComplete}
+                disabled={!validateStep(3) || loading}
+                className="group flex items-center gap-3 rounded-full bg-gradient-to-r from-[#3AF9BC] via-[#4FDEFF] to-[#8A7CFF] px-10 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-[#0B1023] shadow-[0_22px_65px_-28px_rgba(74,225,204,0.55)] transition hover:shadow-[0_22px_75px_-24px_rgba(74,225,204,0.68)] disabled:cursor-not-allowed disabled:opacity-45"
+              >
+                {loading ? (
+                  <>
+                    <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-[#0B1023]"></div>
+                    Salvando...
+                  </>
+                ) : (
+                  <>
+                    <Check className="h-4 w-4" />
+                    Finalizar
+                  </>
+                )}
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>

@@ -1,10 +1,11 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, Eye, X, Grid3X3, List, EyeOff } from 'lucide-react';
+import { ArrowLeft, Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, Eye, X, Grid3X3, List, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import ProjectInfo from './ProjectInfo';
 import { router } from '../utils/router';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import ModalPortal from './common/ModalPortal';
 
 // Helper function to navigate to project
 const navigateToProject = (projectId: string) => {
@@ -174,7 +175,14 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
   const [showUploadModal, setShowUploadModal] = useState<string | null>(null);
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
   const [uploadingDeliverableId, setUploadingDeliverableId] = useState<string | null>(null);
-  const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>(() => {
+    if (typeof window === 'undefined') {
+      return 'grid';
+    }
+
+    const stored = window.localStorage.getItem('creators-projects:view-mode');
+    return stored === 'grid' || stored === 'list' ? stored : 'grid';
+  });
   const [statusFilter, setStatusFilter] = useState<string>('todos');
   const [hideCompleted, setHideCompleted] = useState(false);
   const { user } = useAuth();
@@ -197,6 +205,18 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
       setSelectedProject(current);
     }
   }, [projects, selectedProject]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem('creators-projects:view-mode', viewMode);
+    } catch (error) {
+      console.warn('Não foi possível salvar a visualização selecionada para projetos:', error);
+    }
+  }, [viewMode]);
 
   const fetchProjects = useCallback(async () => {
     if (!user || fetching) return;
@@ -379,14 +399,14 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
     const normalizedStatus = normalizeDeliverableStatus(status);
 
     const statusConfig = {
-      em_andamento: { color: 'bg-blue-100 text-blue-700', label: 'Em andamento', icon: Clock },
-      entregue: { color: 'bg-yellow-100 text-yellow-700', label: 'Entregue', icon: Upload },
-      aprovado: { color: 'bg-green-100 text-green-700', label: 'Aprovado', icon: CheckCircle },
-      atrasado: { color: 'bg-red-100 text-red-700', label: 'Atrasado', icon: AlertCircle },
-      pending: { color: 'bg-gray-100 text-gray-700', label: 'Pendente', icon: Clock },
-      submitted: { color: 'bg-yellow-100 text-yellow-700', label: 'Enviado', icon: Upload },
-      approved: { color: 'bg-green-100 text-green-700', label: 'Aprovado', icon: CheckCircle },
-      rejected: { color: 'bg-red-100 text-red-700', label: 'Rejeitado', icon: X }
+      em_andamento: { className: 'glass-chip chip-info', label: 'Em andamento', icon: Clock },
+      entregue: { className: 'glass-chip chip-warning', label: 'Entregue', icon: Upload },
+      aprovado: { className: 'glass-chip chip-success', label: 'Aprovado', icon: CheckCircle },
+      atrasado: { className: 'glass-chip chip-danger', label: 'Atrasado', icon: AlertCircle },
+      pending: { className: 'glass-chip', label: 'Pendente', icon: Clock },
+      submitted: { className: 'glass-chip chip-warning', label: 'Enviado', icon: Upload },
+      approved: { className: 'glass-chip chip-success', label: 'Aprovado', icon: CheckCircle },
+      rejected: { className: 'glass-chip chip-danger', label: 'Rejeitado', icon: X }
     } as const;
 
     const statusKey = (statusConfig as Record<string, (typeof statusConfig)[keyof typeof statusConfig]>)[status]
@@ -397,8 +417,8 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
     const Icon = config.icon;
 
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full ${config.color}`}>
-        <Icon className="h-3 w-3" />
+      <span className={`${config.className}`}>
+        <Icon className="h-3.5 w-3.5" />
         {config.label}
       </span>
     );
@@ -540,13 +560,14 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Meus Projetos</h1>
-          <p className="text-gray-600 mt-1">Carregando projetos...</p>
-        </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="space-y-8">
+        <div className="glass-card p-8 flex flex-col gap-3">
+          <h1 className="text-2xl font-semibold">Meus Projetos</h1>
+          <p className="text-sm text-gray-400">Carregando o seu hub criativo com atualizações em tempo real...</p>
+          <div className="mt-6 flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-transparent"></span>
+            <span className="text-sm text-gray-500">Sincronizando entregas e conversas.</span>
+          </div>
         </div>
       </div>
     );
@@ -554,62 +575,81 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
 
   // Se projeto selecionado, mostrar detalhes
   if (selectedProject) {
+    const totalDeliverables = selectedProject.deliverables.length;
+    const deliveredCount = selectedProject.deliverables.filter(d => ['submitted', 'approved', 'entregue', 'aprovado'].includes(normalizeDeliverableStatus(d.status))).length;
+    const awaitingFeedback = selectedProject.deliverables.filter(d => ['submitted', 'entregue'].includes(normalizeDeliverableStatus(d.status))).length;
+
     return (
-      <div className="space-y-6">
-        {/* Header do Projeto */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => {
-                setSelectedProject(null);
-                router.navigate('/creators/projects');
-              }}
-              className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              ←
-            </button>
-            <div>
-              <h1 className="text-2xl font-semibold text-gray-900">{selectedProject.title}</h1>
-              <p className="text-gray-600">{selectedProject.company}</p>
+      <div className="space-y-10">
+        <div className="glass-card p-6 md:p-8">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="flex flex-col md:flex-row md:items-center gap-5">
+              <button
+                onClick={() => {
+                  setSelectedProject(null);
+                  router.navigate('/creators/projects');
+                }}
+                className="btn-ghost-glass text-sm px-4"
+              >
+                <ArrowLeft className="h-4 w-4" />
+                Voltar para projetos
+              </button>
+              <div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <h1 className="text-2xl md:text-3xl font-semibold tracking-tight text-white">{selectedProject.title}</h1>
+                  {getStatusBadge(selectedProject.status)}
+                </div>
+                <p className="mt-2 text-sm text-gray-400 flex items-center gap-2">
+                  <Folder className="h-4 w-4 text-gray-500" />
+                  {selectedProject.company}
+                </p>
+              </div>
+            </div>
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
+              <div className="glass-chip chip-info text-xs sm:text-sm">
+                <Clock className="h-3.5 w-3.5" />
+                Prazo {formatDate(selectedProject.deadline)}
+              </div>
+              <button
+                onClick={() => openConversation(selectedProject)}
+                className="btn-primary-glow text-sm"
+              >
+                <MessageCircle className="h-4 w-4" />
+                Conversar com analista
+              </button>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            {getStatusBadge(selectedProject.status)}
-            <button
-              onClick={() => openConversation(selectedProject)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-            >
-              <MessageCircle className="h-4 w-4" />
-              Conversar com Analista
-            </button>
+
+          <hr className="glass-divider-soft" />
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="surface-muted rounded-2xl border border-white/10 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Tipo de Conteúdo</p>
+              <p className="mt-3 text-lg font-semibold text-white/90">{selectedProject.content_type}</p>
+            </div>
+            <div className="surface-muted rounded-2xl border border-white/10 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Orçamento</p>
+              <p className="mt-3 text-lg font-semibold text-emerald-200">{selectedProject.budget}</p>
+            </div>
+            <div className="surface-muted rounded-2xl border border-white/10 p-4">
+              <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Entregas</p>
+              <p className="mt-3 text-lg font-semibold text-white/90">
+                {deliveredCount}/{totalDeliverables}
+              </p>
+              {awaitingFeedback > 0 && (
+                <p className="text-xs text-indigo-200 mt-1">{awaitingFeedback} aguardando avaliação</p>
+              )}
+            </div>
+          </div>
+
+          <div className="mt-6">
+            <p className="text-sm text-gray-400 leading-relaxed max-w-4xl">
+              {selectedProject.description}
+            </p>
           </div>
         </div>
 
-        {/* Informações do Projeto */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Detalhes do Projeto</h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div>
-              <p className="text-sm font-medium text-gray-700">Prazo de Entrega</p>
-              <p className="text-gray-900">{formatDate(selectedProject.deadline)}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700">Tipo de Conteúdo</p>
-              <p className="text-gray-900">{selectedProject.content_type}</p>
-            </div>
-            <div>
-              <p className="text-sm font-medium text-gray-700">Orçamento</p>
-              <p className="text-gray-900">{selectedProject.budget}</p>
-            </div>
-          </div>
-          <div className="mt-4">
-            <p className="text-sm font-medium text-gray-700 mb-2">Descrição</p>
-            <p className="text-gray-600">{selectedProject.description}</p>
-          </div>
-        </div>
-
-        {/* Informações do Projeto (Briefing e Empresa) */}
-        <ProjectInfo 
+        <ProjectInfo
           project={{
             title: selectedProject.title,
             company: selectedProject.company,
@@ -620,58 +660,73 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
           briefing={selectedProject.opportunity?.briefing}
         />
 
-        {/* Entregas Unificadas */}
-        <div className="bg-white rounded-xl border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-6">Cronograma de Entregas</h3>
-          
+        <div className="glass-card p-6 md:p-8 space-y-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="glass-section-title mb-0">
+              <div className="icon-wrap">
+                <Upload className="h-5 w-5" />
+              </div>
+              <h2>Cronograma de Entregas</h2>
+            </div>
+            <p className="text-xs text-gray-500 uppercase tracking-[0.35em]">
+              Sincronizado automaticamente com o analista
+            </p>
+          </div>
+
           {selectedProject.deliverables.length > 0 ? (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {selectedProject.deliverables.map((deliverable) => {
                 const isCustom = deliverable.application_id && deliverable.id.startsWith('std_') === false;
+                const normalizedStatus = normalizeDeliverableStatus(deliverable.status);
+                const isWaitingReview = normalizedStatus === 'submitted';
+
                 return (
-                  <div 
-                    key={deliverable.id} 
-                    className={`border rounded-lg p-4 ${
-                      isCustom 
-                        ? 'border-purple-200 bg-purple-50/30' 
-                        : 'border-blue-200 bg-blue-50/30'
-                    }`}
+                  <div
+                    key={deliverable.id}
+                    className="surface-muted rounded-2xl border border-white/12 p-5 sm:p-6 transition-all hover:border-white/25 hover:shadow-[0_18px_45px_-28px_rgba(12,18,60,0.85)]"
                   >
-                    <div className="flex items-center justify-between mb-3">
-                      <div>
-                        <div className="flex items-center gap-2 mb-1">
-                          <h5 className="font-medium text-gray-900">{deliverable.title}</h5>
+                    <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
+                      <div className="space-y-2">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h5 className="text-lg font-semibold text-white/95">{deliverable.title}</h5>
                           {isCustom && (
-                            <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
-                              Específica
-                            </span>
+                            <span className="glass-chip chip-info text-[0.65rem] uppercase tracking-[0.2em]">Específica</span>
                           )}
                           {deliverable.priority && (
-                            <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-full text-xs font-medium">
+                            <span className="glass-chip text-[0.65rem] uppercase tracking-[0.2em]">
                               Prioridade {deliverable.priority}
                             </span>
                           )}
                         </div>
-                        <p className="text-sm text-gray-600 mb-2">{deliverable.description}</p>
+                        <p className="text-sm text-gray-400 leading-relaxed max-w-3xl">
+                          {deliverable.description}
+                        </p>
                       </div>
-                      <div className="flex items-center gap-3">
-                        <span className="text-sm text-gray-500">
-                          Prazo: {formatDate(deliverable.due_date)}
+                      <div className="flex flex-col items-start sm:items-end gap-2 min-w-[200px]">
+                        <span className="text-xs uppercase tracking-[0.25em] text-gray-500">
+                          Prazo
+                        </span>
+                        <span className="text-sm font-semibold text-white/90">
+                          {formatDate(deliverable.due_date)}
                         </span>
                         {getStatusBadge(deliverable.status)}
                       </div>
                     </div>
 
-                    {/* Arquivos */}
                     {deliverable.files.length > 0 && (
-                      <div className="mb-4">
-                        <p className="text-sm font-medium text-gray-700 mb-2">Arquivos Enviados:</p>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+                      <div className="mt-4 space-y-3">
+                        <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Arquivos enviados</p>
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                           {deliverable.files.map((file) => (
-                            <div key={file.id} className="flex items-center gap-2 p-2 bg-white rounded border">
-                              <FileText className="h-4 w-4 text-gray-400" />
+                            <div
+                              key={file.id}
+                              className="surface-muted border border-white/10 rounded-xl p-3 flex items-center gap-3"
+                            >
+                              <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                                <FileText className="h-4 w-4 text-indigo-200" />
+                              </div>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm font-medium text-gray-900 truncate">{file.name}</p>
+                                <p className="text-sm font-medium text-white/90 truncate">{file.name}</p>
                                 <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                               </div>
                               {file.url ? (
@@ -679,12 +734,12 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                                   href={file.url}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="p-1 hover:bg-gray-200 rounded"
+                                  className="btn-ghost-glass px-3 py-1 text-xs"
                                 >
-                                  <Eye className="h-4 w-4 text-gray-400" />
+                                  <Eye className="h-4 w-4" />
                                 </a>
                               ) : (
-                                <span className="text-xs text-gray-400">URL indisponível</span>
+                                <span className="text-xs text-gray-500">URL indisponível</span>
                               )}
                             </div>
                           ))}
@@ -692,31 +747,35 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                       </div>
                     )}
 
-                    {/* Botão de Upload - Apenas para deliverables customizados */}
-                    {(deliverable.status === 'pending' || deliverable.status === 'pendente' || deliverable.status === 'rejected') && 
-                     isCustom && (
-                      <button
-                        onClick={() => setShowUploadModal(deliverable.id)}
-                        className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                      >
-                        <Upload className="h-4 w-4" />
-                        Enviar Arquivos
-                      </button>
-                    )}
-
-                    {/* Feedback do Analista */}
-                    {deliverable.analyst_feedback && (
-                      <div className="mt-3 p-3 bg-yellow-50 border border-yellow-200 rounded">
-                        <p className="text-sm font-medium text-yellow-800">Feedback do Analista:</p>
-                        <p className="text-sm text-yellow-700">{deliverable.analyst_feedback}</p>
+                    {(normalizedStatus === 'pending' || normalizedStatus === 'rejected') && isCustom && (
+                      <div className="mt-5 flex flex-wrap items-center gap-3">
+                        <button
+                          onClick={() => setShowUploadModal(deliverable.id)}
+                          className="btn-primary-glow text-sm"
+                        >
+                          <Upload className="h-4 w-4" />
+                          Enviar arquivos
+                        </button>
+                        {normalizedStatus === 'rejected' && (
+                          <span className="glass-chip chip-danger text-[0.65rem]">Reenvio necessário</span>
+                        )}
                       </div>
                     )}
 
-                    {deliverable.status === 'rejected' && !deliverable.analyst_feedback && (
-                      <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded">
-                        <p className="text-sm text-red-700">
-                          Sua última entrega foi rejeitada. Revise os arquivos e envie uma nova versão para continuar o projeto.
-                        </p>
+                    {isWaitingReview && (
+                      <div className="mt-5 glass-chip chip-warning text-xs">Aguardando análise do analista</div>
+                    )}
+
+                    {deliverable.analyst_feedback && (
+                      <div className="mt-5 border border-amber-200/30 bg-amber-500/10 rounded-2xl p-4">
+                        <p className="text-xs uppercase tracking-[0.25em] text-amber-200">Feedback do analista</p>
+                        <p className="mt-2 text-sm text-amber-100/90 leading-relaxed">{deliverable.analyst_feedback}</p>
+                      </div>
+                    )}
+
+                    {normalizedStatus === 'rejected' && !deliverable.analyst_feedback && (
+                      <div className="mt-5 border border-red-400/30 bg-red-500/10 rounded-2xl p-4 text-sm text-red-100/90">
+                        Sua última entrega foi rejeitada. Revise os arquivos e envie uma nova versão para continuar o projeto.
                       </div>
                     )}
                   </div>
@@ -724,75 +783,79 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
               })}
             </div>
           ) : (
-            <div className="border border-gray-200 rounded-lg p-6 bg-gray-50/20 text-center">
-              <div className="flex flex-col items-center gap-3">
-                <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
-                  <Clock className="h-6 w-6 text-gray-600" />
-                </div>
-                <div>
-                  <h5 className="font-medium text-gray-900 mb-1">Nenhuma entrega definida</h5>
-                  <p className="text-sm text-gray-600 max-w-md">
-                    As entregas deste projeto ainda não foram definidas. 
-                    Entre em contato com o analista para mais informações.
-                  </p>
-                </div>
+            <div className="surface-muted rounded-2xl border border-dashed border-white/15 p-10 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/5">
+                <Clock className="h-6 w-6 text-indigo-200" />
               </div>
+              <h5 className="text-lg font-semibold text-white/90">Nenhuma entrega definida</h5>
+              <p className="mt-2 text-sm text-gray-400 max-w-md mx-auto">
+                As entregas deste projeto ainda estão sendo estruturadas. Alinhe com o analista para acelerar o planejamento.
+              </p>
             </div>
           )}
         </div>
 
-        {/* Modal de Upload */}
         {showUploadModal && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-            <div className="bg-white rounded-xl max-w-md w-full p-6">
-              <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold text-gray-900">Enviar Arquivos</h3>
+          <ModalPortal>
+            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+              <div className="glass-card max-w-md w-full p-6 sm:p-7">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-white/95">Enviar arquivos</h3>
                 <button
                   onClick={() => setShowUploadModal(null)}
-                  className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="btn-ghost-glass px-3 py-1"
                 >
-                  <X className="h-5 w-5" />
+                  <X className="h-4 w-4" />
+                  Fechar
                 </button>
               </div>
 
-              <div className="space-y-4">
+              <p className="mt-3 text-sm text-gray-400">
+                Adicione todos os arquivos necessários para esta entrega. Eles ficam visíveis automaticamente para o analista responsável.
+              </p>
+
+              <div className="mt-6 space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Selecionar Arquivos
+                  <label className="block text-xs uppercase tracking-[0.28em] text-gray-500 mb-2">
+                    Selecionar arquivos
                   </label>
                   <input
                     type="file"
                     multiple
                     onChange={(e) => setUploadFiles(e.target.files)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="input-glass"
                   />
                 </div>
 
-                <div className="flex items-center justify-end gap-3">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-end gap-3">
                   <button
                     onClick={() => setShowUploadModal(null)}
-                    className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                    className="btn-ghost-glass w-full sm:w-auto justify-center"
                   >
                     Cancelar
                   </button>
                   <button
                     onClick={() => handleFileUpload(showUploadModal)}
                     disabled={!uploadFiles || uploadFiles.length === 0 || uploadingDeliverableId === showUploadModal}
-                    className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                    className="btn-primary-glow w-full sm:w-auto justify-center disabled:opacity-60 disabled:cursor-not-allowed"
                   >
                     {uploadingDeliverableId === showUploadModal ? (
-                      <>
+                      <span className="flex items-center gap-2 text-sm">
                         <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        Enviando...
-                      </>
+                        Enviando
+                      </span>
                     ) : (
-                      <>Enviar</>
+                      <span className="flex items-center gap-2 text-sm">
+                        <Upload className="h-4 w-4" />
+                        Enviar
+                      </span>
                     )}
                   </button>
                 </div>
               </div>
             </div>
-          </div>
+            </div>
+          </ModalPortal>
         )}
       </div>
     );
@@ -800,163 +863,147 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
 
   // Lista de projetos
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Meus Projetos</h1>
-          <p className="text-gray-600 mt-1">{filteredProjects.length} de {projects.length} projetos</p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          {/* Filtros */}
-          <select
-            value={statusFilter}
-            onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          >
-            <option value="todos">Todos os Status</option>
-            <option value="em_andamento">Em Andamento</option>
-            <option value="entregue">Entregue</option>
-            <option value="aprovado">Aprovado</option>
-            <option value="atrasado">Atrasado</option>
-          </select>
+    <div className="space-y-10">
+      <div className="glass-card p-6 md:p-8">
+        <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+          <div className="space-y-3">
+            <span className="badge-pill">Painel criativo</span>
+            <div>
+              <h1 className="text-3xl font-semibold text-white tracking-tight">Meus Projetos</h1>
+              <p className="text-sm text-gray-400 mt-2">
+                {filteredProjects.length} de {projects.length} projetos ativos no momento
+              </p>
+            </div>
+          </div>
 
-          <button
-            onClick={() => setHideCompleted(!hideCompleted)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-lg border transition-colors ${
-              hideCompleted 
-                ? 'bg-blue-50 border-blue-200 text-blue-700' 
-                : 'bg-white border-gray-300 text-gray-700 hover:bg-gray-50'
-            }`}
-          >
-            {hideCompleted ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            {hideCompleted ? 'Mostrar Concluídos' : 'Ocultar Concluídos'}
-          </button>
+          <div className="w-full lg:w-auto flex flex-col sm:flex-row sm:items-center gap-3">
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="select-glass sm:w-48"
+            >
+              <option value="todos">Todos os Status</option>
+              <option value="em_andamento">Em andamento</option>
+              <option value="entregue">Entregue</option>
+              <option value="aprovado">Aprovado</option>
+              <option value="atrasado">Atrasado</option>
+            </select>
 
-          <div className="flex items-center bg-gray-100 rounded-lg p-1">
             <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === 'grid' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
-              }`}
+              onClick={() => setHideCompleted(!hideCompleted)}
+              className={`btn-ghost-glass w-full sm:w-auto justify-center ${hideCompleted ? 'border-white/50 bg-white/15' : ''}`}
             >
-              <Grid3X3 className="h-4 w-4" />
+              {hideCompleted ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              {hideCompleted ? 'Mostrar concluídos' : 'Ocultar concluídos'}
             </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === 'list' ? 'bg-white shadow-sm' : 'hover:bg-gray-200'
-              }`}
-            >
-              <List className="h-4 w-4" />
-            </button>
+
+            <div className="surface-muted rounded-2xl border border-white/12 p-1 flex items-center justify-between">
+              <button
+                onClick={() => setViewMode('grid')}
+                aria-pressed={viewMode === 'grid'}
+                aria-label="Mostrar projetos em grade"
+                className={`btn-ghost-glass border-none px-3 py-2 ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
+              >
+                <Grid3X3 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
+                aria-label="Mostrar projetos em lista"
+                className={`btn-ghost-glass border-none px-3 py-2 ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Projetos */}
       {filteredProjects.length === 0 ? (
-        <div className="text-center py-12">
-          <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Folder className="h-8 w-8 text-gray-400" />
+        <div className="glass-card p-12 flex flex-col items-center text-center gap-4">
+          <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/12 bg-white/5">
+            <Folder className="h-8 w-8 text-indigo-200" />
           </div>
-          <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhum projeto encontrado</h3>
-          <p className="text-gray-600 max-w-md mx-auto">
+          <h3 className="text-lg font-semibold text-white/90">Nenhum projeto encontrado</h3>
+          <p className="text-sm text-gray-400 max-w-md">
             {statusFilter !== 'todos' || hideCompleted
-              ? 'Tente ajustar os filtros para ver mais projetos.'
-              : 'Você ainda não tem projetos aprovados. Continue aplicando para oportunidades!'}
+              ? 'Ajuste os filtros para visualizar outros projetos ativos.'
+              : 'Você ainda não tem projetos aprovados. Continue aplicando nas oportunidades destacadas para ativar seu hub.'}
           </p>
         </div>
       ) : (
-        <div className={viewMode === 'grid' 
-          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
-          : 'space-y-4'
-        }>
-          {filteredProjects.map((project) => (
-            <div
-              key={project.id}
-              onClick={() => {
-                setSelectedProject(project);
-                navigateToProject(project.id);
-              }}
-              className={`bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all cursor-pointer ${
-                viewMode === 'list' ? 'flex items-center justify-between' : ''
-              }`}
-            >
-              {viewMode === 'grid' ? (
-                <>
-                  <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-semibold text-gray-900 truncate">{project.title}</h3>
+        <div
+          className={
+            viewMode === 'grid'
+              ? 'grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6'
+              : 'space-y-4'
+          }
+        >
+          {filteredProjects.map((project) => {
+            const total = project.deliverables.length;
+            const delivered = project.deliverables.filter(d => ['submitted', 'approved', 'entregue', 'aprovado'].includes(normalizeDeliverableStatus(d.status))).length;
+
+            return (
+              <div
+                key={project.id}
+                onClick={() => {
+                  setSelectedProject(project);
+                  navigateToProject(project.id);
+                }}
+                className={`glass-card p-6 transition-transform duration-300 cursor-pointer hover:-translate-y-1 hover:border-white/35 ${
+                  viewMode === 'list' ? 'flex flex-col md:flex-row md:items-center md:justify-between gap-6' : 'space-y-4'
+                }`}
+              >
+                <div className="space-y-4 flex-1">
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="space-y-1">
+                      <p className="text-sm text-gray-500 uppercase tracking-[0.25em]">Projeto</p>
+                      <h3 className="text-xl font-semibold text-white/95">{project.title}</h3>
+                      <p className="text-xs text-gray-500">{project.company}</p>
+                    </div>
                     {getStatusBadge(project.status)}
                   </div>
 
-                  <div className="space-y-3 mb-4">
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <Calendar className="h-4 w-4" />
-                      Prazo: {formatDate(project.deadline)}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="surface-muted rounded-2xl border border-white/10 p-4 flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                        <Calendar className="h-4 w-4 text-indigo-200" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Prazo</p>
+                        <p className="text-sm font-semibold text-white/90">{formatDate(project.deadline)}</p>
+                      </div>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-gray-600">
-                      <FileText className="h-4 w-4" />
-                      {project.content_type}
+                    <div className="surface-muted rounded-2xl border border-white/10 p-4 flex items-center gap-3">
+                      <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                        <FileText className="h-4 w-4 text-indigo-200" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Conteúdo</p>
+                        <p className="text-sm font-semibold text-white/90">{project.content_type}</p>
+                      </div>
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between">
-                    <div className="text-sm text-gray-600">
-                      Entregas: {project.deliverables.filter(d => 
-                        d.status === 'submitted' || d.status === 'approved' || 
-                        d.status === 'entregue' || d.status === 'aprovado'
-                      ).length}/{project.deliverables.length}
-                    </div>
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <span className="glass-chip chip-info text-xs">
+                      {delivered}/{total} entregas concluídas
+                    </span>
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
                         openConversation(project);
                       }}
-                      className="text-blue-600 hover:text-blue-700 transition-colors"
+                      className="btn-ghost-glass text-xs"
                     >
                       <MessageCircle className="h-4 w-4" />
+                      Abrir conversa
                     </button>
                   </div>
-                </>
-              ) : (
-                <>
-                  <div className="flex-1">
-                    <div className="flex items-center gap-4 mb-2">
-                      <h3 className="font-semibold text-gray-900">{project.title}</h3>
-                      {getStatusBadge(project.status)}
-                    </div>
-                    <div className="flex items-center gap-6 text-sm text-gray-600">
-                      <span className="flex items-center gap-1">
-                        <Calendar className="h-4 w-4" />
-                        {formatDate(project.deadline)}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <FileText className="h-4 w-4" />
-                        {project.content_type}
-                      </span>
-                      <span>
-                        {project.deliverables.filter(d => 
-                          d.status === 'submitted' || d.status === 'approved' || 
-                          d.status === 'entregue' || d.status === 'aprovado'
-                        ).length}/{project.deliverables.length} entregas
-                      </span>
-                    </div>
-                  </div>
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      openConversation(project);
-                    }}
-                    className="text-blue-600 hover:text-blue-700 transition-colors p-2"
-                  >
-                    <MessageCircle className="h-5 w-5" />
-                  </button>
-                </>
-              )}
-            </div>
-          ))}
+                </div>
+              </div>
+            );
+          })}
         </div>
       )}
     </div>

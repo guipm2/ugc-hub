@@ -7,6 +7,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRouter } from '../../hooks/useRouter';
+import ModalPortal from '../common/ModalPortal';
 
 interface DeliverableFile {
   id?: string;
@@ -1370,8 +1371,9 @@ const EnhancedDeliverableManagement: React.FC = () => {
 
       {/* Edit Deliverable Modal */}
       {showEditModal && editingDeliverable && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto shadow-2xl">
             <div className="flex items-start justify-between mb-4">
               <div>
                 <h3 className="text-lg font-semibold text-gray-900">Editar Deliverable</h3>
@@ -1539,13 +1541,15 @@ const EnhancedDeliverableManagement: React.FC = () => {
               </button>
             </div>
           </div>
-        </div>
+          </div>
+        </ModalPortal>
       )}
 
       {/* Template Modal */}
       {showTemplateModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-screen overflow-y-auto shadow-2xl">
             <h3 className="text-lg font-semibold mb-4">Criar Deliverables com Template</h3>
             
             <div className="space-y-4">
@@ -1669,12 +1673,14 @@ const EnhancedDeliverableManagement: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
 
       {/* Custom Deliverable Modal */}
       {showCustomModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+            <div className="bg-white rounded-lg p-6 w-full max-w-lg max-h-screen overflow-y-auto shadow-2xl">
             <h3 className="text-lg font-semibold mb-4">Criar Deliverable Personalizado</h3>
             
             <div className="space-y-4">
@@ -1812,6 +1818,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
             </div>
           </div>
         </div>
+        </ModalPortal>
       )}
     </div>
   );

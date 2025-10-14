@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Save, Eye, EyeOff, Shield, Bell, User, Mail, Lock, Trash2, Download, AlertTriangle } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
+import ModalPortal from './common/ModalPortal';
 
 const AccountSettings = () => {
   const [activeTab, setActiveTab] = useState('profile');
@@ -441,9 +442,10 @@ const AccountSettings = () => {
 
       {/* Modal de Primeira Confirmação */}
       {showDeleteModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <div className="flex items-center gap-3 mb-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
@@ -453,42 +455,44 @@ const AccountSettings = () => {
               </div>
             </div>
             
-            <div className="mb-6">
-              <p className="text-gray-700 mb-4">
-                Ao excluir sua conta, os seguintes dados serão permanentemente removidos:
-              </p>
-              <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
-                <li>Todas as suas informações de perfil</li>
-                <li>Histórico de projetos e colaborações</li>
-                <li>Mensagens e conversas</li>
-                <li>Notificações e preferências</li>
-                <li>Dados bancários e contratuais</li>
-              </ul>
-            </div>
+              <div className="mb-6">
+                <p className="text-gray-700 mb-4">
+                  Ao excluir sua conta, os seguintes dados serão permanentemente removidos:
+                </p>
+                <ul className="list-disc list-inside text-sm text-gray-600 space-y-1">
+                  <li>Todas as suas informações de perfil</li>
+                  <li>Histórico de projetos e colaborações</li>
+                  <li>Mensagens e conversas</li>
+                  <li>Notificações e preferências</li>
+                  <li>Dados bancários e contratuais</li>
+                </ul>
+              </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => setShowDeleteModal(false)}
-                className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleConfirmDelete}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-              >
-                Continuar
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setShowDeleteModal(false)}
+                  className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleConfirmDelete}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                >
+                  Continuar
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
 
       {/* Modal de Confirmação Final */}
       {showFinalConfirmation && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-md w-full p-6">
-            <div className="flex items-center gap-3 mb-4">
+        <ModalPortal>
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+            <div className="bg-white rounded-xl shadow-xl max-w-md w-full p-6">
+              <div className="flex items-center gap-3 mb-4">
               <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center">
                 <AlertTriangle className="h-6 w-6 text-red-600" />
               </div>
@@ -498,51 +502,52 @@ const AccountSettings = () => {
               </div>
             </div>
             
-            <div className="mb-6">
-              <p className="text-gray-700 mb-4">
-                Para confirmar a exclusão da sua conta, digite exatamente:
-              </p>
-              <div className="bg-gray-100 p-3 rounded-lg mb-4">
-                <code className="text-red-600 font-mono font-bold">EXCLUIR MINHA CONTA</code>
+              <div className="mb-6">
+                <p className="text-gray-700 mb-4">
+                  Para confirmar a exclusão da sua conta, digite exatamente:
+                </p>
+                <div className="bg-gray-100 p-3 rounded-lg mb-4">
+                  <code className="text-red-600 font-mono font-bold">EXCLUIR MINHA CONTA</code>
+                </div>
+                <input
+                  type="text"
+                  value={deleteConfirmationText}
+                  onChange={(e) => setDeleteConfirmationText(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  placeholder="Digite a confirmação aqui"
+                  disabled={isDeleting}
+                />
               </div>
-              <input
-                type="text"
-                value={deleteConfirmationText}
-                onChange={(e) => setDeleteConfirmationText(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
-                placeholder="Digite a confirmação aqui"
-                disabled={isDeleting}
-              />
-            </div>
 
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  setShowFinalConfirmation(false);
-                  setDeleteConfirmationText('');
-                }}
-                disabled={isDeleting}
-                className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
-              >
-                Cancelar
-              </button>
-              <button
-                onClick={handleFinalDelete}
-                disabled={isDeleting || deleteConfirmationText !== 'EXCLUIR MINHA CONTA'}
-                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isDeleting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    Excluindo...
-                  </>
-                ) : (
-                  'Excluir Conta Permanentemente'
-                )}
-              </button>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => {
+                    setShowFinalConfirmation(false);
+                    setDeleteConfirmationText('');
+                  }}
+                  disabled={isDeleting}
+                  className="flex-1 px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleFinalDelete}
+                  disabled={isDeleting || deleteConfirmationText !== 'EXCLUIR MINHA CONTA'}
+                  className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {isDeleting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      Excluindo...
+                    </>
+                  ) : (
+                    'Excluir Conta Permanentemente'
+                  )}
+                </button>
+              </div>
             </div>
           </div>
-        </div>
+        </ModalPortal>
       )}
     </>
   );

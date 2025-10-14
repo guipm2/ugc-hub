@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { MessageCircle, Search, MoreVertical, Send, ArrowLeft, ExternalLink, AlertTriangle, Trash2, PencilLine, Check } from 'lucide-react';
+import { MessageCircle, Search, MoreVertical, Send, ArrowLeft, ArrowRight, ExternalLink, AlertTriangle, Trash2, PencilLine, Check } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import ModalPortal from './common/ModalPortal';
 
 interface ProjectChat {
   project_id: string;
@@ -639,13 +640,20 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Mensagens</h1>
-          <p className="text-gray-600 mt-1">Carregando conversas...</p>
+      <div className="space-y-8">
+        <div className="glass-card p-6">
+          <div className="glass-section-title mb-0">
+            <div className="icon-wrap">
+              <MessageCircle className="h-5 w-5" />
+            </div>
+            <div>
+              <h1>Mensagens</h1>
+              <p className="text-sm text-gray-400 mt-1">Carregando conversas...</p>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+        <div className="glass-card p-16 flex items-center justify-center">
+          <div className="animate-spin rounded-full h-10 w-10 border-2 border-white/15 border-t-transparent"></div>
         </div>
       </div>
     );
@@ -660,42 +668,44 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
     return (
       <div className="space-y-6">
         {/* Chat Header */}
-        <div className="flex flex-wrap items-center gap-4 sticky top-16 bg-gray-50 z-50 py-4">
+        <div className="glass-card sticky top-24 z-40 flex w-full flex-wrap items-center gap-5 px-6 py-5">
           <button
             onClick={() => {
-                            navigate('/creators/messages');
+              navigate('/creators/messages');
               if (onBackToList) {
-                                onBackToList();
+                onBackToList();
               }
             }}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="btn-ghost-glass px-3 py-2 rounded-xl"
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div className="flex-1 min-w-[220px]">
-            <h1 className="text-2xl font-semibold text-gray-900 truncate">{chatTitle}</h1>
-            <p className="text-gray-600 text-sm mt-1">
+          <div className="flex-1 min-w-[220px] space-y-1">
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-2xl font-semibold text-white truncate">{chatTitle}</h1>
+              {chatTags.length > 0 && (
+                <div className="flex flex-wrap items-center gap-2">
+                  {chatTags.slice(0, 2).map((tag) => (
+                    <span key={tag} className="glass-chip text-xs uppercase tracking-[0.22em]">
+                      #{tag}
+                    </span>
+                  ))}
+                  {chatTags.length > 2 && (
+                    <span className="glass-chip text-xs">+{chatTags.length - 2}</span>
+                  )}
+                </div>
+              )}
+            </div>
+            <p className="text-sm text-gray-300">
               {selectedProject.analyst?.name || 'Analista'} • {selectedProject.analyst?.company || 'Empresa'}
             </p>
             {selectedProject.opportunity?.title && (
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-gray-500">
                 {selectedProject.opportunity.title}
               </p>
             )}
-            {chatTags.length > 0 && (
-              <div className="flex flex-wrap gap-2 mt-3">
-                {chatTags.map((tag) => (
-                  <span
-                    key={tag}
-                    className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700"
-                  >
-                    #{tag}
-                  </span>
-                ))}
-              </div>
-            )}
           </div>
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-3">
             {!isProjectDeleted && (
               <button
                 onClick={() => {
@@ -705,7 +715,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                     navigate(`/creators/opportunities/${selectedProject.opportunity_id}`);
                   }
                 }}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="btn-primary-glow"
               >
                 <ExternalLink className="h-4 w-4" />
                 <span>Ver Projeto</span>
@@ -713,14 +723,14 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
             )}
             <button
               onClick={() => setIsEditingChatDetails((prev) => !prev)}
-              className="flex items-center gap-2 border border-gray-300 text-gray-700 hover:border-gray-400 hover:text-gray-900 px-4 py-2 rounded-lg transition-colors"
+              className="btn-ghost-glass px-4 py-2 rounded-xl"
             >
               <PencilLine className="h-4 w-4" />
               <span>{isEditingChatDetails ? 'Fechar edição' : 'Editar detalhes'}</span>
             </button>
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="flex items-center gap-2 border border-red-300 text-red-600 hover:border-red-400 hover:text-red-700 px-4 py-2 rounded-lg transition-colors"
+              className="btn-ghost-glass px-4 py-2 rounded-xl border border-red-400/40 text-red-300 hover:border-red-300 hover:text-red-200"
             >
               <Trash2 className="h-4 w-4" />
               <span>Apagar chat</span>
@@ -730,21 +740,30 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
         {chatDetailsStatus && (
           <div
-            className={`rounded-lg border px-4 py-3 text-sm ${
+            className={`glass-card border px-5 py-4 text-sm flex items-center gap-3 ${
               chatDetailsStatus.type === 'success'
-                ? 'border-green-200 bg-green-50 text-green-700'
-                : 'border-red-200 bg-red-50 text-red-700'
+                ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200'
+                : 'border-rose-400/40 bg-rose-500/10 text-rose-200'
             }`}
           >
-            {chatDetailsStatus.message}
+            <div
+              className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
+                chatDetailsStatus.type === 'success'
+                  ? 'border-emerald-300/30 bg-emerald-400/15 text-emerald-200'
+                  : 'border-rose-300/30 bg-rose-400/15 text-rose-200'
+              }`}
+            >
+              {chatDetailsStatus.type === 'success' ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
+            </div>
+            <p>{chatDetailsStatus.message}</p>
           </div>
         )}
 
         {isEditingChatDetails && (
-          <div className="bg-white rounded-xl border border-gray-200 p-4">
+          <div className="glass-card border px-6 py-6">
             <div className="grid gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-200">
                   Título personalizado
                 </label>
                 <input
@@ -752,14 +771,14 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                   value={chatTitleInput}
                   onChange={(event) => setChatTitleInput(event.target.value)}
                   placeholder="Digite um título descritivo para este chat"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                  className="mt-2 w-full rounded-xl border border-transparent bg-white/5 px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:border-indigo-400/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
                 />
-                <p className="mt-2 text-xs text-gray-500">
+                <p className="mt-2 text-xs text-gray-400">
                   Deixe em branco para usar automaticamente o título da oportunidade.
                 </p>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700">
+                <label className="block text-sm font-medium text-gray-200">
                   Tags (separadas por vírgula)
                 </label>
                 <input
@@ -767,9 +786,9 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                   value={chatTagsInput}
                   onChange={(event) => setChatTagsInput(event.target.value)}
                   placeholder="ex: briefing, entrega, revisão"
-                  className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+                  className="mt-2 w-full rounded-xl border border-transparent bg-white/5 px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:border-indigo-400/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
                 />
-                <p className="mt-2 text-xs text-gray-500">
+                <p className="mt-2 text-xs text-gray-400">
                   Máximo de 10 tags. Use palavras-chave curtas para facilitar futuras buscas.
                 </p>
               </div>
@@ -777,7 +796,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                 <button
                   type="button"
                   onClick={handleCancelChatDetails}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-900"
+                  className="btn-ghost-glass px-4 py-2"
                 >
                   Cancelar
                 </button>
@@ -785,10 +804,10 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                   type="button"
                   onClick={handleSaveChatDetails}
                   disabled={savingChatDetails}
-                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-400"
+                  className="btn-primary-glow flex items-center gap-2 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {savingChatDetails ? (
-                    <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-white"></span>
+                    <span className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-transparent"></span>
                   ) : (
                     <Check className="h-4 w-4" />
                   )}
@@ -801,12 +820,14 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
         {/* Project Deleted Warning */}
         {isProjectDeleted && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-4">
-            <div className="flex items-center gap-3">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
+          <div className="glass-card border border-rose-400/40 bg-rose-500/10 px-5 py-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-rose-300/40 bg-rose-400/15 text-rose-200">
+                <AlertTriangle className="h-5 w-5" />
+              </div>
               <div className="flex-1">
-                <h3 className="text-red-800 font-medium">Projeto Encerrado</h3>
-                <p className="text-red-700 text-sm">
+                <h3 className="text-sm font-semibold text-rose-100">Projeto Encerrado</h3>
+                <p className="text-xs text-rose-200/90">
                   Este projeto foi encerrado ou removido. Você não pode mais enviar mensagens.
                 </p>
               </div>
@@ -815,25 +836,27 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
         )}
 
         {/* Chat Container */}
-        <div className="bg-white rounded-xl border border-gray-200 h-[600px] flex flex-col">
+        <div className="glass-card h-[620px] flex flex-col overflow-hidden border">
           {/* Messages */}
-          <div className="flex-1 overflow-y-auto p-6 space-y-4">
+          <div className="flex-1 overflow-y-auto px-6 py-6 space-y-4">
             {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.sender_type === 'creator' ? 'justify-end' : 'justify-start'}`}
               >
                 <div
-                  className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
+                  className={`max-w-xs lg:max-w-md rounded-2xl px-4 py-3 shadow-[0_18px_40px_-24px_rgba(16,40,120,0.55)] ${
                     message.sender_type === 'creator'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-900'
+                      ? 'bg-gradient-to-br from-indigo-500/85 via-sky-500/75 to-violet-500/80 text-white'
+                      : 'bg-white/7 border border-white/12 text-gray-100 backdrop-blur-xl'
                   }`}
                 >
-                  <p className="text-sm">{message.content}</p>
+                  <p className="text-sm leading-relaxed">{message.content}</p>
                   <p
-                    className={`text-xs mt-1 ${
-                      message.sender_type === 'creator' ? 'text-blue-100' : 'text-gray-500'
+                    className={`text-xs mt-2 uppercase tracking-[0.22em] ${
+                      message.sender_type === 'creator'
+                        ? 'text-white/70'
+                        : 'text-gray-300/70'
                     }`}
                   >
                     {formatMessageTime(message.created_at)}
@@ -845,24 +868,24 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
           </div>
 
           {/* Message Input */}
-          <div className="border-t border-gray-200 p-4">
+          <div className="border-t border-white/10 bg-white/4 px-5 py-4">
             <div className="flex items-center gap-3">
               <input
                 type="text"
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && !isProjectDeleted && sendMessage()}
-                placeholder={isProjectDeleted ? "Projeto encerrado - não é possível enviar mensagens" : "Digite sua mensagem..."}
+                placeholder={isProjectDeleted ? 'Projeto encerrado - não é possível enviar mensagens' : 'Digite sua mensagem...'}
                 disabled={isProjectDeleted}
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+                className="flex-1 rounded-xl border border-transparent bg-white/10 px-4 py-3 text-sm text-white placeholder:text-gray-400 focus:border-indigo-400/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 disabled:bg-white/5 disabled:text-gray-500/70"
               />
               <button
                 onClick={sendMessage}
                 disabled={!newMessage.trim() || sendingMessage || isProjectDeleted}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white p-2 rounded-lg transition-colors disabled:cursor-not-allowed"
+                className="btn-primary-glow px-4 py-3 disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {sendingMessage ? (
-                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white"></div>
+                  <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-transparent"></div>
                 ) : (
                   <Send className="h-5 w-5" />
                 )}
@@ -873,59 +896,70 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
         
         {/* Delete Chat Confirmation Modal */}
         {showDeleteConfirm && (
-          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-            <div className="bg-white rounded-lg p-6 max-w-md w-mx">
-              <div className="flex items-center gap-3 mb-4">
-                <AlertTriangle className="h-6 w-6 text-red-600" />
-                <h3 className="text-lg font-semibold text-gray-900">Confirmar Exclusão</h3>
-              </div>
-              <p className="text-gray-600 mb-6">
-                Tem certeza que deseja apagar este chat? Esta ação não pode ser desfeita e todas as mensagens serão permanentemente removidas.
-              </p>
-              <div className="flex gap-3 justify-end">
-                <button
-                  onClick={() => setShowDeleteConfirm(false)}
-                  className="px-4 py-2 text-gray-600 hover:text-gray-800 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  onClick={deleteChat}
-                  className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg transition-colors"
-                >
-                  Apagar Chat
-                </button>
+          <ModalPortal>
+            <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md px-4">
+              <div className="glass-card w-full max-w-md border px-6 py-6">
+                <div className="flex items-center gap-3 mb-5">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-rose-400/40 bg-rose-500/15 text-rose-200">
+                    <AlertTriangle className="h-5 w-5" />
+                  </div>
+                  <h3 className="text-lg font-semibold text-white">Confirmar Exclusão</h3>
+                </div>
+                <p className="text-sm text-gray-300 mb-6 leading-relaxed">
+                  Tem certeza que deseja apagar este chat? Esta ação não pode ser desfeita e todas as mensagens serão permanentemente removidas.
+                </p>
+                <div className="flex gap-3 justify-end">
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="btn-ghost-glass px-4 py-2"
+                  >
+                    Cancelar
+                  </button>
+                  <button
+                    onClick={deleteChat}
+                    className="btn-ghost-glass px-4 py-2 border border-rose-400/60 bg-rose-500/20 text-rose-100 hover:border-rose-300 hover:text-rose-50"
+                  >
+                    Apagar Chat
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
+          </ModalPortal>
         )}
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Mensagens</h1>
-        <p className="text-gray-600 mt-1">Converse com empresas sobre oportunidades</p>
+      <div className="glass-card px-6 py-5">
+        <div className="glass-section-title mb-0">
+          <div className="icon-wrap">
+            <MessageCircle className="h-5 w-5" />
+          </div>
+          <div>
+            <h1>Mensagens</h1>
+            <p className="text-sm text-gray-300 mt-1">Converse com empresas sobre oportunidades</p>
+          </div>
+        </div>
       </div>
 
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="glass-card overflow-hidden border">
         {/* Search */}
-        <div className="p-4 border-b border-gray-200">
+        <div className="px-6 py-5 border-b border-white/10">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
             <input
               type="text"
               placeholder="Buscar conversas..."
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="w-full rounded-xl border border-transparent bg-white/8 px-10 py-3 text-sm text-white placeholder:text-gray-400 focus:border-indigo-400/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
             />
           </div>
         </div>
 
         {/* Conversations List */}
-        <div className="divide-y divide-gray-200">
+  <div className="divide-y divide-white/10">
           {projectChats.map((projectChat) => {
             const displayTitle = getChatDisplayTitle(projectChat);
             const tags = (projectChat.tags || []) as string[];
@@ -934,7 +968,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
             return (
               <div
                 key={projectChat.conversation_id || projectChat.opportunity_id}
-                className="p-4 hover:bg-gray-50 cursor-pointer transition-colors"
+                className="group cursor-pointer px-6 py-5 transition-colors hover:bg-white/6"
                 onClick={() => {
                   if (targetPathId) {
                     navigate(`/creators/messages/${targetPathId}`);
@@ -943,46 +977,50 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                   }
                 }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <img
-                      src="https://images.pexels.com/photos/3762800/pexels-photo-3762800.jpeg?auto=compress&cs=tinysrgb&w=50&h=50&fit=crop"
-                      alt={projectChat.analyst?.company || 'Empresa'}
-                      className="w-12 h-12 rounded-full object-cover"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center space-x-2">
-                        <h3 className="font-semibold text-gray-900 truncate">{displayTitle}</h3>
+                <div className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/12 bg-white/10">
+                      <img
+                        src="https://images.pexels.com/photos/3762800/pexels-photo-3762800.jpeg?auto=compress&cs=tinysrgb&w=50&h=50&fit=crop"
+                        alt={projectChat.analyst?.company || 'Empresa'}
+                        className="h-full w-full object-cover opacity-90"
+                      />
+                      <div className="absolute inset-0 rounded-2xl border border-white/15 opacity-50" />
+                    </div>
+                    <div className="flex-1 min-w-0 space-y-2">
+                      <div className="flex items-center gap-3">
+                        <h3 className="text-base font-semibold text-white truncate">{displayTitle}</h3>
                         {projectChat.unread_count > 0 && (
-                          <span className="bg-blue-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                            {projectChat.unread_count}
+                          <span className="glass-chip !px-3 !py-1 text-xs font-semibold">
+                            {projectChat.unread_count} novas
                           </span>
                         )}
-                        {/* Project status indicator */}
-                        {projectChat.opportunity?.status === 'inativo' || projectChat.opportunity?.status === 'deleted' ? (
-                          <div className="w-2 h-2 bg-red-500 rounded-full" title="Projeto encerrado"></div>
-                        ) : (
-                          <div className="w-2 h-2 bg-green-500 rounded-full" title="Projeto ativo"></div>
+                        <span
+                          className={`inline-flex h-2 w-2 rounded-full ${
+                            projectChat.opportunity?.status === 'inativo' || projectChat.opportunity?.status === 'deleted'
+                              ? 'bg-rose-400'
+                              : 'bg-emerald-400'
+                          }`}
+                          title={projectChat.opportunity?.status === 'inativo' || projectChat.opportunity?.status === 'deleted' ? 'Projeto encerrado' : 'Projeto ativo'}
+                        />
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-gray-300">
+                        <span>{projectChat.analyst?.company || 'Empresa'}</span>
+                        {projectChat.opportunity?.title && (
+                          <span className="text-gray-400">• {projectChat.opportunity.title}</span>
                         )}
                       </div>
-                      <p className="text-gray-500 text-xs mt-1">{projectChat.analyst?.company || 'Empresa'}</p>
-                      {projectChat.opportunity?.title && (
-                        <p className="text-gray-500 text-xs mt-1">{projectChat.opportunity.title}</p>
-                      )}
                       {tags.length > 0 && (
-                        <div className="mt-2 flex flex-wrap gap-1">
+                        <div className="flex flex-wrap gap-2">
                           {tags.map((tag) => (
-                            <span
-                              key={tag}
-                              className="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-[11px] font-medium text-blue-700"
-                            >
+                            <span key={tag} className="glass-chip !px-3 !py-1 text-[11px] uppercase tracking-[0.2em]">
                               #{tag}
                             </span>
                           ))}
                         </div>
                       )}
                       {projectChat.lastMessage && (
-                        <p className="text-gray-600 text-sm truncate max-w-xs mt-2">
+                        <p className="text-sm text-gray-300/90 line-clamp-1">
                           {projectChat.lastMessage.sender_type === 'creator' ? 'Você: ' : ''}
                           {projectChat.lastMessage.content}
                         </p>
@@ -990,14 +1028,12 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                     </div>
                   </div>
 
-                  <div className="flex items-center space-x-2">
+                  <div className="flex flex-col items-end gap-3 text-right text-xs text-gray-400">
                     {projectChat.lastMessage && (
-                      <span className="text-xs text-gray-500">
-                        {formatTime(projectChat.lastMessage.created_at)}
-                      </span>
+                      <span>{formatTime(projectChat.lastMessage.created_at)}</span>
                     )}
-                    <button className="p-1 hover:bg-gray-200 rounded">
-                      <MoreVertical className="h-4 w-4 text-gray-400" />
+                    <button className="btn-ghost-glass px-3 py-2">
+                      <MoreVertical className="h-4 w-4" />
                     </button>
                   </div>
                 </div>
@@ -1008,12 +1044,23 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
         {/* Empty State */}
         {projectChats.length === 0 && (
-          <div className="text-center py-12">
-            <MessageCircle className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-            <h3 className="text-lg font-medium text-gray-900 mb-2">Nenhuma conversa ainda</h3>
-            <p className="text-gray-600">
-              Suas conversas com analistas aparecerão aqui quando suas candidaturas forem aprovadas
-            </p>
+          <div className="glass-card text-center py-16 px-8 flex flex-col items-center gap-6">
+            <div className="relative flex items-center justify-center h-16 w-16 rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/25 via-sky-400/25 to-purple-500/25 shadow-[0_22px_45px_-20px_rgba(46,180,255,0.45)]">
+              <div className="absolute inset-0 rounded-2xl border border-white/20 opacity-60" />
+              <MessageCircle className="h-6 w-6 text-white" />
+            </div>
+            <div className="space-y-2 max-w-lg">
+              <h3 className="text-lg font-semibold text-white">Nenhuma conversa ainda</h3>
+              <p className="text-sm text-gray-300">
+                Suas conversas com analistas aparecerão aqui quando suas candidaturas forem aprovadas.
+              </p>
+            </div>
+            <button
+              onClick={() => navigate('/creators/opportunities')}
+              className="btn-primary-glow inline-flex items-center gap-2"
+            >
+              <ArrowRight className="h-4 w-4" /> Explorar oportunidades
+            </button>
           </div>
         )}
       </div>

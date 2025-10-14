@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { CheckCircle2, MailCheck, AlertTriangle, LogIn } from 'lucide-react';
+import { CheckCircle2, MailCheck, AlertTriangle, LogIn, ArrowLeft } from 'lucide-react';
 import { useRouter } from '../../hooks/useRouter';
+import AuthLayout from './AuthLayout';
 
 type ConfirmationState = 'idle' | 'success' | 'error';
 
@@ -12,12 +13,12 @@ const parseHashParams = (hash: string) => {
 const ConfirmationStatusMessage: React.FC<{ state: ConfirmationState; errorMessage?: string }> = ({ state, errorMessage }) => {
   if (state === 'error') {
     return (
-      <div className="max-w-xl mx-auto bg-red-50 border border-red-200 rounded-xl p-4 mt-6">
-        <div className="flex items-start gap-3">
-          <AlertTriangle className="w-6 h-6 text-red-500 mt-1" />
-          <div>
-            <h2 className="text-lg font-semibold text-red-600">O link expirou ou é inválido</h2>
-            <p className="text-red-500 mt-1">
+      <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-red-500/35 bg-red-500/10 px-6 py-5 text-left shadow-[0_18px_45px_-20px_rgba(244,63,94,0.45)]">
+        <div className="flex items-start gap-3 text-sm text-red-100">
+          <AlertTriangle className="mt-1 h-6 w-6 text-red-300" />
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-red-200">O link expirou ou é inválido</h2>
+            <p className="text-red-100/80">
               {errorMessage || 'O link de confirmação não pôde ser validado. Solicite um novo email de confirmação e tente novamente.'}
             </p>
           </div>
@@ -28,14 +29,12 @@ const ConfirmationStatusMessage: React.FC<{ state: ConfirmationState; errorMessa
 
   if (state === 'success') {
     return (
-      <div className="max-w-xl mx-auto bg-green-50 border border-green-200 rounded-xl p-4 mt-6">
-        <div className="flex items-start gap-3">
-          <CheckCircle2 className="w-6 h-6 text-green-600 mt-1" />
-          <div>
-            <h2 className="text-lg font-semibold text-green-700">Email verificado com sucesso!</h2>
-            <p className="text-green-600 mt-1">
-              Sua conta está pronta para uso. Escolha abaixo como deseja continuar.
-            </p>
+      <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-[#4ADE80]/40 bg-[#4ADE80]/10 px-6 py-5 text-left">
+        <div className="flex items-start gap-3 text-sm text-[#B7FBBF]">
+          <CheckCircle2 className="mt-1 h-6 w-6 text-[#6EE7B7]" />
+          <div className="space-y-1">
+            <h2 className="text-base font-semibold text-[#D1FADF]">Email verificado com sucesso!</h2>
+            <p>Sua conta está pronta para uso. Escolha abaixo como deseja continuar.</p>
           </div>
         </div>
       </div>
@@ -43,14 +42,12 @@ const ConfirmationStatusMessage: React.FC<{ state: ConfirmationState; errorMessa
   }
 
   return (
-    <div className="max-w-xl mx-auto bg-blue-50 border border-blue-200 rounded-xl p-4 mt-6">
-      <div className="flex items-start gap-3">
-        <MailCheck className="w-6 h-6 text-blue-600 mt-1" />
-        <div>
-          <h2 className="text-lg font-semibold text-blue-700">Validando seu email...</h2>
-          <p className="text-blue-600 mt-1">
-            Aguarde só um instante enquanto confirmamos suas credenciais.
-          </p>
+    <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-white/15 bg-white/5 px-6 py-5 text-left backdrop-blur-md">
+      <div className="flex items-start gap-3 text-sm text-slate-200">
+        <MailCheck className="mt-1 h-6 w-6 text-[#8A7CFF]" />
+        <div className="space-y-1">
+          <h2 className="text-base font-semibold text-white">Validando seu email...</h2>
+          <p className="text-slate-200/80">Aguarde só um instante enquanto confirmamos suas credenciais.</p>
         </div>
       </div>
     </div>
@@ -89,52 +86,63 @@ const EmailConfirmationPage: React.FC = () => {
     navigate(path);
   };
 
+  const backButton = (
+    <button
+      onClick={() => navigate('/')}
+      className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-300 transition hover:text-white"
+    >
+      <ArrowLeft className="h-4 w-4" />
+      voltar ao início
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-gray-50 via-white to-gray-100 flex items-center justify-center px-4 py-12">
-      <div className="max-w-2xl w-full bg-white shadow-xl rounded-3xl p-10 border border-gray-100">
-        <div className="text-center">
-          <div className="mx-auto h-16 w-16 rounded-2xl bg-gradient-to-br from-purple-600 to-indigo-600 flex items-center justify-center shadow-lg">
-            <MailCheck className="h-9 w-9 text-white" />
+    <AuthLayout
+      topSlot={backButton}
+      title="Confirmação de email"
+      subtitle="Obrigado por validar seu endereço. Em segundos você volta para o fluxo ideal."
+    >
+      <div className="space-y-8 text-center">
+        <div className="space-y-4">
+          <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-3xl border border-white/10 bg-white/[0.08] shadow-[0_25px_55px_-20px_rgba(103,99,255,0.45)]">
+            <MailCheck className="h-10 w-10 text-white" />
           </div>
-          <h1 className="mt-6 text-3xl font-bold text-gray-900 tracking-tight">
-            Confirmação de email
-          </h1>
-          <p className="mt-3 text-base text-gray-600">
-            Obrigado por confirmar seu endereço de email. Agora você pode acessar sua conta UGC Hub normalmente.
-          </p>
-          <p className="mt-1 text-sm text-gray-500">
-            Detectamos que este link foi gerado para a área de <span className="font-semibold text-gray-700">{accountType === 'analyst' ? 'analistas' : 'criadores'}</span>.
-          </p>
+          <div className="space-y-2 text-sm text-slate-300">
+            <p className="text-base text-slate-200">
+              Obrigado por confirmar seu email. Agora você pode acessar normalmente a plataforma UGC Hub.
+            </p>
+            <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
+              Link detectado para <span className="font-semibold text-white">{accountType === 'analyst' ? 'analistas' : 'criadores'}</span>
+            </p>
+          </div>
         </div>
 
         <ConfirmationStatusMessage state={confirmationState} errorMessage={errorMessage} />
 
-        <div className="mt-10 grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <button
             type="button"
             onClick={() => handleNavigate('/login/analysts')}
-            className="flex items-center justify-center gap-2 rounded-xl border border-purple-200 bg-white px-5 py-4 text-base font-semibold text-purple-600 hover:bg-purple-50 focus:outline-none focus:ring-2 focus:ring-purple-400 focus:ring-offset-2 transition"
+            className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-transparent hover:bg-gradient-to-r hover:from-[#4A5BFF] hover:via-[#6E4FFF] hover:to-[#B249FF] hover:shadow-[0_30px_60px_-25px_rgba(74,91,255,0.65)]"
           >
-            <LogIn className="w-5 h-5" />
+            <LogIn className="h-4 w-4 text-[#A69CFF] group-hover:text-white" />
             Sou analista
           </button>
           <button
             type="button"
             onClick={() => handleNavigate('/login/creators')}
-            className="flex items-center justify-center gap-2 rounded-xl border border-blue-200 bg-white px-5 py-4 text-base font-semibold text-blue-600 hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-400 focus:ring-offset-2 transition"
+            className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-transparent hover:bg-gradient-to-r hover:from-[#FF6CAB] hover:via-[#736FFF] hover:to-[#4BE1EC] hover:shadow-[0_30px_60px_-25px_rgba(255,108,171,0.55)]"
           >
-            <LogIn className="w-5 h-5" />
+            <LogIn className="h-4 w-4 text-[#FF9BCF] group-hover:text-white" />
             Sou criador
           </button>
         </div>
 
-        <div className="mt-10 text-center text-sm text-gray-500">
-          <p>
-            Teve problemas com o link? Refaça o cadastro usando o mesmo email ou solicite um novo link de verificação a partir da tela de login.
-          </p>
+        <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-5 text-sm text-slate-300">
+          Teve problemas com o link? Refaça o cadastro usando o mesmo email ou solicite um novo link pela tela de login.
         </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

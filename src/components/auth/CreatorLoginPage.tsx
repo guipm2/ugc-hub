@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Eye, EyeOff, User, Mail, Lock, AlertCircle } from 'lucide-react';
 import { useAuth } from '../../hooks/useAuth';
 import { useRouter } from '../../hooks/useRouter';
+import AuthLayout from './AuthLayout';
 
 const CreatorLoginPage: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -18,7 +19,6 @@ const CreatorLoginPage: React.FC = () => {
   const { signIn, signUp, user, profile } = useAuth();
   const { navigate } = useRouter();
 
-  // Detecta quando login foi bem-sucedido e navega
   useEffect(() => {
     if (user && profile && profile.role === 'creator') {
       navigate('/creators/opportunities');
@@ -33,40 +33,35 @@ const CreatorLoginPage: React.FC = () => {
 
     try {
       if (isLogin) {
-        // Login
-        const { error } = await signIn(email, password);
-        if (error) {
-          setError(error.message || 'Erro ao fazer login');
+        const { error: signInError } = await signIn(email, password);
+        if (signInError) {
+          setError(signInError.message || 'Erro ao fazer login');
         } else {
-          // Timeout de segurança para navegação caso o useEffect não funcione
           setTimeout(() => {
             navigate('/creators/opportunities');
-          }, 2000);
+          }, 1500);
         }
       } else {
-        // Register
         if (password !== confirmPassword) {
           setError('As senhas não coincidem');
           return;
         }
 
-        const { error } = await signUp(email, password, {
+        const { error: signUpError } = await signUp(email, password, {
           name,
           termsAccepted: true,
           termsAcceptedAt: new Date().toISOString(),
           termsVersion: '1.0'
         });
 
-        if (error) {
-          setError(error.message || 'Erro ao criar conta');
+        if (signUpError) {
+          setError(signUpError.message || 'Erro ao criar conta');
         } else {
-          setSuccessMessage(`Conta criada com sucesso! Enviamos um email de confirmação para ${email}. Por favor, clique no link do email para ativar sua conta antes de fazer login.`);
-          // Limpar o formulário
+          setSuccessMessage(`Conta criada com sucesso! Enviamos um email de confirmação para ${email}. Ative sua conta para começar a se candidatar.`);
           setEmail('');
           setPassword('');
           setConfirmPassword('');
           setName('');
-          // Mudar para tela de login após 3 segundos
           setTimeout(() => {
             setIsLogin(true);
             setSuccessMessage('');
@@ -80,185 +75,158 @@ const CreatorLoginPage: React.FC = () => {
     }
   };
 
+  const backButton = (
+    <button
+      onClick={() => navigate('/')}
+      className="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-[0.3em] text-slate-300 transition hover:text-white"
+    >
+      <ArrowLeft className="h-4 w-4" />
+      voltar ao início
+    </button>
+  );
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        {/* Back Button */}
-        <button
-          onClick={() => navigate('/')}
-          className="flex items-center gap-2 text-gray-600 hover:text-gray-900 transition-colors mb-8"
-        >
-          <ArrowLeft className="w-4 h-4" />
-          Voltar ao início
-        </button>
-
-        {/* Card */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          {/* Header */}
-          <div className="text-center mb-8">
-            <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-2xl flex items-center justify-center mx-auto mb-4">
-              <User className="w-8 h-8 text-white" />
-            </div>
-            <h1 className="text-2xl font-bold text-gray-900">
-              {isLogin ? 'Entrar como Criador' : 'Cadastrar como Criador'}
-            </h1>
-            <p className="text-gray-600 mt-2">
-              {isLogin 
-                ? 'Acesse sua conta e encontre oportunidades incríveis' 
-                : 'Crie sua conta e comece a monetizar seu conteúdo'
-              }
-            </p>
+    <AuthLayout
+      topSlot={backButton}
+      title={isLogin ? 'Entrar como creator' : 'Cadastrar como creator'}
+      subtitle={isLogin ? 'Acesse o hub de oportunidades exclusivas do UGC Hub' : 'Crie sua conta e faça parte da comunidade de creators independentes'}
+    >
+      <div className="space-y-6">
+        {error && (
+          <div className="flex items-start gap-3 rounded-2xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm text-red-200 shadow-[0_12px_35px_rgba(244,63,94,0.25)]">
+            <AlertCircle className="mt-0.5 h-5 w-5 flex-shrink-0" />
+            <span>{error}</span>
           </div>
+        )}
 
-          {/* Error Alert */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
-              <div className="text-red-700 text-sm">{error}</div>
-            </div>
-          )}
+        {successMessage && (
+          <div className="rounded-2xl border border-[#4ADE80]/40 bg-[#4ADE80]/10 px-4 py-3 text-sm text-[#B7FBBF]">
+            {successMessage}
+          </div>
+        )}
 
-          {/* Success Alert */}
-          {successMessage && (
-            <div className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-start gap-3">
-              <div className="w-5 h-5 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                <svg className="w-3 h-3 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                </svg>
-              </div>
-              <div className="text-green-700 text-sm">{successMessage}</div>
-            </div>
-          )}
-
-          {/* Form */}
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Nome completo
-                </label>
-                <div className="relative">
-                  <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="Seu nome completo"
-                    required={!isLogin}
-                  />
-                </div>
-              </div>
-            )}
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Email
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {!isLogin && (
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                Nome completo
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
                 <input
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  placeholder="seu@email.com"
+                  type="text"
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+                  placeholder="Seu nome completo"
                   required
                 />
               </div>
             </div>
+          )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Senha
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+              Email
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+                placeholder="seu@email.com"
+                required
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <label className="block text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+              Senha
+            </label>
+            <div className="relative">
+              <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+              <input
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+                placeholder="••••••••"
+                required
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-200"
+              >
+                {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+              </button>
+            </div>
+          </div>
+
+          {!isLogin && (
+            <div className="space-y-2">
+              <label className="block text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                Confirmar senha
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
                 <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
                   placeholder="••••••••"
                   required
                 />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 transition hover:text-slate-200"
                 >
-                  {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+                  {showConfirmPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
             </div>
+          )}
 
-            {!isLogin && (
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Confirmar senha
-                </label>
-                <div className="relative">
-                  <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                    placeholder="••••••••"
-                    required={!isLogin}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
+          <button
+            type="submit"
+            disabled={loading}
+            className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] px-6 py-3 text-sm font-semibold text-white shadow-[0_25px_55px_-18px_rgba(74,91,255,0.6)] transition hover:scale-[1.02] hover:shadow-[0_30px_65px_-20px_rgba(74,91,255,0.65)] disabled:opacity-50"
+          >
+            {loading ? (
+              <>
+                <div className="h-5 w-5 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+                {isLogin ? 'Entrando...' : 'Criando conta...'}
+              </>
+            ) : (
+              isLogin ? 'Entrar' : 'Criar conta'
             )}
+          </button>
+        </form>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold hover:from-blue-700 hover:to-purple-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
-            >
-              {loading ? (
-                <div className="flex items-center justify-center gap-2">
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                  {isLogin ? 'Entrando...' : 'Criando conta...'}
-                </div>
-              ) : (
-                isLogin ? 'Entrar' : 'Criar conta'
-              )}
-            </button>
-          </form>
+        <div className="text-center text-sm text-slate-300">
+          <button
+            onClick={() => setIsLogin(!isLogin)}
+            className="font-semibold text-[#9A91FF] transition hover:text-white"
+          >
+            {isLogin ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Faça login'}
+          </button>
+        </div>
 
-          {/* Footer */}
-          <div className="mt-6 text-center">
-            <button
-              onClick={() => setIsLogin(!isLogin)}
-              className="text-blue-600 hover:text-blue-700 font-medium"
-            >
-              {isLogin 
-                ? 'Não tem uma conta? Cadastre-se' 
-                : 'Já tem uma conta? Faça login'
-              }
-            </button>
-          </div>
-
-          {/* Analyst Link */}
-          <div className="mt-4 text-center">
-            <button
-              onClick={() => navigate('/login/analysts')}
-              className="text-gray-600 hover:text-gray-700 text-sm"
-            >
-              Você é uma empresa? Clique aqui
-            </button>
-          </div>
+        <div className="text-center text-xs uppercase tracking-[0.3em] text-slate-400">
+          <button
+            onClick={() => navigate('/login/analysts')}
+            className="font-semibold text-[#9A91FF] transition hover:text-white"
+          >
+            Você é uma empresa? Acesse a área de analistas →
+          </button>
         </div>
       </div>
-    </div>
+    </AuthLayout>
   );
 };
 

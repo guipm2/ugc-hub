@@ -10,13 +10,15 @@ import {
   Send,
   X,
   Grid3X3,
-  List
+  List,
+  AlertTriangle
 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import { normalizeCompanyLink } from '../utils/formatters';
+import ModalPortal from './common/ModalPortal';
 
 type ApplicationStatus = 'pending' | 'approved' | 'rejected';
 
@@ -162,12 +164,50 @@ const sortOpportunities = (items: OpportunityCardData[]) => {
   });
 };
 
+const getUrgencyBadge = (urgency: OpportunityCardData['urgency']) => {
+  return {
+    label: urgency === 'urgente' ? 'Urgente' : 'Novo',
+    className: `glass-chip ${urgency === 'urgente' ? 'chip-danger' : 'chip-success'}`
+  };
+};
+
+const getApplicationBadge = (status: ApplicationStatus) => {
+  return {
+    label: status === 'approved' ? 'Aprovado' : status === 'rejected' ? 'Rejeitado' : 'Pendente',
+    className: `glass-chip ${
+      status === 'approved' ? 'chip-success' : status === 'rejected' ? 'chip-danger' : 'chip-warning'
+    }`
+  };
+};
+
 const Opportunities: React.FC = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>('list');
+  const [viewMode, setViewMode] = useState<ViewMode>(() => {
+    if (typeof window === 'undefined') {
+      return 'list';
+    }
+
+    const stored = window.localStorage.getItem('creators-opportunities:view-mode');
+    return stored === 'grid' || stored === 'list' ? stored : 'list';
+  });
   const [searchTerm, setSearchTerm] = useState('');
   const [opportunities, setOpportunities] = useState<OpportunityCardData[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [savedOpportunities, setSavedOpportunities] = useState<string[]>(() => {
+    if (typeof window === 'undefined') {
+      return [];
+    }
+
+    try {
+      const stored = window.localStorage.getItem('creators-opportunities:saved');
+      return stored ? (JSON.parse(stored) as string[]) : [];
+    } catch (error) {
+      console.warn('Não foi possível carregar favoritos de oportunidades:', error);
+      return [];
+    }
+  });
+  const [cancelRequest, setCancelRequest] = useState<{ opportunityId: string; applicationId: string } | null>(null);
+  const [cancelError, setCancelError] = useState<string | null>(null);
   const { user } = useAuth();
   const { navigate } = useRouter();
 
@@ -205,12 +245,19 @@ const Opportunities: React.FC = () => {
           console.error('Erro ao buscar candidaturas:', applicationsError);
         }
 
-        const applications = (applicationsData ?? []) as { id: string; opportunity_id: string; status: ApplicationStatus }[];
+        const applications = (applicationsData ?? []) as {
+          id: string;
+          opportunity_id: string;
+          status: ApplicationStatus;
+        }[];
 
         const formatted = (opportunitiesData ?? []).map((opp: DbOpportunity) => {
           const userApplication = applications.find((app) => app.opportunity_id === opp.id);
 
-          const { deadlineLabel, deadlineDate, daysLeft, isClosed } = getDeadlineMeta(opp.deadline, opp.status ?? 'ativo');
+          const { deadlineLabel, deadlineDate, daysLeft, isClosed } = getDeadlineMeta(
+            opp.deadline,
+            opp.status ?? 'ativo'
+          );
           const urgency = getUrgency(isClosed, daysLeft);
 
           return {
@@ -258,6 +305,33 @@ const Opportunities: React.FC = () => {
 
   useAutoRefresh(() => fetchOpportunities({ silent: true }), 20000, true);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem('creators-opportunities:view-mode', viewMode);
+    } catch (error) {
+      console.warn('Não foi possível salvar a visualização selecionada:', error);
+    }
+  }, [viewMode]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    try {
+      window.localStorage.setItem(
+        'creators-opportunities:saved',
+        JSON.stringify(savedOpportunities)
+      );
+    } catch (error) {
+      console.warn('Não foi possível salvar favoritos de oportunidades:', error);
+    }
+  }, [savedOpportunities]);
+
   const filteredOpportunities = opportunities.filter((opportunity) => {
     const term = searchTerm.trim().toLowerCase();
 
@@ -271,6 +345,40 @@ const Opportunities: React.FC = () => {
       opportunity.contentType.toLowerCase().includes(term)
     );
   });
+
+  const toggleSavedOpportunity = useCallback((opportunityId: string) => {
+    setSavedOpportunities((current) => {
+      return current.includes(opportunityId)
+        ? current.filter((id) => id !== opportunityId)
+        : [...current, opportunityId];
+    });
+  }, []);
+
+  const openCancelModal = (opportunityId: string, applicationId: string) => {
+    setCancelError(null);
+    setCancelRequest({ opportunityId, applicationId });
+  };
+
+  const closeCancelModal = () => {
+    if (!cancelRequest) {
+      return;
+    }
+
+    if (actionLoading === cancelRequest.opportunityId) {
+      return;
+    }
+
+    setCancelRequest(null);
+    setCancelError(null);
+  };
+
+  const cancelTargetOpportunity = cancelRequest
+    ? opportunities.find((item) => item.id === cancelRequest.opportunityId)
+    : null;
+
+  const isCancellationInProgress = cancelRequest
+    ? actionLoading === cancelRequest.opportunityId
+    : false;
 
   const handleApply = async (opportunityId: string) => {
     if (!user) return;
@@ -319,15 +427,17 @@ const Opportunities: React.FC = () => {
     }
   };
 
-  const handleCancelApplication = async (opportunityId: string, applicationId: string) => {
-    if (!user) return;
-
-    const confirmed = window.confirm('Tem certeza que deseja cancelar sua candidatura?');
-    if (!confirmed) {
+  const handleCancelApplication = async () => {
+    if (!user || !cancelRequest) {
       return;
     }
 
+    const { opportunityId, applicationId } = cancelRequest;
+    setCancelError(null);
     setActionLoading(opportunityId);
+
+    const opportunity = opportunities.find((item) => item.id === opportunityId);
+    let shouldCloseModal = true;
 
     try {
       const { error } = await supabase
@@ -338,358 +448,365 @@ const Opportunities: React.FC = () => {
 
       if (error) {
         console.error('Erro ao cancelar candidatura:', error);
-      } else {
-        fetchOpportunities({ silent: true });
+        setCancelError('Não foi possível cancelar agora. Tente novamente em instantes.');
+        shouldCloseModal = false;
+        return;
       }
+
+      if (opportunity) {
+        const nextCount = Math.max((opportunity.candidates ?? 1) - 1, 0);
+        const { error: updateError } = await supabase
+          .from('opportunities')
+          .update({
+            candidates_count: nextCount,
+            updated_at: new Date().toISOString()
+          })
+          .eq('id', opportunityId);
+
+        if (updateError) {
+          console.error('Erro ao atualizar contagem de candidatos:', updateError);
+        }
+      }
+
+      fetchOpportunities({ silent: true });
     } catch (err) {
       console.error('Erro ao cancelar candidatura:', err);
+      setCancelError('Não foi possível cancelar agora. Tente novamente.');
+      shouldCloseModal = false;
     } finally {
       setActionLoading(null);
+      if (shouldCloseModal) {
+        setCancelRequest(null);
+      }
     }
   };
 
   if (loading) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900">Oportunidades</h1>
-          <p className="text-gray-600 mt-1">Carregando oportunidades...</p>
-        </div>
-        <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="space-y-8">
+        <div className="glass-card p-8 flex flex-col gap-3">
+          <h1 className="text-2xl font-semibold text-white">Oportunidades</h1>
+          <p className="text-sm text-gray-400">Carregando curadoria de projetos em destaque...</p>
+          <div className="mt-6 flex items-center gap-3">
+            <span className="inline-flex h-9 w-9 animate-spin rounded-full border-2 border-white/20 border-t-transparent"></span>
+            <span className="text-sm text-gray-500">Nossa equipe está sincronizando as oportunidades mais recentes.</span>
+          </div>
         </div>
       </div>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Oportunidades</h1>
-        <p className="text-gray-600 mt-1">{opportunities.length} oportunidades disponíveis</p>
-      </div>
+  const renderOpportunityCard = (opportunity: OpportunityCardData) => {
+    const isList = viewMode === 'list';
+    const urgencyBadge = getUrgencyBadge(opportunity.urgency);
+    const applicationBadge = opportunity.userApplication
+      ? getApplicationBadge(opportunity.userApplication.status)
+      : null;
+    const isLoading = actionLoading === opportunity.id;
 
-      <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="flex-1 max-w-md">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input
-              type="text"
-              placeholder="Pesquisar oportunidades..."
-              value={searchTerm}
-              onChange={(event) => setSearchTerm(event.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-            />
-          </div>
-        </div>
+    const handleCardClick = () => {
+      navigate(`/creators/opportunities/${opportunity.id}`);
+    };
 
-        <div className="flex items-center gap-3">
-          <div className="flex bg-gray-100 rounded-lg p-1">
-            <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === 'grid' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-              }`}
+    const isSaved = savedOpportunities.includes(opportunity.id);
+
+    const handleApplyClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      handleApply(opportunity.id);
+    };
+
+    const handleCancelClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      if (!opportunity.userApplication) return;
+      event.stopPropagation();
+      openCancelModal(opportunity.id, opportunity.userApplication.id);
+    };
+
+    const handleSaveClick = (event: React.MouseEvent<HTMLButtonElement>) => {
+      event.stopPropagation();
+      toggleSavedOpportunity(opportunity.id);
+    };
+
+    return (
+      <div
+        key={opportunity.id}
+        className={`glass-card transition-all duration-300 cursor-pointer hover:-translate-y-1 hover:border-white/35 ${
+          isList ? 'p-5 md:p-6 flex flex-col gap-6 md:flex-row md:items-center md:justify-between' : 'p-6 space-y-5'
+        }`}
+        onClick={handleCardClick}
+      >
+        <div className={`flex ${isList ? 'items-center gap-4 flex-1 min-w-0' : 'items-start gap-4'}`}>
+          <img
+            src={opportunity.companyLogo}
+            alt={opportunity.company}
+            className="w-14 h-14 rounded-2xl object-cover border border-white/15"
+          />
+          <div className="flex-1 min-w-0 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <h3 className="text-lg font-semibold text-white/95 truncate">{opportunity.title}</h3>
+              <span className={`${urgencyBadge.className} text-[0.7rem]`}>{urgencyBadge.label}</span>
+              {opportunity.isClosed && (
+                <span className="glass-chip chip-danger text-[0.7rem]">Encerrada</span>
+              )}
+              <span className="glass-chip chip-info text-[0.7rem]">{opportunity.contentType}</span>
+            </div>
+            <p className="text-sm text-gray-400">{opportunity.company}</p>
+
+            <div
+              className={`grid ${
+                isList ? 'grid-cols-2 lg:grid-cols-3 gap-3' : 'grid-cols-2 gap-3'
+              } text-sm text-gray-300`}
             >
-              <Grid3X3 className="h-4 w-4" />
-            </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-md transition-colors ${
-                viewMode === 'list' ? 'bg-white text-blue-600 shadow-sm' : 'text-gray-600 hover:text-gray-900'
-              }`}
-            >
-              <List className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className={viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-4'}>
-        {filteredOpportunities.map((opportunity) => (
-          <div
-            key={opportunity.id}
-            className={`bg-white rounded-xl border border-gray-200 hover:shadow-lg transition-all duration-200 cursor-pointer ${
-              viewMode === 'list' ? 'p-4' : 'p-6'
-            }`}
-            onClick={() => navigate(`/creators/opportunities/${opportunity.id}`)}
-          >
-            {viewMode === 'list' ? (
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <img
-                    src={opportunity.companyLogo}
-                    alt={opportunity.company}
-                    className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                  />
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1">
-                      <h3 className="font-semibold text-gray-900 truncate">{opportunity.title}</h3>
-                      <span
-                        className={`px-2 py-1 text-xs font-medium rounded-full flex-shrink-0 ${
-                          opportunity.urgency === 'urgente' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                        }`}
-                      >
-                        {opportunity.urgency === 'urgente' ? 'Urgente' : 'Novo'}
-                      </span>
-                      {opportunity.isClosed && (
-                        <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-200 text-gray-700">Encerrada</span>
-                      )}
-                    </div>
-                    <p className="text-gray-600 text-sm mb-2">{opportunity.company}</p>
-                    <div className="flex items-center gap-4 text-sm text-gray-600">
-                      <div className="flex items-center gap-1">
-                        <DollarSign className="h-4 w-4" />
-                        {opportunity.budget}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <MapPin className="h-4 w-4" />
-                        {opportunity.location}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        <span className={opportunity.isClosed ? 'text-gray-500' : 'text-red-500'}>{opportunity.deadlineLabel}</span>
-                      </div>
-                      <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
-                        {opportunity.contentType}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-3 ml-4">
-                  <div className="flex flex-col items-end gap-2">
-                    {opportunity.userApplication ? (
-                      <div className="flex items-center gap-3">
-                        <span
-                          className={`px-3 py-1 text-xs font-medium rounded-full ${
-                            opportunity.userApplication.status === 'approved'
-                              ? 'bg-green-100 text-green-700'
-                              : opportunity.userApplication.status === 'rejected'
-                              ? 'bg-red-100 text-red-700'
-                              : 'bg-yellow-100 text-yellow-700'
-                          }`}
-                        >
-                          {opportunity.userApplication.status === 'approved'
-                            ? 'Aprovado'
-                            : opportunity.userApplication.status === 'rejected'
-                            ? 'Rejeitado'
-                            : 'Pendente'}
-                        </span>
-                        {opportunity.userApplication.status === 'pending' && (
-                          <button
-                            onClick={(event) => {
-                              event.stopPropagation();
-                              handleCancelApplication(opportunity.id, opportunity.userApplication!.id);
-                            }}
-                            disabled={actionLoading === opportunity.id}
-                            className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-3 py-1 rounded-lg text-sm font-medium transition-colors flex items-center gap-1"
-                          >
-                            {actionLoading === opportunity.id ? (
-                              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                            ) : (
-                              <X className="h-3 w-3" />
-                            )}
-                            Cancelar
-                          </button>
-                        )}
-                      </div>
-                    ) : (
-                      <button
-                        onClick={(event) => {
-                          event.stopPropagation();
-                          handleApply(opportunity.id);
-                        }}
-                        disabled={actionLoading === opportunity.id || opportunity.isClosed}
-                        className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                      >
-                        {actionLoading === opportunity.id ? (
-                          <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                            Enviando...
-                          </>
-                        ) : (
-                          <>
-                            <Send className="h-4 w-4" />
-                            {opportunity.isClosed ? 'Indisponível' : 'Candidatar-se'}
-                          </>
-                        )}
-                      </button>
-                    )}
-                  </div>
-                </div>
+              <div className="surface-muted rounded-xl border border-white/10 p-3 flex items-center gap-2">
+                <DollarSign className="h-4 w-4 text-emerald-200" />
+                <span>{opportunity.budget}</span>
               </div>
-            ) : (
+              <div className="surface-muted rounded-xl border border-white/10 p-3 flex items-center gap-2">
+                <Clock className="h-4 w-4 text-amber-200" />
+                <span className={opportunity.isClosed ? 'text-gray-400' : 'text-rose-200'}>
+                  {opportunity.deadlineLabel}
+                </span>
+              </div>
+              <div className="surface-muted rounded-xl border border-white/10 p-3 flex items-center gap-2">
+                <MapPin className="h-4 w-4 text-sky-200" />
+                <span>{opportunity.location}</span>
+              </div>
+              <div className="surface-muted rounded-xl border border-white/10 p-3 flex items-center gap-2">
+                <Users className="h-4 w-4 text-indigo-200" />
+                <span>{opportunity.candidates} candidatos</span>
+              </div>
+            </div>
+
+            {!isList && (
               <>
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <img
-                      src={opportunity.companyLogo}
-                      alt={opportunity.company}
-                      className="w-12 h-12 rounded-lg object-cover flex-shrink-0"
-                    />
-                    <div>
-                      <h3 className="font-semibold text-gray-900">{opportunity.title}</h3>
-                      <p className="text-gray-600 text-sm">{opportunity.company}</p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <span
-                      className={`px-2 py-1 text-xs font-medium rounded-full ${
-                        opportunity.urgency === 'urgente' ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'
-                      }`}
-                    >
-                      {opportunity.urgency === 'urgente' ? 'Urgente' : 'Novo'}
-                    </span>
-                    {opportunity.isClosed && (
-                      <span className="px-2 py-1 text-xs font-medium rounded-full bg-gray-200 text-gray-700">Encerrada</span>
-                    )}
-                  </div>
-                </div>
-
-                <p className="text-gray-600 text-sm mb-4 line-clamp-2">{opportunity.description}</p>
-
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <DollarSign className="h-4 w-4" />
-                    {opportunity.budget}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Clock className="h-4 w-4" />
-                    <span className={opportunity.isClosed ? 'text-gray-500' : 'text-red-500'}>{opportunity.deadlineLabel}</span>
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <MapPin className="h-4 w-4" />
-                    {opportunity.location}
-                  </div>
-                  <div className="flex items-center gap-2 text-sm text-gray-600">
-                    <Users className="h-4 w-4" />
-                    {opportunity.candidates} candidatos
-                  </div>
-                </div>
-
-                <div className="mb-4">
-                  <span className="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-sm font-medium rounded-full">
-                    {opportunity.contentType}
-                  </span>
-                </div>
-
-                <div className="mb-4">
-                  <p className="text-sm font-medium text-gray-900 mb-2">Requisitos:</p>
+                <p className="text-sm text-gray-400 line-clamp-2">{opportunity.description}</p>
+                {opportunity.requirements.length > 0 && (
                   <div className="flex flex-wrap gap-2">
-                    {opportunity.requirements.map((req, index) => (
-                      <span key={index} className="px-2 py-1 bg-gray-100 text-gray-700 text-xs rounded">
+                    {opportunity.requirements.slice(0, 4).map((req, index) => (
+                      <span key={index} className="glass-chip text-[0.65rem]">
                         {req}
                       </span>
                     ))}
+                    {opportunity.requirements.length > 4 && (
+                      <span className="text-xs text-gray-500">+{opportunity.requirements.length - 4} itens</span>
+                    )}
                   </div>
-                </div>
-
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <div className="flex items-center gap-4">
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        navigate(`/creators/opportunities/${opportunity.id}`);
-                      }}
-                      className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      <Eye className="h-4 w-4" />
-                    </button>
-                    <button
-                      onClick={(event) => event.stopPropagation()}
-                      className="flex items-center gap-1 text-gray-500 hover:text-gray-700 transition-colors"
-                    >
-                      <Heart className="h-4 w-4" />
-                    </button>
-                  </div>
-
-                  {opportunity.userApplication ? (
-                    <div className="flex items-center gap-3">
-                      <span
-                        className={`px-3 py-1 text-xs font-medium rounded-full ${
-                          opportunity.userApplication.status === 'approved'
-                            ? 'bg-green-100 text-green-700'
-                            : opportunity.userApplication.status === 'rejected'
-                            ? 'bg-red-100 text-red-700'
-                            : 'bg-yellow-100 text-yellow-700'
-                        }`}
-                      >
-                        {opportunity.userApplication.status === 'approved'
-                          ? 'Aprovado'
-                          : opportunity.userApplication.status === 'rejected'
-                          ? 'Rejeitado'
-                          : 'Pendente'}
-                      </span>
-                      {opportunity.userApplication.status === 'pending' && (
-                        <button
-                          onClick={(event) => {
-                            event.stopPropagation();
-                            handleCancelApplication(opportunity.id, opportunity.userApplication!.id);
-                          }}
-                          disabled={actionLoading === opportunity.id}
-                          className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                        >
-                          {actionLoading === opportunity.id ? (
-                            <>
-                              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                              Cancelando...
-                            </>
-                          ) : (
-                            <>
-                              <X className="h-4 w-4" />
-                              Cancelar
-                            </>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  ) : (
-                    <button
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        handleApply(opportunity.id);
-                      }}
-                      disabled={actionLoading === opportunity.id || opportunity.isClosed}
-                      className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
-                    >
-                      {actionLoading === opportunity.id ? (
-                        <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                          Enviando...
-                        </>
-                      ) : (
-                        <>
-                          <Send className="h-4 w-4" />
-                          {opportunity.isClosed ? 'Indisponível' : 'Candidatar-se'}
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
+                )}
               </>
             )}
           </div>
-        ))}
+        </div>
+
+        <div className={`flex flex-col gap-3 ${isList ? 'items-end' : 'items-stretch'}`}>
+          {opportunity.userApplication ? (
+            <div className="flex items-center gap-3 flex-wrap justify-end">
+              {applicationBadge && (
+                <span className={`${applicationBadge.className} text-xs`}>
+                  {applicationBadge.label}
+                </span>
+              )}
+              {opportunity.userApplication.status === 'pending' && (
+                <button
+                  onClick={handleCancelClick}
+                  disabled={isLoading}
+                  className="btn-ghost-glass bg-red-500/20 border-red-400/40 text-red-100 hover:bg-red-500/35 disabled:opacity-60 disabled:cursor-not-allowed text-xs"
+                >
+                  {isLoading ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-3 w-3 rounded-full border border-current border-t-transparent animate-spin" />
+                      Cancelando...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <X className="h-3 w-3" />
+                      Cancelar
+                    </span>
+                  )}
+                </button>
+              )}
+            </div>
+          ) : (
+            <button
+              onClick={handleApplyClick}
+              disabled={isLoading || opportunity.isClosed}
+              className="btn-primary-glow text-sm px-4 py-2 disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {isLoading ? (
+                <span className="flex items-center gap-2">
+                  <span className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                  Enviando...
+                </span>
+              ) : (
+                <span className="flex items-center gap-2">
+                  <Send className="h-4 w-4" />
+                  {opportunity.isClosed ? 'Indisponível' : 'Candidatar-se'}
+                </span>
+              )}
+            </button>
+          )}
+
+          <div className="flex items-center gap-2 justify-end">
+            <button
+              onClick={(event) => {
+                event.stopPropagation();
+                navigate(`/creators/opportunities/${opportunity.id}`);
+              }}
+              className="btn-ghost-glass text-xs"
+            >
+              <Eye className="h-4 w-4" />
+              Ver detalhes
+            </button>
+            <button
+              onClick={handleSaveClick}
+              aria-pressed={isSaved}
+              title={isSaved ? 'Remover dos favoritos' : 'Salvar para revisar depois'}
+              className={`btn-ghost-glass text-xs transition-colors ${
+                isSaved
+                  ? 'border-indigo-400/60 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/25'
+                  : ''
+              }`}
+            >
+              <Heart className={`h-4 w-4 ${isSaved ? 'fill-current' : 'fill-transparent'}`} />
+              {isSaved ? 'Salvo' : 'Salvar'}
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  return (
+    <>
+      <div className="space-y-10">
+        <div className="glass-card p-6 md:p-8 space-y-6">
+          <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-6">
+            <div className="space-y-3">
+              <span className="badge-pill">Radar de oportunidades</span>
+              <div>
+                <h1 className="text-3xl font-semibold text-white tracking-tight">Oportunidades</h1>
+                <p className="text-sm text-gray-400 mt-2">
+                  {filteredOpportunities.length} de {opportunities.length} oportunidades disponíveis
+                </p>
+              </div>
+            </div>
+            <div className="glass-chip chip-info text-xs">
+              <Clock className="h-3.5 w-3.5" />
+              Atualização a cada 20 segundos
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-4 items-center justify-between">
+            <div className="relative w-full sm:flex-1 max-w-xl">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Pesquisar por marca, formato ou palavra-chave"
+                value={searchTerm}
+                onChange={(event) => setSearchTerm(event.target.value)}
+                className="input-glass pl-11"
+              />
+            </div>
+
+            <div className="surface-muted rounded-2xl border border-white/12 p-1 flex items-center gap-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                aria-pressed={viewMode === 'grid'}
+                aria-label="Mostrar oportunidades em grade"
+                className={`btn-ghost-glass border-none px-3 py-2 ${viewMode === 'grid' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
+              >
+                <Grid3X3 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                aria-pressed={viewMode === 'list'}
+                aria-label="Mostrar oportunidades em lista"
+                className={`btn-ghost-glass border-none px-3 py-2 ${viewMode === 'list' ? 'bg-white/10 text-white' : 'text-gray-400'}`}
+              >
+                <List className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        </div>
+
+        {filteredOpportunities.length === 0 ? (
+          <div className="glass-card p-12 flex flex-col items-center text-center gap-4">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/12 bg-white/5">
+              <Search className="h-8 w-8 text-indigo-200" />
+            </div>
+            <h3 className="text-lg font-semibold text-white/90">
+              {opportunities.length === 0 ? 'Nenhuma oportunidade disponível' : 'Nenhuma oportunidade encontrada'}
+            </h3>
+            <p className="text-sm text-gray-400 max-w-md">
+              {opportunities.length === 0
+                ? 'Aguarde novas oportunidades serem criadas pelos analistas.'
+                : 'Tente ajustar sua busca para explorar outras campanhas.'}
+            </p>
+          </div>
+        ) : (
+          <div className={viewMode === 'grid' ? 'grid grid-cols-1 lg:grid-cols-2 gap-6' : 'space-y-4'}>
+            {filteredOpportunities.map(renderOpportunityCard)}
+          </div>
+        )}
       </div>
 
-      {filteredOpportunities.length === 0 && (
-        <div className="text-center py-12">
-          <div className="text-gray-400 mb-4">
-            <Search className="h-16 w-16 mx-auto" />
+      {cancelRequest && (
+        <ModalPortal>
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md px-4">
+            <div className="glass-card w-full max-w-md border px-6 py-7 space-y-6">
+              <div className="flex items-start gap-3">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-rose-400/40 bg-rose-500/20 text-rose-100">
+                  <AlertTriangle className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-white">Cancelar candidatura</h3>
+                  {cancelTargetOpportunity && (
+                    <p className="text-sm text-gray-300 mt-1">
+                      {cancelTargetOpportunity.title} · {cancelTargetOpportunity.company}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <p className="text-sm text-gray-300 leading-relaxed">
+                Tem certeza de que deseja cancelar? Você perderá seu lugar na fila e precisará se candidatar novamente caso mude de ideia.
+              </p>
+
+              {cancelError && (
+                <div className="rounded-xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                  {cancelError}
+                </div>
+              )}
+
+              <div className="flex justify-end gap-3">
+                <button
+                  onClick={closeCancelModal}
+                  disabled={isCancellationInProgress}
+                  className="btn-ghost-glass px-4 py-2 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  Manter candidatura
+                </button>
+                <button
+                  onClick={handleCancelApplication}
+                  disabled={isCancellationInProgress}
+                  className="btn-ghost-glass px-4 py-2 border border-rose-400/60 bg-rose-500/20 text-rose-100 hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                >
+                  {isCancellationInProgress ? (
+                    <span className="flex items-center gap-2">
+                      <span className="h-4 w-4 rounded-full border border-current border-t-transparent animate-spin" />
+                      Cancelando...
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-2">
+                      <AlertTriangle className="h-4 w-4" />
+                      Cancelar candidatura
+                    </span>
+                  )}
+                </button>
+              </div>
+            </div>
           </div>
-          <h3 className="text-xl font-medium text-gray-900 mb-2">
-            {opportunities.length === 0 ? 'Nenhuma oportunidade disponível' : 'Nenhuma oportunidade encontrada'}
-          </h3>
-          <p className="text-gray-600">
-            {opportunities.length === 0
-              ? 'Aguarde novas oportunidades serem criadas pelos analistas'
-              : 'Tente ajustar seus filtros de busca'}
-          </p>
-        </div>
+        </ModalPortal>
       )}
-    </div>
+    </>
   );
 };
 

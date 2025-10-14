@@ -60,7 +60,7 @@ const Help = () => {
                 <Mail className="h-5 w-5 text-green-600" />
                 <div>
                   <div className="font-medium text-gray-900">Email</div>
-                  <div className="text-sm text-gray-600">suporte@ugchub.com</div>
+                  <div className="text-sm text-gray-600">ugchub@turbopartners.com.br</div>
                 </div>
               </div>
               
@@ -68,7 +68,7 @@ const Help = () => {
                 <Phone className="h-5 w-5 text-purple-600" />
                 <div>
                   <div className="font-medium text-gray-900">Telefone</div>
-                  <div className="text-sm text-gray-600">(11) 3000-0000</div>
+                  <div className="text-sm text-gray-600">(27) 99263-0725</div>
                 </div>
               </div>
             </div>

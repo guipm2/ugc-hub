@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { X, Plus, Minus } from 'lucide-react';
 import { normalizeCompanyLink } from '../../utils/formatters';
+import ModalPortal from '../common/ModalPortal';
 
 interface CreateOpportunityModalProps {
   onClose: () => void;
@@ -143,8 +144,9 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
+    <ModalPortal>
+      <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+        <div className="bg-white rounded-xl max-w-2xl w-full max-h-[90vh] flex flex-col">
         {/* Fixed Header */}
         <div className="flex items-center justify-between p-6 border-b border-gray-200 flex-shrink-0">
           <h2 className="text-xl font-semibold text-gray-900">Nova Oportunidade</h2>
@@ -476,7 +478,8 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
           </form>
         </div>
       </div>
-    </div>
+      </div>
+    </ModalPortal>
   );
 };
 

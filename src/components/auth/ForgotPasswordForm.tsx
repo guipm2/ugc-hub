@@ -28,7 +28,7 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
       } else {
         setSuccess(true);
       }
-    } catch (err) {
+  } catch {
       setError('Erro inesperado. Tente novamente.');
     } finally {
       setLoading(false);
@@ -39,24 +39,24 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
     return (
       <AuthLayout
         title="Email enviado!"
-        subtitle="Verifique sua caixa de entrada"
+        subtitle="Verifique sua caixa de entrada para continuar"
       >
-        <div className="text-center space-y-4">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto">
-            <Mail className="w-8 h-8 text-blue-600" />
+        <div className="space-y-6 text-center">
+          <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10">
+            <Mail className="h-8 w-8 text-[#9A91FF]" />
           </div>
-          <p className="text-gray-600">
-            Enviamos um link de recuperação para <strong>{email}</strong>
+          <p className="text-sm text-slate-200">
+            Enviamos um link de recuperação para <span className="font-semibold text-white">{email}</span>.
           </p>
-          <p className="text-sm text-gray-500">
-            Clique no link do email para redefinir sua senha
+          <p className="text-xs uppercase tracking-[0.3em] text-slate-400">
+            confira spam e promoções
           </p>
           <button
             onClick={onBack}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] px-6 py-3 text-sm font-semibold text-white shadow-[0_25px_55px_-18px_rgba(74,91,255,0.6)] transition hover:scale-[1.02] hover:shadow-[0_30px_65px_-20px_rgba(74,91,255,0.65)]"
           >
-            <ArrowLeft className="w-5 h-5 mr-2" />
-            Voltar para Login
+            <ArrowLeft className="h-5 w-5" />
+            Voltar para login
           </button>
         </div>
       </AuthLayout>
@@ -66,28 +66,28 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
   return (
     <AuthLayout
       title="Esqueceu sua senha?"
-      subtitle="Digite seu email para receber um link de recuperação"
+      subtitle="Digite seu email para receber um link seguro de recuperação"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {error && (
-          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+          <div className="rounded-2xl border border-red-500/35 bg-red-500/10 px-4 py-3 text-sm text-red-200 shadow-[0_12px_35px_rgba(244,63,94,0.25)]">
             {error}
           </div>
         )}
 
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-2">
+        <div className="space-y-2">
+          <label htmlFor="email" className="block text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
             Email
           </label>
           <div className="relative">
-            <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+            <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
               placeholder="seu@email.com"
             />
           </div>
@@ -96,25 +96,25 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
         <button
           type="submit"
           disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-semibold py-3 px-4 rounded-lg transition-colors flex items-center justify-center"
+          className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] px-6 py-3 text-sm font-semibold text-white shadow-[0_25px_55px_-18px_rgba(74,91,255,0.6)] transition hover:scale-[1.02] hover:shadow-[0_30px_65px_-20px_rgba(74,91,255,0.65)] disabled:opacity-50"
         >
           {loading ? (
             <>
-              <Loader2 className="animate-spin h-5 w-5 mr-2" />
+              <Loader2 className="h-5 w-5 animate-spin" />
               Enviando...
             </>
           ) : (
-            'Enviar Link de Recuperação'
+            'Enviar link de recuperação'
           )}
         </button>
 
         <button
           type="button"
           onClick={onBack}
-          className="w-full text-gray-600 hover:text-gray-800 font-medium py-2 flex items-center justify-center transition-colors"
+          className="inline-flex w-full items-center justify-center gap-2 rounded-full border border-white/15 px-6 py-2 text-xs font-semibold uppercase tracking-[0.35em] text-slate-200 transition hover:border-white/35 hover:text-white"
         >
-          <ArrowLeft className="w-4 h-4 mr-2" />
-          Voltar para Login
+          <ArrowLeft className="h-4 w-4" />
+          voltar
         </button>
       </form>
     </AuthLayout>

@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, MapPin, Calendar, DollarSign, Tag, Users, Building2, Send, Heart, Share2, Check, Clock, Star, Award, Briefcase, ExternalLink, Instagram, Globe } from 'lucide-react';
+import { ArrowLeft, MapPin, Calendar, DollarSign, Tag, Users, Building2, Send, Heart, Share2, Check, Clock, Star, Award, Briefcase, ExternalLink, Instagram, Globe, X } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
 import { isInstagramUrl, normalizeCompanyLink } from '../utils/formatters';
+import ModalPortal from './common/ModalPortal';
 
 interface OpportunityDetails {
   id: string;
@@ -178,43 +179,40 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
     if (!status) return null;
     
     const styles = {
-      pending: 'bg-yellow-100 text-yellow-700',
-      approved: 'bg-green-100 text-green-700',
-      rejected: 'bg-red-100 text-red-700'
-    };
-    
-    const labels = {
-      pending: 'Pendente',
-      approved: 'Aprovado',
-      rejected: 'Rejeitado'
-    };
+      pending: { className: 'glass-chip chip-warning', label: 'Pendente' },
+      approved: { className: 'glass-chip chip-success', label: 'Aprovado' },
+      rejected: { className: 'glass-chip chip-danger', label: 'Rejeitado' }
+    } as const;
 
-    return (
-      <span className={`px-3 py-1 rounded-full text-sm font-medium ${styles[status]}`}>
-        {labels[status]}
-      </span>
-    );
+    const config = styles[status];
+
+    return <span className={config.className}>{config.label}</span>;
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-card px-10 py-8 flex flex-col items-center gap-4">
+          <div className="animate-spin rounded-full h-8 w-8 border-2 border-white/30 border-t-transparent"></div>
+          <p className="text-sm text-gray-400">Carregando detalhes da oportunidade...</p>
+        </div>
       </div>
     );
   }
 
   if (!opportunity) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Oportunidade não encontrada</h2>
-          <p className="text-gray-600 mb-4">A oportunidade que você está procurando não existe ou foi removida.</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="glass-card px-10 py-8 text-center space-y-4 max-w-md">
+          <h2 className="text-2xl font-semibold text-white/95">Oportunidade não encontrada</h2>
+          <p className="text-sm text-gray-400">
+            A oportunidade que você está procurando não existe ou foi removida.
+          </p>
           <button
             onClick={() => navigate('/creators/opportunities')}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium"
+            className="btn-primary-glow w-full justify-center"
           >
-            Voltar para Oportunidades
+            Voltar para oportunidades
           </button>
         </div>
       </div>
@@ -223,64 +221,53 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
 
   const daysLeft = getDaysLeft(opportunity.deadline);
   const isClosed = opportunity.status !== 'ativo' || daysLeft <= 0;
+  const deadlineStatusClass = daysLeft <= 0 ? 'chip-danger' : daysLeft <= 3 ? 'chip-danger' : daysLeft <= 7 ? 'chip-warning' : 'chip-success';
+  const deadlineLabel = daysLeft > 0 ? `${daysLeft} dias restantes` : 'Prazo expirado';
+  const budgetDisplay = formatBudget(opportunity.budget_min, opportunity.budget_max);
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header with Breadcrumb */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-2 text-sm text-gray-600">
-            <button
-              onClick={() => navigate('/creators/opportunities')}
-              className="flex items-center gap-2 hover:text-blue-600 transition-colors group"
-            >
-              <ArrowLeft className="h-4 w-4 group-hover:-translate-x-1 transition-transform" />
-              Oportunidades
-            </button>
-            <span className="text-gray-400">/</span>
-            <span className="text-gray-900 font-medium truncate">{opportunity.title}</span>
+    <div className="min-h-screen pb-16">
+      <div className="max-w-6xl mx-auto px-4 pt-10 space-y-10">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <button
+            onClick={() => navigate('/creators/opportunities')}
+            className="btn-ghost-glass"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Voltar para oportunidades
+          </button>
+          <div className="glass-chip chip-info text-xs">
+            <Calendar className="h-3.5 w-3.5" />
+            Publicada em {formatDate(opportunity.created_at)}
           </div>
         </div>
-      </div>
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-4 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-8">
-            {/* Title and Header Info */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm">
+            <div className="glass-card p-6 md:p-8 space-y-6">
               {isClosed && (
-                <div className="mb-6 flex items-center gap-3 rounded-xl border border-yellow-200 bg-yellow-50 px-4 py-3 text-sm text-yellow-800">
+                <div className="surface-muted border border-amber-300/30 rounded-2xl p-4 text-sm text-amber-100/90 flex items-center gap-3">
                   <Clock className="h-4 w-4" />
                   Esta oportunidade não está mais aceitando candidaturas.
                 </div>
               )}
-              <div className="flex flex-wrap items-center gap-3 mb-6">
-                <span className={`inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium ${
-                  daysLeft <= 3 
-                    ? 'bg-red-100 text-red-800' 
-                    : daysLeft <= 7 
-                    ? 'bg-orange-100 text-orange-800'
-                    : 'bg-green-100 text-green-800'
-                }`}>
-                  <Clock className="h-4 w-4 mr-2" />
-                  {daysLeft > 0 ? `${daysLeft} dias restantes` : 'Prazo expirado'}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={`glass-chip ${deadlineStatusClass}`}>
+                  <Clock className="h-3.5 w-3.5" />
+                  {deadlineLabel}
                 </span>
-                <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-blue-100 text-blue-800">
-                  <Briefcase className="h-4 w-4 mr-2" />
+                <span className="glass-chip chip-info">
+                  <Briefcase className="h-3.5 w-3.5" />
                   {opportunity.content_type}
                 </span>
                 {opportunity.candidates_count >= 10 && (
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-purple-100 text-purple-800">
-                    <Star className="h-4 w-4 mr-2" />
+                  <span className="glass-chip chip-info">
+                    <Star className="h-3.5 w-3.5" />
                     Popular
                   </span>
                 )}
                 {opportunity.status !== 'ativo' && (
-                  <span className="inline-flex items-center px-3 py-1.5 rounded-full text-sm font-medium bg-gray-200 text-gray-700">
-                    Encerrada
-                  </span>
+                  <span className="glass-chip chip-danger">Encerrada</span>
                 )}
                 {userApplication && (
                   <div className="ml-auto">
@@ -288,287 +275,255 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                   </div>
                 )}
               </div>
-              
-              <h1 className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">{opportunity.title}</h1>
-              
-              <div className="flex items-center gap-4 text-lg text-gray-600 mb-6">
-                <div className="flex items-center gap-2">
-                  <Building2 className="h-5 w-5" />
-                  <span className="font-semibold">{opportunity.company}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  <span className="font-semibold text-green-600">
-                    {formatBudget(opportunity.budget_min, opportunity.budget_max)}
-                  </span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <MapPin className="h-5 w-5" />
-                  <span>{opportunity.location}</span>
-                </div>
-              </div>
-              
-              {/* Application Status if exists */}
-              {userApplication && (
-                <div className="mt-6 pt-6 border-t border-gray-100">
-                  <div className="flex items-center gap-3 mb-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Check className="h-5 w-5 text-blue-600" />
+
+              <div className="space-y-5">
+                <h1 className="text-3xl md:text-4xl font-semibold text-white/95 leading-tight">
+                  {opportunity.title}
+                </h1>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  <div className="surface-muted rounded-2xl border border-white/12 p-4 flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                      <Building2 className="h-4 w-4 text-indigo-200" />
                     </div>
                     <div>
-                      <h3 className="font-semibold text-gray-900">Candidatura Enviada</h3>
-                      <p className="text-sm text-gray-600">
-                        Enviada em {formatDate(userApplication.applied_at)}
-                      </p>
-                    </div>
-                    <div className="ml-auto">
-                      {getStatusBadge(userApplication.status)}
+                      <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Empresa</p>
+                      <p className="text-sm font-semibold text-white/90">{opportunity.company}</p>
                     </div>
                   </div>
+                  <div className="surface-muted rounded-2xl border border-white/12 p-4 flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                      <DollarSign className="h-4 w-4 text-emerald-200" />
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Investimento</p>
+                      <p className="text-sm font-semibold text-emerald-200">{budgetDisplay}</p>
+                    </div>
+                  </div>
+                  <div className="surface-muted rounded-2xl border border-white/12 p-4 flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                      <MapPin className="h-4 w-4 text-sky-200" />
+                    </div>
+                    <div>
+                      <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Localização</p>
+                      <p className="text-sm font-semibold text-white/90 truncate">{opportunity.location}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {userApplication && (
+                <div className="surface-muted border border-emerald-300/25 rounded-2xl p-5 flex flex-wrap items-center gap-4">
+                  <div className="p-3 rounded-xl bg-emerald-500/20 border border-emerald-300/40">
+                    <Check className="h-5 w-5 text-emerald-200" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white/90">Candidatura enviada</p>
+                    <p className="text-xs text-gray-400">Enviada em {formatDate(userApplication.applied_at)}</p>
+                  </div>
+                  <div className="ml-auto">{getStatusBadge(userApplication.status)}</div>
                 </div>
               )}
             </div>
 
-            {/* Description */}
-            <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-              <div className="flex items-center gap-3 mb-6">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Briefcase className="h-6 w-6 text-blue-600" />
+            <div className="glass-card p-6 md:p-8 space-y-6">
+              <div className="glass-section-title mb-0">
+                <div className="icon-wrap">
+                  <Briefcase className="h-5 w-5" />
                 </div>
-                <h2 className="text-2xl font-bold text-gray-900">Descrição da Oportunidade</h2>
+                <h2>Descrição da Oportunidade</h2>
               </div>
-              <div className="prose prose-lg max-w-none">
-                <p className="text-gray-700 leading-relaxed whitespace-pre-line">
-                  {opportunity.description}
-                </p>
+              <div className="leading-relaxed text-gray-200 whitespace-pre-line">
+                {opportunity.description}
               </div>
-              
-              {/* Engagement metrics */}
-              <div className="mt-6 pt-6 border-t border-gray-100">
-                <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600">
-                  <div className="flex items-center gap-2">
-                    <Users className="h-4 w-4" />
-                    <span>{opportunity.candidates_count || 0} candidatos</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>Criada em {formatDate(opportunity.created_at)}</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    <span>Prazo: {formatDate(opportunity.deadline)}</span>
-                  </div>
+              <div className="surface-muted rounded-2xl border border-white/12 p-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-300">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-indigo-200" />
+                  {opportunity.candidates_count || 0} candidatos
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-indigo-200" />
+                  Criada em {formatDate(opportunity.created_at)}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Calendar className="h-4 w-4 text-indigo-200" />
+                  Prazo: {formatDate(opportunity.deadline)}
                 </div>
               </div>
             </div>
 
-            {/* Requirements */}
             {opportunity.requirements && opportunity.requirements.length > 0 && (
-              <div className="bg-white rounded-2xl p-8 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-purple-100 rounded-lg">
-                    <Award className="h-6 w-6 text-purple-600" />
+              <div className="glass-card p-6 md:p-8 space-y-6">
+                <div className="glass-section-title mb-0">
+                  <div className="icon-wrap">
+                    <Award className="h-5 w-5" />
                   </div>
-                  <h2 className="text-2xl font-bold text-gray-900">Requisitos</h2>
+                  <h2>Requisitos</h2>
                 </div>
                 <div className="space-y-3">
                   {opportunity.requirements.map((req, index) => (
-                    <div key={index} className="flex items-start gap-3 p-4 bg-gray-50 rounded-xl">
-                      <div className="p-1 bg-purple-100 rounded-full mt-0.5">
-                        <Check className="h-3 w-3 text-purple-600" />
+                    <div key={index} className="surface-muted rounded-2xl border border-white/12 p-4 flex items-start gap-3">
+                      <div className="p-2 rounded-full bg-white/5 border border-white/10 mt-0.5">
+                        <Check className="h-3.5 w-3.5 text-indigo-200" />
                       </div>
-                      <span className="text-gray-700">{req}</span>
+                      <span className="text-sm text-gray-200">{req}</span>
                     </div>
                   ))}
                 </div>
               </div>
             )}
 
-            {/* Horizontal Cards - Actions and Company Info */}
             <div className="grid md:grid-cols-2 gap-6">
-              {/* Actions */}
               {user && !userApplication && !isClosed && (
-                <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                  <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <Send className="h-5 w-5 text-blue-600" />
-                    </div>
-                    Ações Disponíveis
-                  </h3>
-                  <div className="space-y-4">
-                    <button
-                      onClick={() => setShowApplicationForm(true)}
-                      className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white px-6 py-4 rounded-xl font-semibold transition-all transform hover:scale-[1.02] flex items-center justify-center gap-3 shadow-lg hover:shadow-xl"
-                    >
+                <div className="glass-card p-6 md:p-7 space-y-5">
+                  <div className="glass-section-title mb-0">
+                    <div className="icon-wrap">
                       <Send className="h-5 w-5" />
-                      Candidatar-se Agora
-                    </button>
-                    
-                    <div className="grid grid-cols-2 gap-3">
-                      <button className="flex-1 bg-white border-2 border-gray-200 hover:border-red-300 hover:bg-red-50 text-gray-700 hover:text-red-600 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 group">
-                        <Heart className="h-4 w-4 group-hover:fill-current" />
-                        <span className="hidden sm:inline">Salvar</span>
-                      </button>
-                      <button className="flex-1 bg-white border-2 border-gray-200 hover:border-blue-300 hover:bg-blue-50 text-gray-700 hover:text-blue-600 px-4 py-3 rounded-xl font-medium transition-all flex items-center justify-center gap-2 group">
-                        <Share2 className="h-4 w-4" />
-                        <span className="hidden sm:inline">Compartilhar</span>
-                      </button>
                     </div>
+                    <h3>Ações Disponíveis</h3>
+                  </div>
+                  <button
+                    onClick={() => setShowApplicationForm(true)}
+                    className="btn-primary-glow w-full justify-center text-base py-3"
+                  >
+                    <Send className="h-4 w-4" />
+                    Candidatar-se agora
+                  </button>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button className="btn-ghost-glass justify-center">
+                      <Heart className="h-4 w-4" />
+                      Salvar
+                    </button>
+                    <button className="btn-ghost-glass justify-center">
+                      <Share2 className="h-4 w-4" />
+                      Compartilhar
+                    </button>
                   </div>
                 </div>
               )}
 
-              {/* Company Info */}
-              <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                  <div className="p-2 bg-gray-100 rounded-lg">
-                    <Building2 className="h-5 w-5 text-gray-600" />
+              <div className="glass-card p-6 md:p-7 space-y-6">
+                <div className="glass-section-title mb-0">
+                  <div className="icon-wrap">
+                    <Building2 className="h-5 w-5" />
                   </div>
-                  Sobre a Empresa
-                </h3>
-                <div className="space-y-6">
-                  <div className="flex items-start gap-4 p-4 bg-gray-50 rounded-xl">
-                    <div className="p-3 bg-gray-100 rounded-xl flex-shrink-0">
-                      <Building2 className="h-6 w-6 text-gray-600" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-lg font-bold text-gray-900 truncate">{opportunity.company}</p>
-                      <p className="text-sm text-gray-600 flex items-center gap-2 mt-2">
-                        <Calendar className="h-4 w-4" />
-                        Membro desde {formatDate(opportunity.created_at)}
-                      </p>
-                      <p className="text-sm text-gray-700 mt-2">
-                        Esta empresa confia na nossa plataforma para encontrar criadores de conteúdo talentosos
-                        para suas campanhas de marketing digital.
-                      </p>
-                    </div>
+                  <h3>Sobre a Empresa</h3>
+                </div>
+                <div className="surface-muted rounded-2xl border border-white/12 p-5 flex items-start gap-4">
+                  <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex-shrink-0">
+                    <Building2 className="h-6 w-6 text-indigo-200" />
                   </div>
+                  <div className="flex-1 min-w-0 space-y-2">
+                    <p className="text-lg font-semibold text-white/95 truncate">{opportunity.company}</p>
+                    <p className="text-sm text-gray-400 flex items-center gap-2">
+                      <Calendar className="h-4 w-4" />
+                      Membro desde {formatDate(opportunity.created_at)}
+                    </p>
+                    <p className="text-sm text-gray-300 leading-relaxed">
+                      A marca utiliza o ecossistema da UGC Hub para encontrar criadores alinhados ao seu posicionamento digital.
+                    </p>
+                  </div>
+                </div>
 
-                  {/* Company Link Button */}
-                  {opportunity.company_link && (
-                    <div className="p-4 bg-blue-50 rounded-xl border border-blue-100">
-                      <h4 className="text-sm font-semibold text-blue-900 mb-3">
-                        Conheça a empresa
-                      </h4>
-                      <button
-                        onClick={() => {
-                          window.open(opportunity.company_link, '_blank', 'noopener,noreferrer');
-                        }}
-                        className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors"
-                      >
-                        {isInstagramUrl(opportunity.company_link) ? (
-                          <Instagram className="h-5 w-5" />
-                        ) : (
-                          <Globe className="h-5 w-5" />
-                        )}
-                        {isInstagramUrl(opportunity.company_link) ? 'Ver Instagram' : 'Visitar Site'}
-                        <ExternalLink className="h-4 w-4" />
-                      </button>
-                      <p className="text-xs text-blue-700 mt-2 text-center">
-                        Explore o perfil da empresa para entender melhor sua marca e estilo
-                      </p>
-                    </div>
-                  )}
-                  
-                  {/* Additional company stats */}
-                  <div className="grid grid-cols-2 gap-3 pt-2">
-                    <div className="text-center p-3 bg-green-50 rounded-lg">
-                      <p className="text-2xl font-bold text-green-600">★</p>
-                      <p className="text-xs text-green-700 font-medium">Empresa Verificada</p>
-                    </div>
-                    <div className="text-center p-3 bg-blue-50 rounded-lg">
-                      <p className="text-2xl font-bold text-blue-600">🎯</p>
-                      <p className="text-xs text-blue-700 font-medium">Resposta Rápida</p>
-                    </div>
+                {opportunity.company_link && (
+                  <div className="surface-muted rounded-2xl border border-white/12 p-5 space-y-3">
+                    <h4 className="text-xs uppercase tracking-[0.28em] text-gray-500">Conheça a marca</h4>
+                    <button
+                      onClick={() => {
+                        window.open(opportunity.company_link, '_blank', 'noopener,noreferrer');
+                      }}
+                      className="btn-primary-glow w-full justify-center"
+                    >
+                      {isInstagramUrl(opportunity.company_link) ? (
+                        <Instagram className="h-4 w-4" />
+                      ) : (
+                        <Globe className="h-4 w-4" />
+                      )}
+                      {isInstagramUrl(opportunity.company_link) ? 'Ver Instagram' : 'Visitar site'}
+                      <ExternalLink className="h-4 w-4" />
+                    </button>
+                    <p className="text-xs text-gray-400">
+                      Abra em uma nova aba para mergulhar na identidade visual e nos cases recentes.
+                    </p>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="surface-muted rounded-2xl border border-white/12 p-4 text-center">
+                    <p className="text-2xl">★</p>
+                    <p className="text-xs text-gray-400 mt-2">Empresa verificada</p>
+                  </div>
+                  <div className="surface-muted rounded-2xl border border-white/12 p-4 text-center">
+                    <p className="text-2xl">⚡</p>
+                    <p className="text-xs text-gray-400 mt-2">Resposta rápida</p>
                   </div>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* Sidebar - Only Key Details */}
           <div className="space-y-6">
-            {/* Key Details */}
-            <div className="bg-white rounded-2xl p-6 border border-gray-100 shadow-sm hover:shadow-md transition-shadow">
-              <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-3">
-                <div className="p-2 bg-indigo-100 rounded-lg">
-                  <Award className="h-5 w-5 text-indigo-600" />
+            <div className="glass-card p-6 md:p-7 space-y-5">
+              <div className="glass-section-title mb-0">
+                <div className="icon-wrap">
+                  <Award className="h-5 w-5" />
                 </div>
-                Detalhes da Oportunidade
-              </h3>
-              <div className="space-y-4">
-                {/* Budget */}
-                <div className="p-4 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl border border-green-100">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-green-100 rounded-lg">
-                      <DollarSign className="h-5 w-5 text-green-600" />
+                <h3>Detalhes da oportunidade</h3>
+              </div>
+
+              <div className="space-y-4 text-sm text-gray-300">
+                <div className="surface-muted rounded-2xl border border-white/12 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                      <DollarSign className="h-4 w-4 text-emerald-200" />
                     </div>
                     <div>
-                      <p className="text-sm text-green-700 font-medium">Investimento</p>
-                      <p className="text-lg font-bold text-green-900">
-                        {formatBudget(opportunity.budget_min, opportunity.budget_max)}
-                      </p>
+                      <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Investimento</p>
+                      <p className="mt-2 text-lg font-semibold text-emerald-200">{budgetDisplay}</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Location */}
-                <div className="p-4 bg-gradient-to-r from-blue-50 to-cyan-50 rounded-xl border border-blue-100">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-blue-100 rounded-lg">
-                      <MapPin className="h-5 w-5 text-blue-600" />
+                <div className="surface-muted rounded-2xl border border-white/12 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                      <MapPin className="h-4 w-4 text-sky-200" />
                     </div>
                     <div>
-                      <p className="text-sm text-blue-700 font-medium">Localização</p>
-                      <p className="text-lg font-bold text-blue-900 truncate">{opportunity.location}</p>
+                      <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Localização</p>
+                      <p className="mt-2 text-base font-semibold text-white/90">{opportunity.location}</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Content Type */}
-                <div className="p-4 bg-gradient-to-r from-purple-50 to-violet-50 rounded-xl border border-purple-100">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-purple-100 rounded-lg">
-                      <Tag className="h-5 w-5 text-purple-600" />
+                <div className="surface-muted rounded-2xl border border-white/12 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                      <Tag className="h-4 w-4 text-indigo-200" />
                     </div>
                     <div>
-                      <p className="text-sm text-purple-700 font-medium">Tipo de Conteúdo</p>
-                      <p className="text-lg font-bold text-purple-900 truncate">{opportunity.content_type}</p>
+                      <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Tipo de conteúdo</p>
+                      <p className="mt-2 text-base font-semibold text-white/90">{opportunity.content_type}</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Deadline */}
-                <div className="p-4 bg-gradient-to-r from-orange-50 to-red-50 rounded-xl border border-orange-100">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-orange-100 rounded-lg">
-                      <Clock className="h-5 w-5 text-orange-600" />
+                <div className="surface-muted rounded-2xl border border-white/12 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                      <Clock className="h-4 w-4 text-amber-200" />
                     </div>
                     <div>
-                      <p className="text-sm text-orange-700 font-medium">Prazo</p>
-                      <p className="text-base font-bold text-orange-900 truncate">
-                        {formatDate(opportunity.deadline)}
-                      </p>
-                      <p className={`text-xs font-medium ${
-                        daysLeft <= 3 ? 'text-red-600' : daysLeft <= 7 ? 'text-orange-600' : 'text-green-600'
-                      }`}>
-                        {daysLeft > 0 ? `${daysLeft} dias restantes` : 'Prazo expirado'}
-                      </p>
+                      <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Prazo</p>
+                      <p className="mt-2 text-base font-semibold text-white/90">{formatDate(opportunity.deadline)}</p>
+                      <p className="text-xs text-gray-400 mt-1">{deadlineLabel}</p>
                     </div>
                   </div>
                 </div>
-
-                {/* Candidates */}
-                <div className="p-4 bg-gradient-to-r from-gray-50 to-slate-50 rounded-xl border border-gray-100">
-                  <div className="flex items-center gap-3 mb-2">
-                    <div className="p-2 bg-gray-100 rounded-lg">
-                      <Users className="h-5 w-5 text-gray-600" />
+                <div className="surface-muted rounded-2xl border border-white/12 p-4">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-white/5 border border-white/10">
+                      <Users className="h-4 w-4 text-indigo-200" />
                     </div>
                     <div>
-                      <p className="text-sm text-gray-700 font-medium">Candidatos</p>
-                      <p className="text-2xl font-bold text-gray-900">
-                        {opportunity.candidates_count || 0}
-                      </p>
+                      <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Candidatos</p>
+                      <p className="mt-2 text-2xl font-semibold text-white/90">{opportunity.candidates_count || 0}</p>
                     </div>
                   </div>
                 </div>
@@ -578,58 +533,71 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
         </div>
       </div>
 
-      {/* Application Form Modal */}
       {showApplicationForm && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full max-h-[90vh] overflow-y-auto">
-            <h2 className="text-2xl font-bold text-gray-900 mb-6">Enviar Candidatura</h2>
-            
-            <div className="mb-6">
-              <h3 className="font-semibold text-gray-900 mb-2">{opportunity.title}</h3>
-              <p className="text-gray-600">{opportunity.company}</p>
+        <ModalPortal>
+          <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md p-4">
+            <div className="glass-card max-w-md w-full p-6 md:p-7 space-y-6 max-h-[90vh] overflow-y-auto">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-white/95">Enviar candidatura</h2>
+              <button
+                onClick={() => setShowApplicationForm(false)}
+                className="btn-ghost-glass px-3 py-1"
+              >
+                <X className="h-4 w-4" />
+                Fechar
+              </button>
             </div>
 
-            <div className="mb-6">
-              <label htmlFor="application-message" className="block text-sm font-medium text-gray-700 mb-2">
+            <div className="surface-muted rounded-2xl border border-white/12 p-4 space-y-1">
+              <h3 className="text-sm font-semibold text-white/90">{opportunity.title}</h3>
+              <p className="text-xs text-gray-400">{opportunity.company}</p>
+            </div>
+
+            <div>
+              <label
+                htmlFor="application-message"
+                className="block text-xs uppercase tracking-[0.28em] text-gray-500 mb-2"
+              >
                 Mensagem (opcional)
               </label>
               <textarea
                 id="application-message"
                 rows={4}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="input-glass resize-none min-h-[140px]"
                 placeholder="Conte um pouco sobre por que você é ideal para esta oportunidade..."
                 value={applicationMessage}
                 onChange={(e) => setApplicationMessage(e.target.value)}
               />
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 justify-end">
               <button
                 onClick={() => setShowApplicationForm(false)}
-                className="flex-1 px-4 py-3 border border-gray-300 rounded-lg text-gray-700 font-medium hover:bg-gray-50 transition-colors"
+                className="btn-ghost-glass w-full sm:w-auto justify-center"
               >
                 Cancelar
               </button>
               <button
                 onClick={handleApply}
                 disabled={applying}
-                className="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 text-white px-4 py-3 rounded-lg font-medium transition-all flex items-center justify-center gap-2"
+                className="btn-primary-glow w-full sm:w-auto justify-center disabled:opacity-60 disabled:cursor-not-allowed"
               >
                 {applying ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  <span className="flex items-center gap-2 text-sm">
+                    <span className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
                     Enviando...
-                  </>
+                  </span>
                 ) : (
-                  <>
+                  <span className="flex items-center gap-2 text-sm">
                     <Send className="h-4 w-4" />
-                    Enviar Candidatura
-                  </>
+                    Enviar candidatura
+                  </span>
                 )}
               </button>
             </div>
           </div>
-        </div>
+          </div>
+        </ModalPortal>
       )}
     </div>
   );
