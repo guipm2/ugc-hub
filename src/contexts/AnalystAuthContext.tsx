@@ -1,3 +1,4 @@
+/* eslint-disable react-refresh/only-export-components */
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { router } from '../utils/router';
@@ -21,19 +22,25 @@ interface AnalystAuthContextType {
   analyst: Analyst | null; // Dados específicos da tabela analysts
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string, name: string, company: string) => Promise<{ error: string | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    name: string,
+    company: string,
+    secretKey: string
+  ) => Promise<{ error: string | null }>;
   signOut: () => void;
 }
 
 const AnalystAuthContext = createContext<AnalystAuthContextType | undefined>(undefined);
 
-export const useAnalystAuth = () => {
+export function useAnalystAuth() {
   const context = useContext(AnalystAuthContext);
   if (context === undefined) {
     throw new Error('useAnalystAuth must be used within an AnalystAuthProvider');
   }
   return context;
-};
+}
 
 export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [profile, setProfile] = useState<Analyst | null>(null);
@@ -320,7 +327,13 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
     }
   };
 
-  const signUp = async (email: string, password: string, name: string, company: string) => {
+  const signUp = async (
+    email: string,
+    password: string,
+    name: string,
+    company: string,
+    secretKey: string
+  ) => {
     try {
       // Verifica se já existe perfil de criador com esse email
       const { data: creatorExists } = await supabase
@@ -331,6 +344,17 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       if (creatorExists && creatorExists.role === 'creator') {
         return { error: 'Este email já está cadastrado como criador' };
+      }
+
+      const trimmedSecret = secretKey.trim();
+      if (!trimmedSecret) {
+        return { error: 'Insira a chave secreta fornecida pelo time do UGC Hub.' };
+      }
+
+      const expectedSecret = (import.meta.env.VITE_ANALYST_SIGNUP_SECRET ?? 'ugc-turbo').trim();
+
+      if (trimmedSecret !== expectedSecret) {
+        return { error: 'Chave secreta inválida. Verifique com o time do UGC Hub.' };
       }
 
       // Cria o usuário com role analyst no user_metadata

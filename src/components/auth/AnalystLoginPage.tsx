@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Eye, EyeOff, Building, Mail, Lock, AlertCircle, User } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, Building, Mail, Lock, AlertCircle, User, KeyRound } from 'lucide-react';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRouter } from '../../hooks/useRouter';
 import AuthLayout from './AuthLayout';
@@ -11,6 +11,7 @@ const AnalystLoginPage: React.FC = () => {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [name, setName] = useState('');
   const [company, setCompany] = useState('');
+  const [secretKey, setSecretKey] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -40,7 +41,12 @@ const AnalystLoginPage: React.FC = () => {
           return;
         }
 
-        const { error: signUpError } = await signUp(email, password, name, company);
+        if (!secretKey.trim()) {
+          setError('Informe a chave secreta fornecida pelo UGC Hub.');
+          return;
+        }
+
+        const { error: signUpError } = await signUp(email, password, name, company, secretKey);
 
         if (signUpError) {
           setError(signUpError);
@@ -51,6 +57,7 @@ const AnalystLoginPage: React.FC = () => {
           setConfirmPassword('');
           setName('');
           setCompany('');
+          setSecretKey('');
           setTimeout(() => {
             setIsLogin(true);
             setSuccessMessage('');
@@ -130,6 +137,26 @@ const AnalystLoginPage: React.FC = () => {
                   />
                 </div>
               </div>
+
+                <div className="space-y-2">
+                  <label className="block text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    Chave secreta do UGC Hub
+                  </label>
+                  <div className="relative">
+                    <KeyRound className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <input
+                      type="text"
+                      value={secretKey}
+                      onChange={(e) => setSecretKey(e.target.value)}
+                      className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+                      placeholder="Informe a chave fornecida pelo time"
+                      required
+                    />
+                  </div>
+                  <p className="text-[0.7rem] text-slate-400/80">
+                    Apenas analistas autorizados possuem essa chave. Sem ela, o cadastro não é concluído.
+                  </p>
+                </div>
             </>
           )}
 
