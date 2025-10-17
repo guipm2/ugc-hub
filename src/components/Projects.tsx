@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { ArrowLeft, Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, Eye, X, Grid3X3, List, EyeOff } from 'lucide-react';
+import { ArrowLeft, Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, X, Grid3X3, List, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import ProjectInfo from './ProjectInfo';
@@ -729,18 +729,9 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                                 <p className="text-sm font-medium text-white/90 truncate">{file.name}</p>
                                 <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                               </div>
-                              {file.url ? (
-                                <a
-                                  href={file.url}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="btn-ghost-glass px-3 py-1 text-xs"
-                                >
-                                  <Eye className="h-4 w-4" />
-                                </a>
-                              ) : (
-                                <span className="text-xs text-gray-500">URL indisponível</span>
-                              )}
+                              <div className="glass-chip chip-success text-[0.65rem]">
+                                Enviado
+                              </div>
                             </div>
                           ))}
                         </div>

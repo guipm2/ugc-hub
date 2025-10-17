@@ -842,6 +842,38 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                   </div>
                 </div>
 
+                <div className="space-y-2">
+                  <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
+                    CEP *
+                  </label>
+                  <input
+                    type="text"
+                    value={data.address?.zipCode || ''}
+                    onChange={event => handleAddressChange('zipCode', event.target.value)}
+                    className={inputClass(Boolean(fieldErrors['address.zipCode']))}
+                    placeholder="00000-000"
+                    maxLength={9}
+                    required
+                  />
+                  {isFetchingAddress && (
+                    <p className="flex items-center gap-2 text-xs text-cyan-300">
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Buscando endereço automaticamente...
+                    </p>
+                  )}
+                  {!isFetchingAddress && !fieldErrors['address.zipCode'] && (
+                    <p className="text-xs text-slate-400">
+                      Digite seu CEP e preencheremos os campos automaticamente.
+                    </p>
+                  )}
+                  {fieldErrors['address.zipCode'] && (
+                    <p className="flex items-center gap-2 text-xs text-rose-300">
+                      <AlertTriangle className="h-4 w-4" />
+                      {fieldErrors['address.zipCode']}
+                    </p>
+                  )}
+                </div>
+
                 <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
                   <div className="md:col-span-2 space-y-2">
                     <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
@@ -919,7 +951,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                   <div className="space-y-2">
                     <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
                       Cidade *
@@ -961,33 +993,6 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                       <p className="flex items-center gap-2 text-xs text-rose-300">
                         <AlertTriangle className="h-4 w-4" />
                         {fieldErrors['address.state']}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
-                      CEP *
-                    </label>
-                    <input
-                      type="text"
-                      value={data.address?.zipCode || ''}
-                      onChange={event => handleAddressChange('zipCode', event.target.value)}
-                      className={inputClass(Boolean(fieldErrors['address.zipCode']))}
-                      placeholder="00000-000"
-                      maxLength={9}
-                      required
-                    />
-                    {isFetchingAddress && (
-                      <p className="flex items-center gap-2 text-xs text-cyan-300">
-                        <Loader2 className="h-4 w-4 animate-spin" />
-                        Buscando endereço automaticamente...
-                      </p>
-                    )}
-                    {fieldErrors['address.zipCode'] && (
-                      <p className="flex items-center gap-2 text-xs text-rose-300">
-                        <AlertTriangle className="h-4 w-4" />
-                        {fieldErrors['address.zipCode']}
                       </p>
                     )}
                   </div>

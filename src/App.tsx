@@ -238,8 +238,8 @@ function CreatorApp() {
 
         {/* Navigation */}
         <nav
-          className="mt-6 flex flex-1 flex-col gap-1 px-2 overflow-y-auto"
-          style={{ maxHeight: 'calc(100vh - 180px)' }}
+          className="mt-6 flex flex-1 flex-col gap-0.5 px-2"
+          style={{ maxHeight: 'calc(100vh - 180px)', overflowY: 'hidden' }}
         >
           {menuItems.map(item => {
             const Icon = item.icon;

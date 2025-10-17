@@ -1293,11 +1293,8 @@ const EnhancedDeliverableManagement: React.FC = () => {
                                 </label>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                                   {deliverable.deliverable_files.map((file, index) => (
-                                    <a
-                                      key={file.id || `${deliverable.id}-file-${index}`}
-                                      href={file.url || undefined}
-                                      target={file.url ? '_blank' : undefined}
-                                      rel={file.url ? 'noopener noreferrer' : undefined}
+                                    <div
+                                      key={`expanded-${deliverable.id}-file-${index}`}
                                       className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:border-purple-400 hover:shadow-sm transition"
                                     >
                                       <FileText className="h-4 w-4 text-purple-500" />
@@ -1305,10 +1302,39 @@ const EnhancedDeliverableManagement: React.FC = () => {
                                         <p className="text-sm font-medium text-gray-900 truncate">{file.name || 'Arquivo'}</p>
                                         <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                                       </div>
-                                      <span className={`text-xs font-medium ${file.url ? 'text-purple-600' : 'text-gray-400'}`}>
-                                        {file.url ? 'Abrir' : 'Sem link'}
-                                      </span>
-                                    </a>
+                                      {file.path && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.preventDefault();
+                                            if (!file.path) return;
+                                            
+                                            // Obter URL pública do bucket
+                                            const { data: urlData } = supabase.storage
+                                              .from('deliverables')
+                                              .getPublicUrl(file.path);
+                                            
+                                            if (urlData?.publicUrl) {
+                                              // Baixar arquivo usando URL pública
+                                              const a = document.createElement('a');
+                                              a.href = urlData.publicUrl;
+                                              a.download = file.name || 'arquivo';
+                                              a.target = '_blank';
+                                              document.body.appendChild(a);
+                                              a.click();
+                                              document.body.removeChild(a);
+                                            } else {
+                                              alert('Erro ao gerar link do arquivo.');
+                                            }
+                                          }}
+                                          className="text-xs font-medium text-purple-600 hover:text-purple-700 px-2 py-1 rounded hover:bg-purple-50 transition"
+                                        >
+                                          Baixar
+                                        </button>
+                                      )}
+                                      {!file.path && (
+                                        <span className="text-xs text-gray-400">Indisponível</span>
+                                      )}
+                                    </div>
                                   ))}
                                 </div>
                               </div>
@@ -1504,11 +1530,8 @@ const EnhancedDeliverableManagement: React.FC = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">Arquivos Enviados</label>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
                     {editingDeliverable.deliverable_files.map((file, index) => (
-                      <a
-                        key={file.id || `${editingDeliverable.id}-modal-file-${index}`}
-                        href={file.url || undefined}
-                        target={file.url ? '_blank' : undefined}
-                        rel={file.url ? 'noopener noreferrer' : undefined}
+                      <div
+                        key={`modal-${editingDeliverable.id}-file-${index}`}
                         className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200 hover:border-purple-500 transition"
                       >
                         <FileText className="h-4 w-4 text-purple-500" />
@@ -1516,10 +1539,39 @@ const EnhancedDeliverableManagement: React.FC = () => {
                           <p className="text-sm font-medium text-gray-900 truncate">{file.name || 'Arquivo'}</p>
                           <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
                         </div>
-                        <span className={`text-xs font-medium ${file.url ? 'text-purple-600' : 'text-gray-400'}`}>
-                          {file.url ? 'Abrir' : 'Sem link'}
-                        </span>
-                      </a>
+                        {file.path && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (!file.path) return;
+                              
+                              // Obter URL pública do bucket
+                              const { data: urlData } = supabase.storage
+                                .from('deliverables')
+                                .getPublicUrl(file.path);
+                              
+                              if (urlData?.publicUrl) {
+                                // Baixar arquivo usando URL pública
+                                const a = document.createElement('a');
+                                a.href = urlData.publicUrl;
+                                a.download = file.name || 'arquivo';
+                                a.target = '_blank';
+                                document.body.appendChild(a);
+                                a.click();
+                                document.body.removeChild(a);
+                              } else {
+                                alert('Erro ao gerar link do arquivo.');
+                              }
+                            }}
+                            className="text-xs font-medium text-purple-600 hover:text-purple-700 px-2 py-1 rounded hover:bg-purple-50 transition"
+                          >
+                            Baixar
+                          </button>
+                        )}
+                        {!file.path && (
+                          <span className="text-xs text-gray-400">Indisponível</span>
+                        )}
+                      </div>
                     ))}
                   </div>
                 </div>

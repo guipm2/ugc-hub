@@ -314,21 +314,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         
         // Verificar se a conta existe mas senha está incorreta
         if (error.message?.includes('Invalid login credentials')) {
-          // Verificar se o email existe
-          const { data: userExists } = await supabase
-            .from('profiles')
-            .select('email')
-            .eq('email', email)
-            .maybeSingle();
-            
-          if (userExists) {
-            return { error: { message: 'Senha incorreta' } as AuthError };
-          } else {
-            return { error: { message: 'Conta não encontrada. Por favor, verifique seu email ou crie uma conta.' } as AuthError };
-          }
+          // Mensagem mais clara e útil que cobre ambos os casos
+          return { error: { message: 'Email ou senha incorretos. Verifique suas credenciais e tente novamente.' } as AuthError };
         }
         
-        return { error: { message: 'Email ou senha incorretos' } as AuthError };
+        return { error: { message: 'Erro ao fazer login. Por favor, tente novamente.' } as AuthError };
       }
 
             

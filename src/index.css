@@ -288,6 +288,8 @@ body::before {
 	.glass-sidebar {
 		position: relative;
 		overflow: hidden;
+		overflow-x: hidden;
+		overflow-y: hidden;
 		border-right: 1px solid rgba(142, 152, 255, 0.28);
 		background: linear-gradient(180deg, rgba(22, 30, 72, 0.88) 0%, rgba(14, 18, 52, 0.82) 40%, rgba(12, 15, 40, 0.78) 100%);
 		backdrop-filter: blur(42px) saturate(165%);
