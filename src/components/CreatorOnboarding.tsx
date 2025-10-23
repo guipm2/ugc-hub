@@ -92,6 +92,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     }
   });
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [fieldValidations, setFieldValidations] = useState<Record<string, 'valid' | 'invalid' | 'validating'>>({});
   const [isFetchingAddress, setIsFetchingAddress] = useState(false);
   const { user } = useAuth();
   const lastFetchedCepRef = useRef('');
@@ -116,6 +117,180 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
       delete next[field];
       return next;
     });
+  };
+
+  const setFieldValidation = (field: string, status: 'valid' | 'invalid' | 'validating') => {
+    setFieldValidations(prev => ({ ...prev, [field]: status }));
+  };
+
+  const clearFieldValidation = (field: string) => {
+    setFieldValidations(prev => {
+      const next = { ...prev };
+      delete next[field];
+      return next;
+    });
+  };
+
+  // Validações em tempo real
+  const validateBirthDateRealTime = (value: string) => {
+    if (!value) {
+      clearFieldValidation('birth_date');
+      return;
+    }
+
+    const age = calculateAge(value);
+    if (!age || age < 13) {
+      setFieldValidation('birth_date', 'invalid');
+      setFieldErrors(prev => ({ ...prev, birth_date: 'Você precisa ter pelo menos 13 anos.' }));
+    } else if (age > 100) {
+      setFieldValidation('birth_date', 'invalid');
+      setFieldErrors(prev => ({ ...prev, birth_date: 'Por favor, verifique a data de nascimento.' }));
+    } else {
+      setFieldValidation('birth_date', 'valid');
+      clearFieldError('birth_date');
+    }
+  };
+
+  const validateInstagramRealTime = (value: string) => {
+    if (!value || !value.trim()) {
+      clearFieldValidation('instagram_url');
+      return;
+    }
+
+    const trimmed = value.trim();
+    const isValidUrl = trimmed.startsWith('http') && (trimmed.includes('instagram.com') || trimmed.includes('instagr.am'));
+    const isUsername = !trimmed.startsWith('http') && trimmed.length >= 2;
+
+    if (isValidUrl || isUsername) {
+      setFieldValidation('instagram_url', 'valid');
+      clearFieldError('instagram_url');
+    } else {
+      setFieldValidation('instagram_url', 'invalid');
+      setFieldErrors(prev => ({ ...prev, instagram_url: 'Link ou @ inválido.' }));
+    }
+  };
+
+  const validatePixKeyRealTime = (value: string) => {
+    if (!value || !value.trim()) {
+      clearFieldValidation('pix_key');
+      return;
+    }
+
+    const trimmed = value.trim();
+    
+    // Validar se parece com email
+    const isEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(trimmed);
+    
+    // Validar se parece com telefone (10 ou 11 dígitos)
+    const digitsOnly = stripFormatting(trimmed);
+    const isPhone = digitsOnly.length === 10 || digitsOnly.length === 11;
+    
+    // Validar se parece com CPF (11 dígitos)
+    const isCPF = digitsOnly.length === 11;
+    
+    // Validar se parece com CNPJ (14 dígitos)
+    const isCNPJ = digitsOnly.length === 14;
+    
+    // Chave aleatória (UUID ou similar - mínimo 32 caracteres)
+    const isRandomKey = trimmed.length >= 32 && /^[a-zA-Z0-9-]+$/.test(trimmed);
+
+    if (isEmail || isPhone || isCPF || isCNPJ || isRandomKey) {
+      setFieldValidation('pix_key', 'valid');
+      clearFieldError('pix_key');
+    } else if (trimmed.length < 11) {
+      clearFieldValidation('pix_key');
+    } else {
+      setFieldValidation('pix_key', 'invalid');
+      setFieldErrors(prev => ({ ...prev, pix_key: 'Chave PIX inválida. Use CPF, email, telefone ou chave aleatória.' }));
+    }
+  };
+
+  const validateDocumentRealTime = (value: string) => {
+    if (!value || !value.trim()) {
+      clearFieldValidation('document_number');
+      return;
+    }
+
+    const digits = stripFormatting(value);
+    
+    if (digits.length < 11) {
+      clearFieldValidation('document_number');
+      return;
+    }
+
+    const detectedType = detectDocumentType(digits);
+    
+    if (detectedType === 'cpf' && digits.length === 11) {
+      setFieldValidation('document_number', 'valid');
+      clearFieldError('document_number');
+    } else if (detectedType === 'cnpj' && digits.length === 14) {
+      setFieldValidation('document_number', 'valid');
+      clearFieldError('document_number');
+    } else if (digits.length >= 11) {
+      setFieldValidation('document_number', 'invalid');
+      setFieldErrors(prev => ({ ...prev, document_number: 'CPF ou CNPJ inválido.' }));
+    }
+  };
+
+  const validatePhoneRealTime = (value: string) => {
+    if (!value || !value.trim()) {
+      clearFieldValidation('phone');
+      return;
+    }
+
+    const digits = stripFormatting(value);
+    
+    if (digits.length < 10) {
+      clearFieldValidation('phone');
+      return;
+    }
+
+    if (digits.length === 10 || digits.length === 11) {
+      setFieldValidation('phone', 'valid');
+      clearFieldError('phone');
+    } else {
+      setFieldValidation('phone', 'invalid');
+      setFieldErrors(prev => ({ ...prev, phone: 'Telefone inválido. Use formato (11) 99999-9999.' }));
+    }
+  };
+
+  const validateEmailRealTime = (value: string) => {
+    if (!value || !value.trim()) {
+      clearFieldValidation('email');
+      return;
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    
+    if (emailRegex.test(value.trim())) {
+      setFieldValidation('email', 'valid');
+      clearFieldError('email');
+    } else {
+      setFieldValidation('email', 'invalid');
+      setFieldErrors(prev => ({ ...prev, email: 'Email inválido.' }));
+    }
+  };
+
+  const validateCEPRealTime = (value: string) => {
+    if (!value || !value.trim()) {
+      clearFieldValidation('address.zipCode');
+      return;
+    }
+
+    const digits = stripFormatting(value);
+    
+    if (digits.length < 8) {
+      clearFieldValidation('address.zipCode');
+      return;
+    }
+
+    if (digits.length === 8) {
+      setFieldValidation('address.zipCode', 'validating');
+      // A validação final será feita pela API do ViaCEP
+    } else {
+      setFieldValidation('address.zipCode', 'invalid');
+      setFieldErrors(prev => ({ ...prev, 'address.zipCode': 'CEP deve ter 8 dígitos.' }));
+    }
   };
 
   const resetStepErrors = (fields: readonly string[]) => {
@@ -155,6 +330,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
       }));
 
       clearFieldError(fullFieldKey);
+      validateCEPRealTime(formattedValue);
 
       if (addressFetchTimeoutRef.current) {
         clearTimeout(addressFetchTimeoutRef.current);
@@ -163,6 +339,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
 
       if (digits.length === 8 && digits !== lastFetchedCepRef.current) {
         setIsFetchingAddress(true);
+        setFieldValidation('address.zipCode', 'validating');
 
         addressFetchTimeoutRef.current = setTimeout(async () => {
           try {
@@ -191,12 +368,17 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
             clearFieldError('address.neighborhood');
             clearFieldError('address.city');
             clearFieldError('address.state');
+            
+            // Marcar CEP como válido após sucesso
+            setFieldValidation('address.zipCode', 'valid');
+            clearFieldError('address.zipCode');
 
             lastFetchedCepRef.current = digits;
           } catch (error) {
             console.error('Erro ao buscar CEP:', error);
+            setFieldValidation('address.zipCode', 'invalid');
             setStepErrors({
-              'address.zipCode': 'Não foi possível localizar o endereço. Verifique o CEP ou preencha manualmente.'
+              'address.zipCode': 'CEP não encontrado. Verifique ou preencha manualmente.'
             });
           } finally {
             setIsFetchingAddress(false);
@@ -236,7 +418,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
       birth_date: value,
       age: calculateAge(value)
     }));
-    clearFieldError('birth_date');
+    validateBirthDateRealTime(value);
   };
 
   const inputClass = (hasError: boolean, extra = '') =>
@@ -251,6 +433,48 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
       [field]: value
     }));
     clearFieldError(field as string);
+
+    // Validação em tempo real para campos específicos
+    if (field === 'pix_key') {
+      validatePixKeyRealTime(value);
+    } else if (field === 'phone') {
+      validatePhoneRealTime(value);
+    } else if (field === 'email') {
+      validateEmailRealTime(value);
+    }
+  };
+
+  // Componente de ícone de validação
+  const ValidationIcon = ({ field }: { field: string }) => {
+    const status = fieldValidations[field];
+    
+    if (!status) return null;
+
+    if (status === 'validating') {
+      return (
+        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <Loader2 className="h-5 w-5 animate-spin text-cyan-400" />
+        </div>
+      );
+    }
+
+    if (status === 'valid') {
+      return (
+        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <Check className="h-5 w-5 text-emerald-400" />
+        </div>
+      );
+    }
+
+    if (status === 'invalid') {
+      return (
+        <div className="absolute right-4 top-1/2 -translate-y-1/2">
+          <AlertTriangle className="h-5 w-5 text-rose-400" />
+        </div>
+      );
+    }
+
+    return null;
   };
 
   const handleInstagramChange = (value: string) => {
@@ -258,6 +482,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     if (!trimmed) {
       setData(prev => ({ ...prev, instagram_url: '' }));
       clearFieldError('instagram_url');
+      clearFieldValidation('instagram_url');
       return;
     }
 
@@ -266,7 +491,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
       : `https://instagram.com/${trimmed.replace(/^@/, '')}`;
 
     setData(prev => ({ ...prev, instagram_url: normalized }));
-    clearFieldError('instagram_url');
+    validateInstagramRealTime(trimmed);
   };
 
   const handleDocumentChange = (value: string) => {
@@ -280,6 +505,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
       }));
       clearFieldError('document_number');
       clearFieldError('document_type');
+      clearFieldValidation('document_number');
       return;
     }
 
@@ -292,7 +518,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
       document_type: detectedType ?? prev.document_type
     }));
 
-    clearFieldError('document_number');
+    validateDocumentRealTime(formatted);
     if (detectedType) {
       clearFieldError('document_type');
     }
@@ -403,11 +629,45 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     setCurrentStep(prev => prev - 1);
   };
 
+  // Função auxiliar para retry com backoff exponencial
+  const retryWithBackoff = async <T,>(
+    fn: () => Promise<T>,
+    maxRetries = 3,
+    baseDelay = 1000
+  ): Promise<T> => {
+    let lastError: Error | null = null;
+    
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // Adicionar timeout de 10 segundos para cada tentativa
+        const timeoutPromise = new Promise<never>((_, reject) => {
+          setTimeout(() => reject(new Error('Request timeout')), 10000);
+        });
+        
+        const result = await Promise.race([fn(), timeoutPromise]);
+        return result as T;
+      } catch (error) {
+        lastError = error as Error;
+        console.warn(`Tentativa ${attempt + 1}/${maxRetries} falhou:`, error);
+        
+        // Se não for a última tentativa, aguardar antes de tentar novamente
+        if (attempt < maxRetries - 1) {
+          const delay = baseDelay * Math.pow(2, attempt); // Backoff exponencial
+          await new Promise(resolve => setTimeout(resolve, delay));
+        }
+      }
+    }
+    
+    throw lastError || new Error('Todas as tentativas falharam');
+  };
+
   const handleComplete = async () => {
     if (!validateStep(3, true) || !user?.id) return;
 
     setLoading(true);
+    
     try {
+      // Validar dados antes de enviar
       const updateData = {
         birth_date: data.birth_date || null,
         instagram_url: data.instagram_url?.trim() || null,
@@ -415,32 +675,98 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         portfolio_url: data.portfolio_url?.trim() || null,
         age: data.age,
         gender: data.gender,
-        niches: data.niches,
+        niches: Array.isArray(data.niches) ? data.niches : [],
         pix_key: data.pix_key?.trim() || null,
         full_name: data.full_name?.trim() || null,
-        phone: data.phone?.trim() || null,
+        phone: data.phone ? stripFormatting(data.phone) : null, // Remove formatação antes de salvar
         email: data.email?.trim() || null,
-        address: data.address,
-        document_type: data.document_type,
+        address: data.address || null,
+        document_type: data.document_type || null,
         document_number: data.document_number ? stripFormatting(data.document_number) : null,
         onboarding_completed: true,
         onboarding_step: 4,
         onboarding_completed_at: new Date().toISOString()
       };
 
-      const { error } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', user.id);
+      console.log('📤 Enviando dados do onboarding:', { userId: user.id, dataKeys: Object.keys(updateData) });
 
-      if (error) {
-        throw error;
-      }
+      // Tentar salvar com retry
+      await retryWithBackoff(async () => {
+        const { data: result, error } = await supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', user.id)
+          .select()
+          .single();
 
+        if (error) {
+          console.error('❌ Erro do Supabase:', error);
+          throw error;
+        }
+
+        console.log('✅ Onboarding salvo com sucesso:', result);
+        return result;
+      });
+
+      // Sucesso - completar onboarding
       onComplete();
+      
     } catch (error) {
-      console.error('Erro ao salvar onboarding:', error);
-      alert('Erro ao salvar informações. Tente novamente.');
+      console.error('❌ Erro ao salvar onboarding após todas as tentativas:', error);
+      
+      // Salvar dados localmente como fallback
+      try {
+        const fallbackData = {
+          userId: user.id,
+          data: data,
+          timestamp: new Date().toISOString(),
+          error: error instanceof Error ? error.message : 'Erro desconhecido'
+        };
+        localStorage.setItem('onboarding_fallback', JSON.stringify(fallbackData));
+        console.log('💾 Dados salvos localmente como fallback');
+      } catch (storageError) {
+        console.error('Erro ao salvar fallback:', storageError);
+      }
+      
+      // Mostrar mensagem amigável ao usuário
+      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
+      const isTimeout = errorMessage.includes('timeout');
+      const is400 = errorMessage.includes('400') || errorMessage.includes('Bad Request');
+      
+      let userMessage = 'Não foi possível salvar suas informações no momento.\n\n';
+      
+      if (isTimeout) {
+        userMessage += 'A conexão está demorando muito. Verifique sua internet e tente novamente.';
+      } else if (is400) {
+        userMessage += 'Alguns dados podem estar em formato inválido. Por favor, revise os campos e tente novamente.\n\nSe o problema persistir, entre em contato com o suporte.';
+      } else {
+        userMessage += 'Ocorreu um erro inesperado. Suas informações foram salvas temporariamente e você poderá completar o cadastro depois.\n\nDeseja continuar para o dashboard mesmo assim?';
+      }
+      
+      // Perguntar ao usuário se quer continuar
+      const shouldContinue = confirm(userMessage + '\n\nContinuar para o dashboard?');
+      
+      if (shouldContinue) {
+        // Marcar que o onboarding está incompleto mas permitir acesso
+        console.log('⚠️ Usuário optou por continuar sem completar o onboarding');
+        
+        // Tentar marcar apenas o onboarding_step sem os outros dados
+        try {
+          await supabase
+            .from('profiles')
+            .update({ 
+              onboarding_step: 3, // Não marcar como completo
+              onboarding_completed: false 
+            })
+            .eq('id', user.id);
+        } catch (stepError) {
+          console.error('Erro ao atualizar step:', stepError);
+        }
+        
+        onComplete();
+      }
+      // Se não quiser continuar, apenas remove o loading para permitir nova tentativa
+      
     } finally {
       setLoading(false);
     }
@@ -521,9 +847,10 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                       max={maxBirthDate}
                       min={minBirthDate}
                       onChange={event => handleBirthDateChange(event.target.value)}
-                      className={inputClass(Boolean(fieldErrors.birth_date), '!pl-12 !pr-4')}
+                      className={inputClass(Boolean(fieldErrors.birth_date), '!pl-12 !pr-12')}
                       required
                     />
+                    <ValidationIcon field="birth_date" />
                   </div>
                   {data.birth_date && (
                     <p className="mt-2 text-xs uppercase tracking-[0.25em] text-slate-400">
@@ -582,10 +909,11 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                       value={data.instagram_url || ''}
                       onChange={event => handleSimpleFieldChange('instagram_url', event.target.value)}
                       onBlur={event => handleInstagramChange(event.target.value)}
-                      className={inputClass(Boolean(fieldErrors.instagram_url), '!pl-12')}
+                      className={inputClass(Boolean(fieldErrors.instagram_url), '!pl-12 !pr-12')}
                       placeholder="https://instagram.com/seuperfil"
                       required
                     />
+                    <ValidationIcon field="instagram_url" />
                   </div>
                   <p className="mt-2 text-xs text-slate-400">
                     Informe o link completo ou seu @. Usamos isso para entender seu alcance.
@@ -689,10 +1017,11 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     type="text"
                     value={data.pix_key || ''}
                     onChange={event => handleSimpleFieldChange('pix_key', event.target.value)}
-                    className={inputClass(Boolean(fieldErrors.pix_key), '!pl-12')}
+                    className={inputClass(Boolean(fieldErrors.pix_key), '!pl-12 !pr-12')}
                     placeholder="CPF, email, telefone ou chave aleatória"
                     required
                   />
+                  <ValidationIcon field="pix_key" />
                 </div>
                 <p className="text-xs text-slate-400">Pode ser seu CPF, email, telefone ou uma chave aleatória.</p>
                 {fieldErrors.pix_key && (
@@ -748,10 +1077,11 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                       type="tel"
                       value={data.phone || ''}
                       onChange={event => handleSimpleFieldChange('phone', formatPhone(event.target.value))}
-                      className={inputClass(Boolean(fieldErrors.phone), '!pl-12')}
+                      className={inputClass(Boolean(fieldErrors.phone), '!pl-12 !pr-12')}
                       placeholder="(11) 99999-9999"
                       required
                     />
+                    <ValidationIcon field="phone" />
                   </div>
                   {fieldErrors.phone && (
                     <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
@@ -807,15 +1137,18 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                       </span>
                     )}
                   </div>
-                  <input
-                    type="text"
-                    value={data.document_number || ''}
-                    onChange={event => handleDocumentChange(event.target.value)}
-                    className={inputClass(Boolean(fieldErrors.document_number || fieldErrors.document_type))}
-                    placeholder="Digite seu CPF ou CNPJ"
-                    maxLength={18}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={data.document_number || ''}
+                      onChange={event => handleDocumentChange(event.target.value)}
+                      className={inputClass(Boolean(fieldErrors.document_number || fieldErrors.document_type), '!pr-12')}
+                      placeholder="Digite seu CPF ou CNPJ"
+                      maxLength={18}
+                      required
+                    />
+                    <ValidationIcon field="document_number" />
+                  </div>
                   {fieldErrors.document_number && (
                     <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
                       <AlertTriangle className="h-4 w-4" />
@@ -846,15 +1179,18 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                   <label className="text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
                     CEP *
                   </label>
-                  <input
-                    type="text"
-                    value={data.address?.zipCode || ''}
-                    onChange={event => handleAddressChange('zipCode', event.target.value)}
-                    className={inputClass(Boolean(fieldErrors['address.zipCode']))}
-                    placeholder="00000-000"
-                    maxLength={9}
-                    required
-                  />
+                  <div className="relative">
+                    <input
+                      type="text"
+                      value={data.address?.zipCode || ''}
+                      onChange={event => handleAddressChange('zipCode', event.target.value)}
+                      className={inputClass(Boolean(fieldErrors['address.zipCode']), '!pr-12')}
+                      placeholder="00000-000"
+                      maxLength={9}
+                      required
+                    />
+                    <ValidationIcon field="address.zipCode" />
+                  </div>
                   {isFetchingAddress && (
                     <p className="flex items-center gap-2 text-xs text-cyan-300">
                       <Loader2 className="h-4 w-4 animate-spin" />

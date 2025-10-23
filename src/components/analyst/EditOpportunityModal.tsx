@@ -34,6 +34,31 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
   onClose, 
   onSubmit 
 }) => {
+  // Parse age_range para age_min e age_max
+  const parseAgeRange = (ageRange?: string) => {
+    if (!ageRange) return { min: '', max: '' };
+    
+    // Formato "20-45"
+    if (ageRange.includes('-')) {
+      const [min, max] = ageRange.split('-');
+      return { min, max };
+    }
+    
+    // Formato "20+"
+    if (ageRange.includes('+')) {
+      return { min: ageRange.replace('+', ''), max: '' };
+    }
+    
+    // Formato "até 45"
+    if (ageRange.includes('até')) {
+      return { min: '', max: ageRange.replace('até ', '').trim() };
+    }
+    
+    return { min: '', max: '' };
+  };
+
+  const { min: initialAgeMin, max: initialAgeMax } = parseAgeRange(opportunity.age_range);
+
   const [formData, setFormData] = useState({
     title: opportunity.title,
     company_link: opportunity.company_link ?? '',
@@ -45,7 +70,8 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
     requirements: [...(opportunity.requirements || [])],
     deadline: opportunity.deadline.split('T')[0], // Format for input date
     status: opportunity.status,
-    age_range: opportunity.age_range || '',
+    age_min: initialAgeMin,
+    age_max: initialAgeMax,
     gender: opportunity.gender || ''
   });
   const [loading, setLoading] = useState(false);
@@ -56,6 +82,16 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
     setLoading(true);
 
     try {
+      // Construir a age_range a partir de age_min e age_max
+      let ageRange = '';
+      if (formData.age_min && formData.age_max) {
+        ageRange = `${formData.age_min}-${formData.age_max}`;
+      } else if (formData.age_min) {
+        ageRange = `${formData.age_min}+`;
+      } else if (formData.age_max) {
+        ageRange = `até ${formData.age_max}`;
+      }
+
       const normalizedLink = normalizeCompanyLink(formData.company_link);
       const { error } = await supabase
         .from('opportunities')
@@ -70,7 +106,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
           requirements: formData.requirements,
           deadline: formData.deadline,
           status: formData.status,
-          age_range: formData.age_range,
+          age_range: ageRange,
           gender: formData.gender,
           updated_at: new Date().toISOString()
         })
@@ -80,7 +116,11 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
         console.error('Erro ao atualizar oportunidade:', error);
         // REMOVIDO: alert('Erro ao atualizar oportunidade');
       } else {
-        onSubmit({ ...formData, company_link: normalizedLink });
+        onSubmit({ 
+          ...formData, 
+          company_link: normalizedLink,
+          age_range: ageRange
+        });
         // REMOVIDO: alert('Oportunidade atualizada com sucesso!');
       }
     } catch (err) {
@@ -184,25 +224,17 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Localização *
+                Valor Máximo (R$) *
               </label>
-              <select
-                value={formData.location}
-                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={formData.budget_max}
+                onChange={(e) => setFormData(prev => ({ ...prev, budget_max: Number(e.target.value) }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                 required
-              >
-                <option value="Remoto">Remoto</option>
-                <option value="São Paulo">São Paulo</option>
-                <option value="Rio de Janeiro">Rio de Janeiro</option>
-                <option value="Belo Horizonte">Belo Horizonte</option>
-                <option value="Brasília">Brasília</option>
-                <option value="Salvador">Salvador</option>
-                <option value="Fortaleza">Fortaleza</option>
-                <option value="Recife">Recife</option>
-                <option value="Porto Alegre">Porto Alegre</option>
-                <option value="Curitiba">Curitiba</option>
-              </select>
+              />
             </div>
           </div>
 
@@ -219,14 +251,9 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
                 required
               >
                 <option value="">Selecione o tipo</option>
-                <option value="Reel + Stories">Reel + Stories</option>
-                <option value="Vídeo YouTube">Vídeo YouTube</option>
-                <option value="Post Instagram">Post Instagram</option>
-                <option value="Stories">Stories</option>
-                <option value="TikTok">TikTok</option>
-                <option value="Reels">Reels</option>
-                <option value="IGTV">IGTV</option>
-                <option value="Feed + Stories">Feed + Stories</option>
+                <option value="Foto">Foto</option>
+                <option value="Foto + Video">Foto + Video</option>
+                <option value="Video">Video</option>
               </select>
             </div>
             <div>
@@ -244,8 +271,8 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
             </div>
           </div>
 
-          {/* Status, Gender, and Age Range */}
-          <div className="grid grid-cols-3 gap-4">
+          {/* Status */}
+          <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Status *
@@ -263,37 +290,55 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Gênero
+                Gênero *
               </label>
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                required
               >
-                <option value="">Qualquer gênero</option>
-                <option value="Masculino">Masculino</option>
+                <option value="">Selecione o gênero</option>
                 <option value="Feminino">Feminino</option>
-                <option value="Outros">Outros</option>
+                <option value="Masculino">Masculino</option>
+                <option value="Não-binário">Não-binário</option>
+                <option value="Qualquer gênero">Qualquer gênero</option>
               </select>
             </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Faixa Etária
-              </label>
-              <select
-                value={formData.age_range}
-                onChange={(e) => setFormData(prev => ({ ...prev, age_range: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">Qualquer idade</option>
-                <option value="16-20">16-20 anos</option>
-                <option value="21-25">21-25 anos</option>
-                <option value="26-30">26-30 anos</option>
-                <option value="31-35">31-35 anos</option>
-                <option value="36-40">36-40 anos</option>
-                <option value="41+">41+ anos</option>
-              </select>
+          </div>
+
+          {/* Age Range */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Faixa Etária
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <input
+                  type="number"
+                  value={formData.age_min}
+                  onChange={(e) => setFormData(prev => ({ ...prev, age_min: e.target.value }))}
+                  min="13"
+                  max="100"
+                  placeholder="Idade mín."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <input
+                  type="number"
+                  value={formData.age_max}
+                  onChange={(e) => setFormData(prev => ({ ...prev, age_max: e.target.value }))}
+                  min="13"
+                  max="100"
+                  placeholder="Idade máx."
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                />
+              </div>
             </div>
+            <p className="text-sm text-gray-500 mt-1">
+              Ex: 20 a 45 anos. Deixe em branco para qualquer idade.
+            </p>
           </div>
 
           {/* Requirements */}

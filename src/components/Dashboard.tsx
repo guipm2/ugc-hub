@@ -57,6 +57,57 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
+    // Verificar se há dados do onboarding salvos localmente (fallback)
+    const checkOnboardingFallback = async () => {
+      if (!user) return;
+
+      try {
+        const fallbackData = localStorage.getItem('onboarding_fallback');
+        if (!fallbackData) return;
+
+        const parsed = JSON.parse(fallbackData);
+        
+        // Verificar se é do usuário atual e se tem menos de 24 horas
+        if (parsed.userId !== user.id) return;
+        
+        const savedTime = new Date(parsed.timestamp).getTime();
+        const now = new Date().getTime();
+        const hoursPassed = (now - savedTime) / (1000 * 60 * 60);
+        
+        if (hoursPassed > 24) {
+          // Dados muito antigos, remover
+          localStorage.removeItem('onboarding_fallback');
+          return;
+        }
+
+        console.log('💾 Encontrados dados do onboarding salvos localmente. Tentando salvar novamente...');
+        
+        // Tentar salvar novamente
+        const { error } = await supabase
+          .from('profiles')
+          .update({
+            ...parsed.data,
+            onboarding_completed: true,
+            onboarding_step: 4,
+            onboarding_completed_at: new Date().toISOString()
+          })
+          .eq('id', user.id);
+
+        if (error) {
+          console.error('❌ Ainda não foi possível salvar os dados:', error);
+          // Manter os dados para tentar novamente depois
+        } else {
+          console.log('✅ Dados do onboarding salvos com sucesso!');
+          localStorage.removeItem('onboarding_fallback');
+          
+          // Mostrar notificação de sucesso
+          alert('✅ Suas informações de cadastro foram salvas com sucesso!');
+        }
+      } catch (error) {
+        console.error('Erro ao processar fallback do onboarding:', error);
+      }
+    };
+
     const fetchApplications = async () => {
       if (!user) return;
 
@@ -221,6 +272,7 @@ const Dashboard = () => {
     };
 
     if (user) {
+      checkOnboardingFallback();
       fetchApplications();
       fetchUpcomingDeadlines();
     }

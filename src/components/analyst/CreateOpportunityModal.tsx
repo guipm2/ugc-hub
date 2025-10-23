@@ -38,7 +38,8 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
     niche: '',
     deadline: '',
     requirements: [''],
-    age_range: '',
+    age_min: '',
+    age_max: '',
     gender: ''
   });
 
@@ -108,6 +109,16 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
     const filteredRequirements = formData.requirements.filter(req => req.trim() !== '');
     const budget = calculateBudget();
     
+    // Construir a age_range a partir de age_min e age_max
+    let ageRange = '';
+    if (formData.age_min && formData.age_max) {
+      ageRange = `${formData.age_min}-${formData.age_max}`;
+    } else if (formData.age_min) {
+      ageRange = `${formData.age_min}+`;
+    } else if (formData.age_max) {
+      ageRange = `até ${formData.age_max}`;
+    }
+    
     const opportunityData = {
       title: formData.title,
       company: formData.company || 'Empresa não informada',
@@ -120,7 +131,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
       requirements: filteredRequirements,
       deadline: formData.deadline,
       status: 'ativo',
-      age_range: formData.age_range,
+      age_range: ageRange,
       gender: formData.gender
     };
 
@@ -366,24 +377,35 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Faixa Etária *
               </label>
-              <select
-                name="age_range"
-                value={formData.age_range}
-                onChange={handleInputChange}
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-              >
-                <option value="">Selecione a faixa etária</option>
-                <option value="16-20">16-20 anos</option>
-                <option value="21-25">21-25 anos</option>
-                <option value="26-30">26-30 anos</option>
-                <option value="31-35">31-35 anos</option>
-                <option value="36-40">36-40 anos</option>
-                <option value="41-45">41-45 anos</option>
-                <option value="46-50">46-50 anos</option>
-                <option value="50+">50+ anos</option>
-                <option value="Qualquer idade">Qualquer idade</option>
-              </select>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <input
+                    type="number"
+                    name="age_min"
+                    value={formData.age_min}
+                    onChange={handleInputChange}
+                    min="13"
+                    max="100"
+                    placeholder="Idade mín."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+                <div>
+                  <input
+                    type="number"
+                    name="age_max"
+                    value={formData.age_max}
+                    onChange={handleInputChange}
+                    min="13"
+                    max="100"
+                    placeholder="Idade máx."
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  />
+                </div>
+              </div>
+              <p className="text-sm text-gray-500 mt-1">
+                Ex: 20 a 45 anos. Deixe em branco para qualquer idade.
+              </p>
             </div>
 
             <div>
