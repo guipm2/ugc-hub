@@ -212,12 +212,33 @@ const Opportunities: React.FC = () => {
   const { navigate } = useRouter();
 
   const fetchOpportunities = useCallback(
-    async ({ silent = false }: { silent?: boolean } = {}) => {
+    async ({ silent = false, force = false }: { silent?: boolean; force?: boolean } = {}) => {
       if (!silent) {
         setLoading(true);
       }
 
       try {
+        if (!force) {
+          const cached = window.localStorage.getItem('creators-opportunities:cache');
+          if (cached) {
+            try {
+              const parsed = JSON.parse(cached) as {
+                updatedAt: string;
+                items: OpportunityCardData[];
+              };
+              if (Array.isArray(parsed?.items)) {
+                setOpportunities(parsed.items);
+                if (!silent) {
+                  setLoading(false);
+                }
+                return;
+              }
+            } catch (cacheError) {
+              console.warn('Não foi possível utilizar o cache de oportunidades:', cacheError);
+            }
+          }
+        }
+
         const [opportunitiesResponse, applicationsResponse] = await Promise.all([
           supabase
             .from('opportunities')
@@ -287,20 +308,29 @@ const Opportunities: React.FC = () => {
         });
 
         setOpportunities(sortOpportunities(formatted));
+        try {
+          window.localStorage.setItem(
+            'creators-opportunities:cache',
+            JSON.stringify({
+              updatedAt: new Date().toISOString(),
+              items: sortOpportunities(formatted)
+            })
+          );
+        } catch (cacheSaveError) {
+          console.warn('Não foi possível salvar o cache de oportunidades:', cacheSaveError);
+        }
       } catch (error) {
         console.error('Erro ao buscar oportunidades:', error);
         setOpportunities([]);
       } finally {
-        if (!silent) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     },
     [user]
   );
 
   useEffect(() => {
-    fetchOpportunities();
+    fetchOpportunities({ force: true });
   }, [fetchOpportunities]);
 
   useAutoRefresh(() => fetchOpportunities({ silent: true }), 20000, true);

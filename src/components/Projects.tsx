@@ -218,11 +218,36 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
     }
   }, [viewMode]);
 
-  const fetchProjects = useCallback(async () => {
+  const fetchProjects = useCallback(async ({ silent = false, force = false }: { silent?: boolean; force?: boolean } = {}) => {
     if (!user || fetching) return;
+
+    if (!silent) {
+      setLoading(true);
+    }
 
     setFetching(true);
     try {
+      if (!force && typeof window !== 'undefined') {
+        const cached = window.sessionStorage.getItem('creators-projects:cache');
+        if (cached) {
+          try {
+            const parsed = JSON.parse(cached) as {
+              updatedAt: string;
+              items: Project[];
+            };
+            if (Array.isArray(parsed?.items)) {
+              setProjects(parsed.items);
+              if (!silent) {
+                setLoading(false);
+              }
+              return;
+            }
+          } catch (cacheError) {
+            console.warn('Não foi possível utilizar o cache de projetos:', cacheError);
+          }
+        }
+      }
+
       // Buscar candidaturas aprovadas
       const { data: applications, error } = await supabase
         .from('opportunity_applications')
@@ -330,6 +355,19 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
       }
 
       setProjects(projectsData);
+      if (typeof window !== 'undefined') {
+        try {
+          window.sessionStorage.setItem(
+            'creators-projects:cache',
+            JSON.stringify({
+              updatedAt: new Date().toISOString(),
+              items: projectsData
+            })
+          );
+        } catch (cacheSaveError) {
+          console.warn('Não foi possível salvar o cache de projetos:', cacheSaveError);
+        }
+      }
     } catch (err) {
       console.error('❌ [PROJECTS] Erro geral ao buscar projetos:', err);
     } finally {
@@ -342,7 +380,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
     let mounted = true;
     
     if (user && !fetching) {
-      fetchProjects().then(() => {
+      fetchProjects({ force: true }).then(() => {
         if (!mounted) return;
         // Execução completa
       });
@@ -353,7 +391,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
     };
   }, [user, fetchProjects, fetching]);
 
-  useAutoRefresh(fetchProjects, 25000, Boolean(user));
+  useAutoRefresh(() => fetchProjects({ silent: true }), 25000, Boolean(user));
 
   const getProjectStatus = (deadline: string, deliverables?: Deliverable[]): 'em_andamento' | 'entregue' | 'aprovado' | 'atrasado' => {
     const deadlineDate = new Date(deadline);
@@ -517,7 +555,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
         setSelectedProject(prev => (prev ? updateProjectDeliverables(prev) : prev));
       }
 
-      await fetchProjects();
+  await fetchProjects({ silent: true, force: true });
 
       setShowUploadModal(null);
       setUploadFiles(null);

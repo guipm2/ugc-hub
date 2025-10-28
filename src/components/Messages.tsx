@@ -64,10 +64,12 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
   const { navigate } = useRouter();
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
-  const fetchProjectChats = useCallback(async () => {
+  const fetchProjectChats = useCallback(async ({ silent = false }: { silent?: boolean } = {}) => {
     if (!user) return;
 
-    setLoading(true);
+    if (!silent) {
+      setLoading(true);
+    }
 
     try {
       // Step 1: Get all conversations for this creator (replicando padrão do analista)
@@ -243,7 +245,9 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
     } catch (err) {
       console.error('❌ [MESSAGES] Erro ao buscar chats:', err);
     } finally {
-      setLoading(false);
+      if (!silent) {
+        setLoading(false);
+      }
     }
   }, [user]);
 
@@ -278,7 +282,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
     }
   }, [user, fetchProjectChats]);
 
-  useAutoRefresh(fetchProjectChats, 20000, Boolean(user));
+  useAutoRefresh(() => fetchProjectChats({ silent: true }), 20000, Boolean(user));
 
   const createConversationForProject = useCallback(async (projectId: string) => {
     try {
