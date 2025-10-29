@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
 import { isInstagramUrl, normalizeCompanyLink } from '../utils/formatters';
 import ModalPortal from './common/ModalPortal';
+import OpportunityImageGallery from './common/OpportunityImageGallery';
 
 interface OpportunityDetails {
   id: string;
@@ -324,6 +325,12 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                 </div>
               )}
             </div>
+
+            {/* Galeria de Imagens */}
+            <OpportunityImageGallery 
+              opportunityId={opportunityId}
+              className="glass-card p-6 md:p-8"
+            />
 
             <div className="glass-card p-6 md:p-8 space-y-6">
               <div className="glass-section-title mb-0">

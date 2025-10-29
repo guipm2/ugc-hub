@@ -22,6 +22,7 @@ interface OpportunityData {
   status: string;
   age_range: string;
   gender: string;
+  images?: File[]; // Adicionar imagens temporárias
 }
 
 const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose, onSubmit }) => {
@@ -42,6 +43,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
     age_max: '',
     gender: ''
   });
+  const [selectedImages, setSelectedImages] = useState<File[]>([]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
     setFormData({
@@ -132,7 +134,8 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
       deadline: formData.deadline,
       status: 'ativo',
       age_range: ageRange,
-      gender: formData.gender
+      gender: formData.gender,
+      images: selectedImages // Adicionar imagens selecionadas
     };
 
     onSubmit(opportunityData);
@@ -476,6 +479,68 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
                 <Plus className="h-4 w-4" />
                 Adicionar Requisito
               </button>
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Imagens da Oportunidade
+            </label>
+            <p className="text-sm text-gray-500 mb-3">
+              Adicione fotos dos produtos, da empresa ou relacionadas à oportunidade (opcional)
+            </p>
+            <div className="border-2 border-dashed border-gray-300 rounded-lg p-4">
+              <input
+                type="file"
+                accept="image/jpeg,image/png,image/webp"
+                multiple
+                onChange={(e) => {
+                  const files = Array.from(e.target.files || []);
+                  if (files.length + selectedImages.length > 10) {
+                    alert('Máximo de 10 imagens por oportunidade');
+                    return;
+                  }
+                  setSelectedImages(prev => [...prev, ...files]);
+                }}
+                className="hidden"
+                id="image-upload"
+              />
+              <label
+                htmlFor="image-upload"
+                className="flex flex-col items-center justify-center cursor-pointer py-4"
+              >
+                <Plus className="h-8 w-8 text-gray-400 mb-2" />
+                <span className="text-sm text-gray-600">
+                  Clique para selecionar imagens
+                </span>
+                <span className="text-xs text-gray-400 mt-1">
+                  JPEG, PNG ou WebP • Máx. 5MB • Até 10 imagens
+                </span>
+              </label>
+              
+              {selectedImages.length > 0 && (
+                <div className="mt-4 grid grid-cols-4 gap-2">
+                  {selectedImages.map((file, index) => (
+                    <div key={index} className="relative aspect-square group">
+                      <img
+                        src={URL.createObjectURL(file)}
+                        alt={`Preview ${index + 1}`}
+                        className="w-full h-full object-cover rounded-lg"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setSelectedImages(prev => prev.filter((_, i) => i !== index))}
+                        className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                      <div className="absolute bottom-1 left-1 px-2 py-1 bg-black/70 rounded text-xs text-white">
+                        {index + 1}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
           </div>

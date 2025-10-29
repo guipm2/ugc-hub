@@ -59,6 +59,7 @@ type NewOpportunityPayload = {
   status: string;
   age_range: string;
   gender: string;
+  images?: File[];
 };
 
 const OPPORTUNITY_CREATED_WEBHOOK_URL =
@@ -327,9 +328,11 @@ const OpportunityManagement: React.FC = () => {
     if (!profile) return;
 
     try {
+      const { images, ...opportunityDataWithoutImages } = opportunityData;
+      
       const sanitizedData = {
-        ...opportunityData,
-        company_link: normalizeCompanyLink(opportunityData.company_link)
+        ...opportunityDataWithoutImages,
+        company_link: normalizeCompanyLink(opportunityDataWithoutImages.company_link)
       };
       const { data, error } = await supabase
         .from('opportunities')
@@ -352,6 +355,52 @@ const OpportunityManagement: React.FC = () => {
           created_by: profile.id,
           candidates_count: 0
         });
+
+        // Upload de imagens se houver
+        if (images && images.length > 0) {
+          try {
+            // Importar dinamicamente as funções de upload
+            const { supabase: supabaseClient } = await import('../../lib/supabase');
+            const { createSquareThumbnail } = await import('../../utils/imageUtils');
+            
+            for (let i = 0; i < images.length; i++) {
+              const file = images[i];
+              const optimizedBlob = await createSquareThumbnail(file, 800);
+              const fileName = `${createdOpportunity.id}/${Date.now()}-${i}.webp`;
+              
+              const { error: uploadError } = await supabaseClient.storage
+                .from('opportunity-images')
+                .upload(fileName, optimizedBlob, {
+                  contentType: 'image/webp',
+                  cacheControl: '3600',
+                  upsert: false
+                });
+              
+              if (uploadError) {
+                console.error('Erro ao fazer upload da imagem:', uploadError);
+                continue;
+              }
+              
+              // Gerar URL assinada (válida por 1 ano)
+              const { data: signedUrlData } = await supabaseClient.storage
+                .from('opportunity-images')
+                .createSignedUrl(fileName, 31536000);
+              
+              const publicUrl = signedUrlData?.signedUrl || '';
+              console.log('URL assinada gerada:', publicUrl);
+              
+              await supabaseClient
+                .from('opportunity_images')
+                .insert({
+                  opportunity_id: createdOpportunity.id,
+                  image_url: publicUrl,
+                  display_order: i
+                });
+            }
+          } catch (imgError) {
+            console.error('Erro ao fazer upload de imagens:', imgError);
+          }
+        }
 
         setOpportunities(prev => [createdOpportunity, ...prev]);
         setShowCreateModal(false);

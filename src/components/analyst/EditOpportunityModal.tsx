@@ -3,6 +3,7 @@ import { X, Plus, Minus } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { normalizeCompanyLink } from '../../utils/formatters';
 import ModalPortal from '../common/ModalPortal';
+import OpportunityImageUpload from '../common/OpportunityImageUpload';
 
 interface Opportunity {
   id: string;
@@ -383,6 +384,14 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
                 ))}
               </div>
             )}
+          </div>
+
+          {/* Imagens da Oportunidade */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Imagens da Oportunidade
+            </label>
+            <OpportunityImageUpload opportunityId={opportunity.id} />
           </div>
 
           {/* Actions */}
