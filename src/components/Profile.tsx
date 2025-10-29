@@ -3,6 +3,7 @@ import { Edit, Save, Eye, EyeOff, Shield, Lock, AlertCircle, CheckCircle2, Loade
 import { useAuth } from '../hooks/useAuth';
 import { supabase } from '../lib/supabase';
 import { formatCEP, formatDocument, formatPhone } from '../utils/formatters';
+import AvatarUpload from './common/AvatarUpload';
 
 type DocumentType = 'cpf' | 'cnpj' | '';
 
@@ -32,6 +33,7 @@ interface ProfileFormData {
   document_number: string;
   phone: string;
   address: ProfileAddress;
+  avatar_url: string;
 }
 
 const DEFAULT_ADDRESS: ProfileAddress = {
@@ -90,7 +92,8 @@ const Profile = () => {
     document_type: '',
     document_number: '',
     phone: '',
-    address: { ...DEFAULT_ADDRESS }
+    address: { ...DEFAULT_ADDRESS },
+    avatar_url: ''
   });
   const [originalProfileData, setOriginalProfileData] = useState<ProfileFormData | null>(null);
   const [saving, setSaving] = useState(false);
@@ -139,7 +142,8 @@ const Profile = () => {
           document_type: (data.document_type as DocumentType) || '',
           document_number: data.document_number || '',
           phone: data.phone || '',
-          address: parsedAddress
+          address: parsedAddress,
+          avatar_url: data.avatar_url || ''
         });
         setOriginalProfileData(
           cloneProfileData({
@@ -157,7 +161,8 @@ const Profile = () => {
             document_type: (data.document_type as DocumentType) || '',
             document_number: data.document_number || '',
             phone: data.phone || '',
-            address: parsedAddress
+            address: parsedAddress,
+            avatar_url: data.avatar_url || ''
           })
         );
       }
@@ -333,7 +338,7 @@ const Profile = () => {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pt-6">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-semibold text-gray-900">Meu Perfil</h1>
@@ -399,10 +404,18 @@ const Profile = () => {
         <div className="xl:col-span-1">
           <div className="bg-white rounded-xl border border-gray-200 p-6">
             <div className="text-center">
-              <div className="w-24 h-24 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
-                {profileData.name ? profileData.name.charAt(0).toUpperCase() : 'U'}
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-1">
+              <AvatarUpload
+                currentAvatarUrl={profileData.avatar_url}
+                userName={profileData.name || profileData.full_name}
+                onUploadComplete={(url) => {
+                  setProfileData(prev => ({ ...prev, avatar_url: url }));
+                  setStatusMessage({ type: 'success', message: url ? 'Foto de perfil atualizada com sucesso!' : 'Foto de perfil removida com sucesso!' });
+                }}
+                onUploadError={(error) => {
+                  setStatusMessage({ type: 'error', message: error });
+                }}
+              />
+              <h3 className="text-lg font-semibold text-gray-900 mb-1 mt-4">
                 {profileData.full_name || profileData.name || 'Nome não informado'}
               </h3>
               <p className="text-gray-500 text-sm">

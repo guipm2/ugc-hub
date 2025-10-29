@@ -15,6 +15,7 @@ export interface Profile {
   terms_version?: string;
   onboarding_completed?: boolean;
   onboarding_step?: number;
+  avatar_url?: string | null;
 }
 
 interface AuthContextType {

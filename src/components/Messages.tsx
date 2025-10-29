@@ -5,6 +5,7 @@ import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
 import ModalPortal from './common/ModalPortal';
+import Avatar from './common/Avatar';
 
 interface ProjectChat {
   project_id: string;
@@ -19,6 +20,7 @@ interface ProjectChat {
   analyst: {
     name: string;
     company: string;
+    avatar_url?: string | null;
   } | null;
   conversation_id: string | null; // Conversation ID if exists
   last_message_at: string | null;
@@ -135,23 +137,26 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
         Array.from(analystConversations.values()).map(async (conv) => {
           // Get analyst info
           const { data: analystData } = await supabase
-            .from('analyst')
-            .select('name, email')
-            .eq('user_id', conv.analyst_id)
+            .from('analysts')
+            .select('name, email, avatar_url')
+            .eq('id', conv.analyst_id)
             .single();
 
           // Fallback to profiles if not found in analyst table
-          let analystInfo = analystData;
+          let analystInfo: { name: string; email: string; avatar_url?: string | null } = analystData || { name: 'Analista', email: '', avatar_url: null };
           if (!analystData) {
             const { data: profileData } = await supabase
               .from('profiles')
-              .select('full_name, email')
+              .select('full_name, email, avatar_url')
               .eq('id', conv.analyst_id)
               .single();
-            analystInfo = profileData ? {
-              name: profileData.full_name,
-              email: profileData.email
-            } : { name: 'Analista', email: '' };
+            if (profileData) {
+              analystInfo = {
+                name: profileData.full_name,
+                email: profileData.email,
+                avatar_url: profileData.avatar_url
+              };
+            }
           }
 
           // Get all approved projects between this creator and analyst
@@ -227,7 +232,11 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                 analyst_id: project.analyst_id,
                 created_by: project.created_by
               },
-              analyst: analystInfo,
+              analyst: {
+                name: analystInfo.name,
+                company: project.company,
+                avatar_url: analystInfo.avatar_url
+              },
               conversation_id: conv.id,
               last_message_at: conv.last_message_at,
               lastMessage: lastMessage,
@@ -684,30 +693,38 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
           >
             <ArrowLeft className="h-5 w-5" />
           </button>
-          <div className="flex-1 min-w-[220px] space-y-1">
-            <div className="flex flex-wrap items-center gap-3">
-              <h1 className="text-2xl font-semibold text-white truncate">{chatTitle}</h1>
-              {chatTags.length > 0 && (
-                <div className="flex flex-wrap items-center gap-2">
-                  {chatTags.slice(0, 2).map((tag) => (
-                    <span key={tag} className="glass-chip text-xs uppercase tracking-[0.22em]">
-                      #{tag}
-                    </span>
-                  ))}
-                  {chatTags.length > 2 && (
-                    <span className="glass-chip text-xs">+{chatTags.length - 2}</span>
-                  )}
-                </div>
+          <div className="flex items-center gap-4 flex-1 min-w-[220px]">
+            <Avatar
+              src={selectedProject.analyst?.avatar_url}
+              alt={selectedProject.analyst?.name || 'Analista'}
+              size="lg"
+              fallbackInitials={selectedProject.analyst?.name}
+            />
+            <div className="flex-1 space-y-1">
+              <div className="flex flex-wrap items-center gap-3">
+                <h1 className="text-2xl font-semibold text-white truncate">{chatTitle}</h1>
+                {chatTags.length > 0 && (
+                  <div className="flex flex-wrap items-center gap-2">
+                    {chatTags.slice(0, 2).map((tag) => (
+                      <span key={tag} className="glass-chip text-xs uppercase tracking-[0.22em]">
+                        #{tag}
+                      </span>
+                    ))}
+                    {chatTags.length > 2 && (
+                      <span className="glass-chip text-xs">+{chatTags.length - 2}</span>
+                    )}
+                  </div>
+                )}
+              </div>
+              <p className="text-sm text-gray-300">
+                {selectedProject.analyst?.name || 'Analista'} • {selectedProject.analyst?.company || 'Empresa'}
+              </p>
+              {selectedProject.opportunity?.title && (
+                <p className="text-xs text-gray-500">
+                  {selectedProject.opportunity.title}
+                </p>
               )}
             </div>
-            <p className="text-sm text-gray-300">
-              {selectedProject.analyst?.name || 'Analista'} • {selectedProject.analyst?.company || 'Empresa'}
-            </p>
-            {selectedProject.opportunity?.title && (
-              <p className="text-xs text-gray-500">
-                {selectedProject.opportunity.title}
-              </p>
-            )}
           </div>
           <div className="flex flex-wrap items-center gap-3">
             {!isProjectDeleted && (
@@ -846,8 +863,16 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
             {messages.map((message) => (
               <div
                 key={message.id}
-                className={`flex ${message.sender_type === 'creator' ? 'justify-end' : 'justify-start'}`}
+                className={`flex gap-3 ${message.sender_type === 'creator' ? 'justify-end' : 'justify-start'}`}
               >
+                {message.sender_type !== 'creator' && (
+                  <Avatar
+                    src={selectedProject.analyst?.avatar_url}
+                    alt={selectedProject.analyst?.name || 'Analista'}
+                    size="sm"
+                    fallbackInitials={selectedProject.analyst?.name}
+                  />
+                )}
                 <div
                   className={`max-w-xs lg:max-w-md rounded-2xl px-4 py-3 shadow-[0_18px_40px_-24px_rgba(16,40,120,0.55)] ${
                     message.sender_type === 'creator'
@@ -866,6 +891,14 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                     {formatMessageTime(message.created_at)}
                   </p>
                 </div>
+                {message.sender_type === 'creator' && (
+                  <Avatar
+                    src={user?.user_metadata?.avatar_url}
+                    alt="Você"
+                    size="sm"
+                    fallbackInitials={user?.user_metadata?.name || user?.email}
+                  />
+                )}
               </div>
             ))}
             <div ref={messagesEndRef} />
@@ -983,14 +1016,12 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
               >
                 <div className="flex items-center justify-between gap-4">
                   <div className="flex items-center gap-4">
-                    <div className="relative flex h-14 w-14 items-center justify-center overflow-hidden rounded-2xl border border-white/12 bg-white/10">
-                      <img
-                        src="https://images.pexels.com/photos/3762800/pexels-photo-3762800.jpeg?auto=compress&cs=tinysrgb&w=50&h=50&fit=crop"
-                        alt={projectChat.analyst?.company || 'Empresa'}
-                        className="h-full w-full object-cover opacity-90"
-                      />
-                      <div className="absolute inset-0 rounded-2xl border border-white/15 opacity-50" />
-                    </div>
+                    <Avatar
+                      src={projectChat.analyst?.avatar_url}
+                      alt={projectChat.analyst?.name || 'Analista'}
+                      size="xl"
+                      fallbackInitials={projectChat.analyst?.name}
+                    />
                     <div className="flex-1 min-w-0 space-y-2">
                       <div className="flex items-center gap-3">
                         <h3 className="text-base font-semibold text-white truncate">{displayTitle}</h3>

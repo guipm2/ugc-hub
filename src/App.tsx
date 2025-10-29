@@ -9,6 +9,7 @@ import CreatorRouter from './components/creator/CreatorRouter';
 import CreatorOnboarding from './components/CreatorOnboarding';
 import GlobalSearch from './components/GlobalSearch';
 import NotificationDropdown from './components/NotificationDropdown';
+import Avatar from './components/common/Avatar';
 import CreatorLoginPage from './components/auth/CreatorLoginPage';
 import AnalystLoginPage from './components/auth/AnalystLoginPage';
 import EmailConfirmationPage from './components/auth/EmailConfirmationPage';
@@ -329,9 +330,12 @@ function CreatorApp() {
                 sidebarExpanded ? 'justify-start gap-3 px-4 py-3' : 'justify-center px-0 py-2'
               }`}
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] text-sm font-semibold text-white">
-                {user.user_metadata?.name?.charAt(0) || user.email?.charAt(0).toUpperCase()}
-              </div>
+              <Avatar
+                src={profile?.avatar_url}
+                alt={user.user_metadata?.name || user.email || 'User'}
+                size="sm"
+                fallbackInitials={user.user_metadata?.name || user.email}
+              />
               <div
                 className={`min-w-0 transition-all duration-300 ${
                   sidebarExpanded ? 'opacity-100 ml-2' : 'pointer-events-none opacity-0 max-w-0 ml-0 overflow-hidden'
@@ -405,9 +409,12 @@ function CreatorApp() {
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
                 className="group flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-2 transition hover:bg-white/10"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] text-sm font-semibold text-white">
-                  {user.user_metadata?.name?.charAt(0) || user.email?.charAt(0).toUpperCase()}
-                </div>
+                <Avatar
+                  src={profile?.avatar_url}
+                  alt={user.user_metadata?.name || user.email || 'User'}
+                  size="sm"
+                  fallbackInitials={user.user_metadata?.name || user.email}
+                />
                 <div className="text-left">
                   <div className="text-sm font-semibold text-white">
                     {user.user_metadata?.name || user.email}
@@ -456,7 +463,7 @@ function CreatorApp() {
           </div>
         </header>
 
-        <main className="relative z-10 mt-20 px-6 pb-10">
+        <main className="relative z-10 mt-24 px-6 pb-10">
           <CreatorRouter
             onOpenConversation={handleOpenConversation}
             selectedConversationId={selectedProjectId}
