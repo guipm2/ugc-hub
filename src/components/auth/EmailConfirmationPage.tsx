@@ -119,23 +119,26 @@ const EmailConfirmationPage: React.FC = () => {
 
         <ConfirmationStatusMessage state={confirmationState} errorMessage={errorMessage} />
 
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-          <button
-            type="button"
-            onClick={() => handleNavigate('/login/analysts')}
-            className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-transparent hover:bg-gradient-to-r hover:from-[#4A5BFF] hover:via-[#6E4FFF] hover:to-[#B249FF] hover:shadow-[0_30px_60px_-25px_rgba(74,91,255,0.65)]"
-          >
-            <LogIn className="h-4 w-4 text-[#A69CFF] group-hover:text-white" />
-            Sou analista
-          </button>
-          <button
-            type="button"
-            onClick={() => handleNavigate('/login/creators')}
-            className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-6 py-3 text-sm font-semibold text-white transition hover:border-transparent hover:bg-gradient-to-r hover:from-[#FF6CAB] hover:via-[#736FFF] hover:to-[#4BE1EC] hover:shadow-[0_30px_60px_-25px_rgba(255,108,171,0.55)]"
-          >
-            <LogIn className="h-4 w-4 text-[#FF9BCF] group-hover:text-white" />
-            Sou criador
-          </button>
+        <div className="flex justify-center">
+          {accountType === 'analyst' ? (
+            <button
+              type="button"
+              onClick={() => handleNavigate('/login/analysts')}
+              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-semibold text-white transition hover:border-transparent hover:bg-gradient-to-r hover:from-[#4A5BFF] hover:via-[#6E4FFF] hover:to-[#B249FF] hover:shadow-[0_30px_60px_-25px_rgba(74,91,255,0.65)]"
+            >
+              <LogIn className="h-5 w-5 text-[#A69CFF] group-hover:text-white" />
+              Acessar como analista
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={() => handleNavigate('/login/creators')}
+              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-semibold text-white transition hover:border-transparent hover:bg-gradient-to-r hover:from-[#FF6CAB] hover:via-[#736FFF] hover:to-[#4BE1EC] hover:shadow-[0_30px_60px_-25px_rgba(255,108,171,0.55)]"
+            >
+              <LogIn className="h-5 w-5 text-[#FF9BCF] group-hover:text-white" />
+              Acessar como criador
+            </button>
+          )}
         </div>
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.06] px-6 py-5 text-sm text-slate-300">
