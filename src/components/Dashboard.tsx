@@ -3,6 +3,7 @@ import { Eye, Calendar, Award, Target, Clock, ArrowRight, TrendingUp, DollarSign
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
+import { OnboardingRecoveryBanner } from './common/OnboardingRecoveryBanner';
 
 interface Application {
   id: string;
@@ -367,6 +368,9 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-10">
+      {/* Banner de recuperação de dados do onboarding */}
+      <OnboardingRecoveryBanner />
+
       <div className="glass-card p-6 md:p-8 flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-3">
           <span className="badge-pill">Visão geral</span>

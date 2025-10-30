@@ -529,6 +529,10 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     if (user?.email) {
       setData(prev => ({ ...prev, email: user.email || '' }));
     }
+
+    // 🔥 WARM-UP: Acordar o Supabase assim que o componente montar
+    // Isso é crítico para planos gratuitos que entram em cold start
+    warmupSupabase();
   }, [user]);
 
   const handleNicheToggle = (niche: string) => {
@@ -629,30 +633,55 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     setCurrentStep(prev => prev - 1);
   };
 
-  // Função auxiliar para retry com backoff exponencial
+  // Função para "acordar" o Supabase com uma query leve
+  const warmupSupabase = async (): Promise<void> => {
+    try {
+      console.log('🔥 Aquecendo conexão com Supabase...');
+      // Query simples e leve apenas para estabelecer conexão
+      await supabase.from('profiles').select('id').limit(1).single();
+    } catch (error) {
+      // Ignora erros - o objetivo é apenas acordar o banco
+      console.log('Warmup completado (erro esperado):', error);
+    }
+  };
+
+  // Função auxiliar para retry com backoff exponencial OTIMIZADO PARA COLD START
   const retryWithBackoff = async <T,>(
     fn: () => Promise<T>,
-    maxRetries = 3,
-    baseDelay = 1000
+    maxRetries = 5, // Aumentado de 3 para 5 tentativas
+    baseDelay = 2000 // Aumentado de 1s para 2s
   ): Promise<T> => {
     let lastError: Error | null = null;
     
     for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        // Adicionar timeout de 10 segundos para cada tentativa
+        // Timeout progressivo: primeira tentativa 30s, depois 20s, depois 15s
+        const timeoutDuration = attempt === 0 ? 30000 : attempt === 1 ? 20000 : 15000;
+        
         const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout')), 10000);
+          setTimeout(() => reject(new Error('Request timeout')), timeoutDuration);
         });
         
+        console.log(`⏱️ Tentativa ${attempt + 1}/${maxRetries} (timeout: ${timeoutDuration/1000}s)`);
+        
         const result = await Promise.race([fn(), timeoutPromise]);
+        
+        console.log(`✅ Tentativa ${attempt + 1} bem-sucedida!`);
         return result as T;
       } catch (error) {
         lastError = error as Error;
-        console.warn(`Tentativa ${attempt + 1}/${maxRetries} falhou:`, error);
+        const isTimeout = (error as Error).message.includes('timeout');
+        
+        console.warn(
+          `⚠️ Tentativa ${attempt + 1}/${maxRetries} falhou:`, 
+          isTimeout ? 'Timeout' : (error as Error).message
+        );
         
         // Se não for a última tentativa, aguardar antes de tentar novamente
         if (attempt < maxRetries - 1) {
-          const delay = baseDelay * Math.pow(2, attempt); // Backoff exponencial
+          // Backoff exponencial mais agressivo para cold start
+          const delay = baseDelay * Math.pow(2, attempt);
+          console.log(`⏳ Aguardando ${delay/1000}s antes da próxima tentativa...`);
           await new Promise(resolve => setTimeout(resolve, delay));
         }
       }
@@ -667,7 +696,11 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     setLoading(true);
     
     try {
-      // Validar dados antes de enviar
+      // 🔥 Fazer warmup novamente antes do save para garantir que a conexão está ativa
+      console.log('🔥 Garantindo que Supabase está acordado antes de salvar...');
+      await warmupSupabase();
+      
+      // Validar e preparar dados antes de enviar
       const updateData = {
         birth_date: data.birth_date || null,
         instagram_url: data.instagram_url?.trim() || null,
@@ -678,7 +711,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         niches: Array.isArray(data.niches) ? data.niches : [],
         pix_key: data.pix_key?.trim() || null,
         full_name: data.full_name?.trim() || null,
-        phone: data.phone ? stripFormatting(data.phone) : null, // Remove formatação antes de salvar
+        phone: data.phone ? stripFormatting(data.phone) : null,
         email: data.email?.trim() || null,
         address: data.address || null,
         document_type: data.document_type || null,
@@ -688,9 +721,14 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         onboarding_completed_at: new Date().toISOString()
       };
 
-      console.log('📤 Enviando dados do onboarding:', { userId: user.id, dataKeys: Object.keys(updateData) });
+      console.log('📤 Enviando dados do onboarding:', { 
+        userId: user.id, 
+        dataKeys: Object.keys(updateData),
+        hasAddress: !!updateData.address,
+        hasNiches: updateData.niches.length > 0
+      });
 
-      // Tentar salvar com retry
+      // Tentar salvar com retry otimizado para cold start
       await retryWithBackoff(async () => {
         const { data: result, error } = await supabase
           .from('profiles')
@@ -706,9 +744,10 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
 
         console.log('✅ Onboarding salvo com sucesso:', result);
         return result;
-      });
+      }, 5, 2000); // 5 tentativas com delay base de 2s
 
       // Sucesso - completar onboarding
+      console.log('🎉 Onboarding completado com sucesso! Redirecionando...');
       onComplete();
       
     } catch (error) {
@@ -728,26 +767,36 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         console.error('Erro ao salvar fallback:', storageError);
       }
       
-      // Mostrar mensagem amigável ao usuário
+      // Mostrar mensagem amigável ao usuário com informações sobre cold start
       const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
       const isTimeout = errorMessage.includes('timeout');
-      const is400 = errorMessage.includes('400') || errorMessage.includes('Bad Request');
       
-      let userMessage = 'Não foi possível salvar suas informações no momento.\n\n';
+      let userMessage = '⚠️ Não conseguimos salvar suas informações.\n\n';
       
       if (isTimeout) {
-        userMessage += 'A conexão está demorando muito. Verifique sua internet e tente novamente.';
-      } else if (is400) {
-        userMessage += 'Alguns dados podem estar em formato inválido. Por favor, revise os campos e tente novamente.\n\nSe o problema persistir, entre em contato com o suporte.';
+        userMessage += '🕒 POSSÍVEL CAUSA: O servidor está demorando para responder.\n\n';
+        userMessage += 'Isso pode acontecer quando:\n';
+        userMessage += '• É o primeiro acesso do dia (servidor em modo economia)\n';
+        userMessage += '• Sua conexão está lenta\n';
+        userMessage += '• O servidor está sobrecarregado\n\n';
+        userMessage += '💡 SOLUÇÕES:\n';
+        userMessage += '1. Aguarde 30 segundos e tente novamente (o servidor já deve estar ativo)\n';
+        userMessage += '2. Verifique sua conexão com internet\n';
+        userMessage += '3. Tente em outro navegador\n\n';
+        userMessage += '✅ Seus dados foram salvos localmente e você pode:\n';
+        userMessage += '• Clicar em CANCELAR e tentar novamente em instantes\n';
+        userMessage += '• Clicar em OK para acessar o dashboard (você pode completar depois)';
       } else {
-        userMessage += 'Ocorreu um erro inesperado. Suas informações foram salvas temporariamente e você poderá completar o cadastro depois.\n\nDeseja continuar para o dashboard mesmo assim?';
+        userMessage += `Erro técnico: ${errorMessage}\n\n`;
+        userMessage += 'Suas informações foram salvas temporariamente.\n';
+        userMessage += 'Você pode completar o cadastro depois em "Configurações".\n\n';
+        userMessage += 'Deseja continuar para o dashboard?';
       }
       
       // Perguntar ao usuário se quer continuar
-      const shouldContinue = confirm(userMessage + '\n\nContinuar para o dashboard?');
+      const shouldContinue = confirm(userMessage);
       
       if (shouldContinue) {
-        // Marcar que o onboarding está incompleto mas permitir acesso
         console.log('⚠️ Usuário optou por continuar sem completar o onboarding');
         
         // Tentar marcar apenas o onboarding_step sem os outros dados
@@ -755,7 +804,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
           await supabase
             .from('profiles')
             .update({ 
-              onboarding_step: 3, // Não marcar como completo
+              onboarding_step: 3,
               onboarding_completed: false 
             })
             .eq('id', user.id);
@@ -764,8 +813,10 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         }
         
         onComplete();
+      } else {
+        // Se cancelou, mostrar dica
+        alert('💡 DICA: Aguarde 30-60 segundos para o servidor "acordar" e tente novamente.\n\nSe o problema persistir, entre em contato com o suporte.');
       }
-      // Se não quiser continuar, apenas remove o loading para permitir nova tentativa
       
     } finally {
       setLoading(false);
