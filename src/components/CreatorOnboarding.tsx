@@ -697,8 +697,8 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     
     try {
       // 🔥 Fazer warmup novamente antes do save para garantir que a conexão está ativa
-      console.log('🔥 Garantindo que Supabase está acordado antes de salvar...');
-      await warmupSupabase();
+      console.log('111- 🔥 Garantindo que Supabase está acordado antes de salvar...');
+      // await warmupSupabase();
       
       // Validar e preparar dados antes de enviar
       const updateData = {
