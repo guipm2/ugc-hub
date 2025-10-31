@@ -646,49 +646,49 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
   };
 
   // Função auxiliar para retry com backoff exponencial OTIMIZADO PARA COLD START
-  const retryWithBackoff = async <T,>(
-    fn: () => Promise<T>,
-    maxRetries = 5, // Aumentado de 3 para 5 tentativas
-    baseDelay = 2000 // Aumentado de 1s para 2s
-  ): Promise<T> => {
-    let lastError: Error | null = null;
+  // const retryWithBackoff = async <T,>(
+  //   fn: () => Promise<T>,
+  //   maxRetries = 5, // Aumentado de 3 para 5 tentativas
+  //   baseDelay = 2000 // Aumentado de 1s para 2s
+  // ): Promise<T> => {
+  //   let lastError: Error | null = null;
     
-    for (let attempt = 0; attempt < maxRetries; attempt++) {
-      try {
-        // Timeout progressivo: primeira tentativa 30s, depois 20s, depois 15s
-        const timeoutDuration = attempt === 0 ? 30000 : attempt === 1 ? 20000 : 15000;
+  //   for (let attempt = 0; attempt < maxRetries; attempt++) {
+  //     try {
+  //       // Timeout progressivo: primeira tentativa 30s, depois 20s, depois 15s
+  //       const timeoutDuration = attempt === 0 ? 30000 : attempt === 1 ? 20000 : 15000;
         
-        const timeoutPromise = new Promise<never>((_, reject) => {
-          setTimeout(() => reject(new Error('Request timeout')), timeoutDuration);
-        });
+  //       const timeoutPromise = new Promise<never>((_, reject) => {
+  //         setTimeout(() => reject(new Error('Request timeout')), timeoutDuration);
+  //       });
         
-        console.log(`⏱️ Tentativa ${attempt + 1}/${maxRetries} (timeout: ${timeoutDuration/1000}s)`);
+  //       console.log(`⏱️ Tentativa ${attempt + 1}/${maxRetries} (timeout: ${timeoutDuration/1000}s)`);
         
-        const result = await Promise.race([fn(), timeoutPromise]);
+  //       const result = await Promise.race([fn(), timeoutPromise]);
         
-        console.log(`✅ Tentativa ${attempt + 1} bem-sucedida!`);
-        return result as T;
-      } catch (error) {
-        lastError = error as Error;
-        const isTimeout = (error as Error).message.includes('timeout');
+  //       console.log(`✅ Tentativa ${attempt + 1} bem-sucedida!`);
+  //       return result as T;
+  //     } catch (error) {
+  //       lastError = error as Error;
+  //       const isTimeout = (error as Error).message.includes('timeout');
         
-        console.warn(
-          `⚠️ Tentativa ${attempt + 1}/${maxRetries} falhou:`, 
-          isTimeout ? 'Timeout' : (error as Error).message
-        );
+  //       console.warn(
+  //         `⚠️ Tentativa ${attempt + 1}/${maxRetries} falhou:`, 
+  //         isTimeout ? 'Timeout' : (error as Error).message
+  //       );
         
-        // Se não for a última tentativa, aguardar antes de tentar novamente
-        if (attempt < maxRetries - 1) {
-          // Backoff exponencial mais agressivo para cold start
-          const delay = baseDelay * Math.pow(2, attempt);
-          console.log(`⏳ Aguardando ${delay/1000}s antes da próxima tentativa...`);
-          await new Promise(resolve => setTimeout(resolve, delay));
-        }
-      }
-    }
+  //       // Se não for a última tentativa, aguardar antes de tentar novamente
+  //       if (attempt < maxRetries - 1) {
+  //         // Backoff exponencial mais agressivo para cold start
+  //         const delay = baseDelay * Math.pow(2, attempt);
+  //         console.log(`⏳ Aguardando ${delay/1000}s antes da próxima tentativa...`);
+  //         await new Promise(resolve => setTimeout(resolve, delay));
+  //       }
+  //     }
+  //   }
     
-    throw lastError || new Error('Todas as tentativas falharam');
-  };
+  //   throw lastError || new Error('Todas as tentativas falharam');
+  // };
 
   const handleComplete = async () => {
     if (!validateStep(3, true) || !user?.id) return;
@@ -728,23 +728,30 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         hasNiches: updateData.niches.length > 0
       });
 
-      // Tentar salvar com retry otimizado para cold start
-      await retryWithBackoff(async () => {
-        const { data: result, error } = await supabase
+       await supabase
           .from('profiles')
           .update(updateData)
           .eq('id', user.id)
           .select()
           .single();
 
-        if (error) {
-          console.error('❌ Erro do Supabase:', error);
-          throw error;
-        }
+      // Tentar salvar com retry otimizado para cold start
+      // await retryWithBackoff(async () => {
+      //   const { data: result, error } = await supabase
+      //     .from('profiles')
+      //     .update(updateData)
+      //     .eq('id', user.id)
+      //     .select()
+      //     .single();
 
-        console.log('✅ Onboarding salvo com sucesso:', result);
-        return result;
-      }, 5, 2000); // 5 tentativas com delay base de 2s
+      //   if (error) {
+      //     console.error('❌ Erro do Supabase:', error);
+      //     throw error;
+      //   }
+
+      //   console.log('✅ Onboarding salvo com sucesso:', result);
+      //   return result;
+      // }, 5, 2000); // 5 tentativas com delay base de 2s
 
       // Sucesso - completar onboarding
       console.log('🎉 Onboarding completado com sucesso! Redirecionando...');
