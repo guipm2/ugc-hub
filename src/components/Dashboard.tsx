@@ -4,6 +4,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
 import { OnboardingRecoveryBanner } from './common/OnboardingRecoveryBanner';
+import { IncompleteDataBanner } from './common/IncompleteDataBanner';
 
 interface Application {
   id: string;
@@ -368,6 +369,9 @@ const Dashboard = () => {
 
   return (
     <div className="space-y-10">
+      {/* Banner de dados incompletos (tem prioridade sobre recovery) */}
+      <IncompleteDataBanner />
+      
       {/* Banner de recuperação de dados do onboarding */}
       <OnboardingRecoveryBanner />
 

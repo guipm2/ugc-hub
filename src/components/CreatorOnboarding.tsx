@@ -695,10 +695,15 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
 
     setLoading(true);
     
+    // Timeout de segurança para evitar loading infinito
+    const safetyTimeout = setTimeout(() => {
+      console.error('⏰ Timeout de segurança atingido - forçando fim do loading');
+      setLoading(false);
+      alert('A operação está demorando muito. Por favor, verifique sua conexão e tente novamente.');
+    }, 60000); // 60 segundos de timeout máximo
+    
     try {
-      // 🔥 Fazer warmup novamente antes do save para garantir que a conexão está ativa
-      console.log('111- 🔥 Garantindo que Supabase está acordado antes de salvar...');
-      // await warmupSupabase();
+      console.log('🔥 Iniciando salvamento do onboarding...');
       
       // Validar e preparar dados antes de enviar
       const updateData = {
@@ -728,30 +733,20 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         hasNiches: updateData.niches.length > 0
       });
 
-       await supabase
-          .from('profiles')
-          .update(updateData)
-          .eq('id', user.id)
-          .select()
-          .single();
+      // Salvar dados do onboarding
+      const { data: result, error: saveError } = await supabase
+        .from('profiles')
+        .update(updateData)
+        .eq('id', user.id)
+        .select()
+        .single();
 
-      // Tentar salvar com retry otimizado para cold start
-      // await retryWithBackoff(async () => {
-      //   const { data: result, error } = await supabase
-      //     .from('profiles')
-      //     .update(updateData)
-      //     .eq('id', user.id)
-      //     .select()
-      //     .single();
+      if (saveError) {
+        console.error('❌ Erro do Supabase ao salvar:', saveError);
+        throw saveError;
+      }
 
-      //   if (error) {
-      //     console.error('❌ Erro do Supabase:', error);
-      //     throw error;
-      //   }
-
-      //   console.log('✅ Onboarding salvo com sucesso:', result);
-      //   return result;
-      // }, 5, 2000); // 5 tentativas com delay base de 2s
+      console.log('✅ Onboarding salvo com sucesso:', result);
 
       // Sucesso - completar onboarding
       console.log('🎉 Onboarding completado com sucesso! Redirecionando...');
@@ -774,58 +769,69 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         console.error('Erro ao salvar fallback:', storageError);
       }
       
-      // Mostrar mensagem amigável ao usuário com informações sobre cold start
-      const errorMessage = error instanceof Error ? error.message : 'Erro desconhecido';
-      const isTimeout = errorMessage.includes('timeout');
+      // SOLUÇÃO DE CONTORNO: Marcar onboarding como completo mesmo com erro
+      // Isso libera o acesso ao dashboard, mas com flag de dados incompletos
+      console.log('🔄 Tentando liberar acesso ao dashboard com dados pendentes...');
       
-      let userMessage = '⚠️ Não conseguimos salvar suas informações.\n\n';
-      
-      if (isTimeout) {
-        userMessage += '🕒 POSSÍVEL CAUSA: O servidor está demorando para responder.\n\n';
-        userMessage += 'Isso pode acontecer quando:\n';
-        userMessage += '• É o primeiro acesso do dia (servidor em modo economia)\n';
-        userMessage += '• Sua conexão está lenta\n';
-        userMessage += '• O servidor está sobrecarregado\n\n';
-        userMessage += '💡 SOLUÇÕES:\n';
-        userMessage += '1. Aguarde 30 segundos e tente novamente (o servidor já deve estar ativo)\n';
-        userMessage += '2. Verifique sua conexão com internet\n';
-        userMessage += '3. Tente em outro navegador\n\n';
-        userMessage += '✅ Seus dados foram salvos localmente e você pode:\n';
-        userMessage += '• Clicar em CANCELAR e tentar novamente em instantes\n';
-        userMessage += '• Clicar em OK para acessar o dashboard (você pode completar depois)';
-      } else {
-        userMessage += `Erro técnico: ${errorMessage}\n\n`;
-        userMessage += 'Suas informações foram salvas temporariamente.\n';
-        userMessage += 'Você pode completar o cadastro depois em "Configurações".\n\n';
-        userMessage += 'Deseja continuar para o dashboard?';
-      }
-      
-      // Perguntar ao usuário se quer continuar
-      const shouldContinue = confirm(userMessage);
-      
-      if (shouldContinue) {
-        console.log('⚠️ Usuário optou por continuar sem completar o onboarding');
-        
-        // Tentar marcar apenas o onboarding_step sem os outros dados
-        try {
-          await supabase
-            .from('profiles')
-            .update({ 
-              onboarding_step: 3,
-              onboarding_completed: false 
-            })
-            .eq('id', user.id);
-        } catch (stepError) {
-          console.error('Erro ao atualizar step:', stepError);
+      try {
+        const { error: unlockError } = await supabase
+          .from('profiles')
+          .update({ 
+            onboarding_completed: true, // Libera acesso
+            onboarding_step: 4,
+            onboarding_completed_at: new Date().toISOString(),
+            // Flag para indicar que dados estão incompletos
+            onboarding_data_incomplete: true
+          })
+          .eq('id', user.id);
+
+        if (unlockError) {
+          console.error('❌ Erro ao liberar acesso:', unlockError);
+          // Se nem isso funcionar, mostra mensagem e mantém na tela
+          alert(
+            '❌ Não foi possível completar o cadastro no momento.\n\n' +
+            'Por favor:\n' +
+            '1. Verifique sua conexão com internet\n' +
+            '2. Aguarde alguns instantes\n' +
+            '3. Tente novamente\n\n' +
+            'Se o problema persistir, entre em contato com o suporte.'
+          );
+          return; // Para aqui, não redireciona
         }
+
+        console.log('✅ Acesso liberado com dados pendentes');
         
+        // Mostrar mensagem informativa
+        alert(
+          '⚠️ Acesso Liberado com Ressalvas\n\n' +
+          'Houve um problema ao salvar algumas informações do seu cadastro.\n\n' +
+          'Você já pode acessar a plataforma, mas IMPORTANTE:\n\n' +
+          '📋 Acesse "Configurações da Conta" e complete/revise seus dados:\n' +
+          '   • Dados pessoais\n' +
+          '   • Informações bancárias (PIX)\n' +
+          '   • Documentos e endereço\n\n' +
+          'Isso é necessário para:\n' +
+          '   ✓ Candidatar-se a oportunidades\n' +
+          '   ✓ Receber pagamentos\n' +
+          '   ✓ Assinar contratos\n\n' +
+          'Clique em OK para ir ao dashboard.'
+        );
+        
+        // Redireciona para dashboard (mesmo com dados incompletos)
         onComplete();
-      } else {
-        // Se cancelou, mostrar dica
-        alert('💡 DICA: Aguarde 30-60 segundos para o servidor "acordar" e tente novamente.\n\nSe o problema persistir, entre em contato com o suporte.');
+        
+      } catch (unlockError) {
+        console.error('❌ Erro crítico ao tentar liberar acesso:', unlockError);
+        alert(
+          '❌ Erro Crítico\n\n' +
+          'Não foi possível completar o cadastro.\n\n' +
+          'Por favor, tente novamente em alguns minutos.\n' +
+          'Se o problema persistir, entre em contato com o suporte.'
+        );
       }
       
     } finally {
+      clearTimeout(safetyTimeout);
       setLoading(false);
     }
   };

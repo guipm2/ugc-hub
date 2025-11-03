@@ -15,6 +15,7 @@ export interface Profile {
   terms_version?: string;
   onboarding_completed?: boolean;
   onboarding_step?: number;
+  onboarding_data_incomplete?: boolean;
   avatar_url?: string | null;
 }
 
