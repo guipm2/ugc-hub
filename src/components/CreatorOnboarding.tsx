@@ -698,6 +698,9 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     // 🔒 Flag para evitar race condition entre timeout e query
     let operationCompleted = false;
     
+    // ⏱️ TELEMETRIA: Marcar tempo de início (fora do try para capturar em catch)
+    const startTime = performance.now();
+    
     // Timeout de segurança para evitar loading infinito
     const safetyTimeout = setTimeout(() => {
       if (!operationCompleted) {
@@ -710,7 +713,12 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     try {
       console.log('🔥 Iniciando salvamento do onboarding...', {
         userId: user.id,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        // 📊 TELEMETRIA: Informações do ambiente
+        userAgent: navigator.userAgent,
+        connection: (navigator as { connection?: { effectiveType?: string } }).connection?.effectiveType || 'unknown',
+        platform: navigator.platform,
+        onLine: navigator.onLine
       });
       
       // 🛡️ Validar que user.id ainda está disponível (prevenir expiração de token)
@@ -747,7 +755,11 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         emailProvided: !!updateData.email
       });
 
+      // ⏱️ TELEMETRIA: Tempo antes da query
+      console.log(`⏱️ Tempo de preparação: ${(performance.now() - startTime).toFixed(2)}ms`);
+
       // 🔥 Salvar dados do onboarding com timeout explícito e tratamento de erros específicos
+      const queryStartTime = performance.now();
       const { data: result, error: saveError } = await Promise.race([
         supabase
           .from('profiles')
@@ -759,6 +771,10 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
           setTimeout(() => reject(new Error('Database timeout')), 60000)
         )
       ]);
+
+      // ⏱️ TELEMETRIA: Tempo da query
+      const queryDuration = performance.now() - queryStartTime;
+      console.log(`⏱️ Tempo da query: ${queryDuration.toFixed(2)}ms (${(queryDuration / 1000).toFixed(2)}s)`);
 
       // 🛡️ Verificar tipos específicos de erro do Supabase
       if (saveError) {
@@ -804,6 +820,10 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
 
       console.log('✅ Onboarding salvo com sucesso:', result);
       
+      // ⏱️ TELEMETRIA: Tempo total
+      const totalDuration = performance.now() - startTime;
+      console.log(`⏱️ Tempo total da operação: ${totalDuration.toFixed(2)}ms (${(totalDuration / 1000).toFixed(2)}s)`);
+      
       // 🔒 Marcar operação como completa ANTES de chamar onComplete
       operationCompleted = true;
       clearTimeout(safetyTimeout);
@@ -820,7 +840,14 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
       console.error('❌ Erro ao salvar onboarding:', {
         error,
         message: error instanceof Error ? error.message : 'Erro desconhecido',
-        userId: user?.id
+        userId: user?.id,
+        // 📊 TELEMETRIA: Informações do erro
+        errorName: error instanceof Error ? error.name : 'Unknown',
+        errorStack: error instanceof Error ? error.stack : undefined,
+        timeSinceStart: `${((performance.now() - startTime) / 1000).toFixed(2)}s`,
+        // Informações de ambiente no momento do erro
+        onLineNow: navigator.onLine,
+        connectionNow: (navigator as { connection?: { effectiveType?: string } }).connection?.effectiveType || 'unknown'
       });
       
       // Salvar dados localmente como fallback
