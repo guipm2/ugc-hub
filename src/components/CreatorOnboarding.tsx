@@ -695,15 +695,28 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
 
     setLoading(true);
     
+    // 🔒 Flag para evitar race condition entre timeout e query
+    let operationCompleted = false;
+    
     // Timeout de segurança para evitar loading infinito
     const safetyTimeout = setTimeout(() => {
-      console.error('⏰ Timeout de segurança atingido - forçando fim do loading');
-      setLoading(false);
-      alert('A operação está demorando muito. Por favor, verifique sua conexão e tente novamente.');
-    }, 60000); // 60 segundos de timeout máximo
+      if (!operationCompleted) {
+        console.error('⏰ Timeout de segurança atingido - forçando fim do loading');
+        setLoading(false);
+        alert('A operação está demorando muito. Por favor, verifique sua conexão e tente novamente.');
+      }
+    }, 90000); // Aumentado para 90s (redes lentas + cold start)
     
     try {
-      console.log('🔥 Iniciando salvamento do onboarding...');
+      console.log('🔥 Iniciando salvamento do onboarding...', {
+        userId: user.id,
+        timestamp: new Date().toISOString()
+      });
+      
+      // 🛡️ Validar que user.id ainda está disponível (prevenir expiração de token)
+      if (!user?.id) {
+        throw new Error('Sessão expirada. Por favor, faça login novamente.');
+      }
       
       // Validar e preparar dados antes de enviar
       const updateData = {
@@ -713,7 +726,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         portfolio_url: data.portfolio_url?.trim() || null,
         age: data.age,
         gender: data.gender,
-        niches: Array.isArray(data.niches) ? data.niches : [],
+        niches: Array.isArray(data.niches) && data.niches.length > 0 ? data.niches : null,
         pix_key: data.pix_key?.trim() || null,
         full_name: data.full_name?.trim() || null,
         phone: data.phone ? stripFormatting(data.phone) : null,
@@ -730,30 +743,85 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         userId: user.id, 
         dataKeys: Object.keys(updateData),
         hasAddress: !!updateData.address,
-        hasNiches: updateData.niches.length > 0
+        hasNiches: !!updateData.niches,
+        emailProvided: !!updateData.email
       });
 
-      // Salvar dados do onboarding
-      const { data: result, error: saveError } = await supabase
-        .from('profiles')
-        .update(updateData)
-        .eq('id', user.id)
-        .select()
-        .single();
+      // 🔥 Salvar dados do onboarding com timeout explícito e tratamento de erros específicos
+      const { data: result, error: saveError } = await Promise.race([
+        supabase
+          .from('profiles')
+          .update(updateData)
+          .eq('id', user.id)
+          .select()
+          .maybeSingle(), // ✅ Mudado de .single() para .maybeSingle() - evita erro se não retornar linha
+        new Promise<never>((_, reject) => 
+          setTimeout(() => reject(new Error('Database timeout')), 60000)
+        )
+      ]);
 
+      // 🛡️ Verificar tipos específicos de erro do Supabase
       if (saveError) {
-        console.error('❌ Erro do Supabase ao salvar:', saveError);
+        console.error('❌ Erro do Supabase ao salvar:', {
+          message: saveError.message,
+          code: saveError.code,
+          details: saveError.details,
+          hint: saveError.hint
+        });
+
+        // Tratamento de erros específicos
+        if (saveError.code === '23505') {
+          // Violação de UNIQUE constraint (email/phone duplicado)
+          throw new Error('Email ou telefone já cadastrado em outra conta.');
+        } else if (saveError.code === '42501') {
+          // Permissão negada (RLS policy)
+          throw new Error('Permissão negada. Tente fazer logout e login novamente.');
+        } else if (saveError.code === '08006' || saveError.code === '57014') {
+          // Connection failure ou Query cancelled
+          throw new Error('Conexão instável detectada. Verifique sua internet.');
+        }
+        
         throw saveError;
       }
 
+      // 🛡️ Verificar se realmente salvou
+      if (!result) {
+        console.warn('⚠️ Update não retornou dados, verificando se profile existe...');
+        
+        // Verificar se profile existe
+        const { data: profileCheck, error: checkError } = await supabase
+          .from('profiles')
+          .select('id, onboarding_completed')
+          .eq('id', user.id)
+          .maybeSingle();
+        
+        if (checkError || !profileCheck) {
+          throw new Error('Perfil não encontrado no banco de dados. Entre em contato com o suporte.');
+        }
+        
+        console.log('✅ Profile existe, mas update não retornou dados (pode ser RLS policy no SELECT)');
+      }
+
       console.log('✅ Onboarding salvo com sucesso:', result);
+      
+      // 🔒 Marcar operação como completa ANTES de chamar onComplete
+      operationCompleted = true;
+      clearTimeout(safetyTimeout);
 
       // Sucesso - completar onboarding
       console.log('🎉 Onboarding completado com sucesso! Redirecionando...');
+      
+      // Pequeno delay para garantir que banco processou
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       onComplete();
       
     } catch (error) {
-      console.error('❌ Erro ao salvar onboarding após todas as tentativas:', error);
+      console.error('❌ Erro ao salvar onboarding:', {
+        error,
+        message: error instanceof Error ? error.message : 'Erro desconhecido',
+        userId: user?.id
+      });
       
       // Salvar dados localmente como fallback
       try {
@@ -761,12 +829,35 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
           userId: user.id,
           data: data,
           timestamp: new Date().toISOString(),
-          error: error instanceof Error ? error.message : 'Erro desconhecido'
+          error: error instanceof Error ? error.message : 'Erro desconhecido',
+          errorCode: (error as { code?: string })?.code,
+          errorDetails: (error as { details?: string })?.details
         };
         localStorage.setItem('onboarding_fallback', JSON.stringify(fallbackData));
         console.log('💾 Dados salvos localmente como fallback');
       } catch (storageError) {
         console.error('Erro ao salvar fallback:', storageError);
+      }
+      
+      // Mensagens de erro específicas por tipo
+      let userMessage = '';
+      
+      if (error instanceof Error) {
+        if (error.message.includes('Sessão expirada')) {
+          userMessage = '🔐 Sua sessão expirou.\n\nPor favor, faça login novamente.';
+          // Não tenta fallback - precisa reautenticar
+          alert(userMessage);
+          setLoading(false);
+          operationCompleted = true;
+          clearTimeout(safetyTimeout);
+          return;
+        } else if (error.message.includes('duplicado')) {
+          userMessage = '⚠️ Email ou telefone já cadastrado.\n\nEsse email/telefone já está em uso em outra conta.';
+        } else if (error.message.includes('Conexão instável')) {
+          userMessage = '📶 Conexão instável detectada.\n\nVerifique sua internet e tente novamente.';
+        } else if (error.message.includes('timeout')) {
+          userMessage = '⏰ A operação demorou muito.\n\nSua internet pode estar lenta. Tente novamente.';
+        }
       }
       
       // SOLUÇÃO DE CONTORNO: Marcar onboarding como completo mesmo com erro
@@ -787,8 +878,10 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
 
         if (unlockError) {
           console.error('❌ Erro ao liberar acesso:', unlockError);
-          // Se nem isso funcionar, mostra mensagem e mantém na tela
+          
+          // Se nem isso funcionar, mostra mensagem específica ou genérica
           alert(
+            userMessage || 
             '❌ Não foi possível completar o cadastro no momento.\n\n' +
             'Por favor:\n' +
             '1. Verifique sua conexão com internet\n' +
@@ -796,13 +889,22 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
             '3. Tente novamente\n\n' +
             'Se o problema persistir, entre em contato com o suporte.'
           );
+          
+          operationCompleted = true;
+          clearTimeout(safetyTimeout);
+          setLoading(false);
           return; // Para aqui, não redireciona
         }
 
         console.log('✅ Acesso liberado com dados pendentes');
         
+        // 🔒 Marcar operação como completa
+        operationCompleted = true;
+        clearTimeout(safetyTimeout);
+        
         // Mostrar mensagem informativa
         alert(
+          (userMessage ? userMessage + '\n\n' : '') +
           '⚠️ Acesso Liberado com Ressalvas\n\n' +
           'Houve um problema ao salvar algumas informações do seu cadastro.\n\n' +
           'Você já pode acessar a plataforma, mas IMPORTANTE:\n\n' +
@@ -822,6 +924,10 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
         
       } catch (unlockError) {
         console.error('❌ Erro crítico ao tentar liberar acesso:', unlockError);
+        
+        operationCompleted = true;
+        clearTimeout(safetyTimeout);
+        
         alert(
           '❌ Erro Crítico\n\n' +
           'Não foi possível completar o cadastro.\n\n' +
@@ -831,7 +937,9 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
       }
       
     } finally {
-      clearTimeout(safetyTimeout);
+      if (!operationCompleted) {
+        clearTimeout(safetyTimeout);
+      }
       setLoading(false);
     }
   };
