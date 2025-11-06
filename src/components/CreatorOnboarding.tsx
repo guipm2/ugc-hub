@@ -691,7 +691,19 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
   // };
 
   const handleComplete = async () => {
-    if (!validateStep(3, true) || !user?.id) return;
+    if (!validateStep(3, true) || !user?.id) {
+      // 🚨 DEBUG: Log se user.id está undefined
+      if (!user?.id) {
+        console.error('🚨 ERRO CRÍTICO: user.id está undefined!', {
+          user,
+          hasUser: !!user,
+          userId: user?.id,
+          userEmail: user?.email
+        });
+        alert('⚠️ Erro: Sessão de usuário não encontrada. Por favor, faça logout e login novamente.');
+      }
+      return;
+    }
 
     setLoading(true);
     
@@ -758,7 +770,31 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
       // ⏱️ TELEMETRIA: Tempo antes da query
       console.log(`⏱️ Tempo de preparação: ${(performance.now() - startTime).toFixed(2)}ms`);
 
-      // 🔥 Salvar dados do onboarding com timeout explícito e tratamento de erros específicos
+      // �️ VERIFICAÇÃO CRÍTICA: Garantir que o perfil existe antes de tentar UPDATE
+      console.log('🔍 Verificando se perfil existe antes do UPDATE...');
+      const { data: profileExists, error: checkError } = await supabase
+        .from('profiles')
+        .select('id, role, email, onboarding_completed')
+        .eq('id', user.id)
+        .maybeSingle();
+      
+      if (checkError) {
+        console.error('❌ Erro ao verificar perfil:', checkError);
+        throw new Error(`Erro ao verificar perfil: ${checkError.message}`);
+      }
+      
+      if (!profileExists) {
+        console.error('🚨 ERRO CRÍTICO: Perfil não existe no banco de dados!', {
+          userId: user.id,
+          userEmail: user?.email,
+          authUser: user
+        });
+        throw new Error('Perfil não encontrado no banco de dados. O cadastro pode não ter sido concluído. Entre em contato com o suporte.');
+      }
+      
+      console.log('✅ Perfil encontrado:', profileExists);
+
+      // �🔥 Salvar dados do onboarding com timeout explícito e tratamento de erros específicos
       const queryStartTime = performance.now();
       const { data: result, error: saveError } = await Promise.race([
         supabase
@@ -802,23 +838,48 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
 
       // 🛡️ Verificar se realmente salvou
       if (!result) {
-        console.warn('⚠️ Update não retornou dados, verificando se profile existe...');
+        console.warn('⚠️ Update não retornou dados, tentando UPSERT como fallback...');
         
-        // Verificar se profile existe
-        const { data: profileCheck, error: checkError } = await supabase
+        // 🔄 FALLBACK: Tentar UPSERT ao invés de UPDATE
+        // Isso resolve o caso onde o perfil não existe ou RLS bloqueou o UPDATE
+        const { data: upsertResult, error: upsertError } = await supabase
           .from('profiles')
-          .select('id, onboarding_completed')
-          .eq('id', user.id)
+          .upsert({
+            id: user.id,
+            ...updateData
+          }, {
+            onConflict: 'id',
+            ignoreDuplicates: false
+          })
+          .select()
           .maybeSingle();
         
-        if (checkError || !profileCheck) {
-          throw new Error('Perfil não encontrado no banco de dados. Entre em contato com o suporte.');
+        if (upsertError) {
+          console.error('❌ UPSERT também falhou:', upsertError);
+          throw new Error(`Falha ao salvar dados (UPDATE e UPSERT): ${upsertError.message}`);
         }
         
-        console.log('✅ Profile existe, mas update não retornou dados (pode ser RLS policy no SELECT)');
+        if (!upsertResult) {
+          console.error('🚨 UPSERT não retornou dados - possível problema de RLS');
+          
+          // Verificar se realmente salvou mesmo sem retornar dados
+          const { data: finalCheck } = await supabase
+            .from('profiles')
+            .select('id, onboarding_completed')
+            .eq('id', user.id)
+            .maybeSingle();
+          
+          if (!finalCheck || !finalCheck.onboarding_completed) {
+            throw new Error('Não foi possível confirmar se os dados foram salvos. Entre em contato com o suporte.');
+          }
+          
+          console.log('✅ Dados salvos via UPSERT (verificação manual confirmou)');
+        } else {
+          console.log('✅ Dados salvos via UPSERT:', upsertResult);
+        }
+      } else {
+        console.log('✅ Onboarding salvo com sucesso via UPDATE:', result);
       }
-
-      console.log('✅ Onboarding salvo com sucesso:', result);
       
       // ⏱️ TELEMETRIA: Tempo total
       const totalDuration = performance.now() - startTime;
