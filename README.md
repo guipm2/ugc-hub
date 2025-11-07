@@ -177,7 +177,7 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 ## 📞 Suporte
 
 Para dúvidas ou suporte, entre em contato:
-- 📧 Email: [guilherme.miranda@turbopartners.com.br]
+- 📧 Email: [guilherme.miranda@utopiasolutions.com.br]
 - 🐛 Issues: [GitHub Issues](https://github.com/guipm2/ugc-hub/issues)
 
 ---
