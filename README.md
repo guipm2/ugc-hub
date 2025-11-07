@@ -1,4 +1,4 @@
-# 🎯 UGC Hub
+# 🎯 Influenciando - Plataforma UGC
 
 Uma plataforma completa para gestão de User Generated Content (UGC) que conecta **criadores de conteúdo** com **analistas** de forma eficiente e organizada.
 
