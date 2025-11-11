@@ -3,6 +3,7 @@
 Uma plataforma inovadora que conecta **criadores de conteúdo** com **oportunidades de marcas** de forma eficiente, moderna e tecnológica.
 
 **Link:** [Influenciando - Sua plataforma UGC](https://influenciando-ugc.netlify.app)
+**Key para conta de analista:** analista
 
 ## 📋 Sobre o Projeto
 
