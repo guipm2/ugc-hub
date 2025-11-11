@@ -191,8 +191,8 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 ## 📞 Suporte
 
 Para dúvidas ou suporte:
-- 📧 Email: [your-email@example.com]
-- 🐛 Issues: [GitHub Issues](https://github.com/your-username/ugc-platform/issues)
+- 📧 Email: [guipm2@gmail.com]
+- 🐛 Issues: [GitHub Issues](https://github.com/guipm2/influenciando_ugc_platform/issues)
 
 ## 🎨 Personalização (White Label)
 
