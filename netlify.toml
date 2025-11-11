@@ -6,7 +6,12 @@
 
 [build.environment]
   # Disable secrets scanning for Supabase public keys
-  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY"
+  # Add keys that are intentionally injected at build time and may appear in files.
+  # WARNING: Omitting keys weakens Netlify's secrets scanning. Only omit keys you
+  # are certain are safe to be public (e.g. Supabase anon key). For sensitive
+  # secrets (signup secret, webhook URLs) prefer setting proper values in the
+  # Netlify UI and ensuring they do not match strings in the repo.
+  SECRETS_SCAN_OMIT_KEYS = "VITE_SUPABASE_URL,VITE_SUPABASE_ANON_KEY,VITE_ANALYST_SIGNUP_SECRET,VITE_OPPORTUNITY_CREATED_WEBHOOK_URL"
 
 [[redirects]]
   from = "/*"
