@@ -1,6 +1,8 @@
 [build]
   publish = "dist"
-  command = "npm run build"
+  # Temporarily add --debug to surface full Vite/Rollup errors in Netlify logs.
+  # Remove the --debug once we've identified the failure.
+  command = "npm run build -- --debug"
 
 [build.environment]
   # Disable secrets scanning for Supabase public keys
