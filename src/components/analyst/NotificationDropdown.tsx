@@ -26,10 +26,10 @@ const AnalystNotificationDropdown: React.FC = () => {
 
   const toneTokens: Record<ToneKey, { gradient: string; icon: string; chip: string; ring: string }> = {
     info: {
-      gradient: 'from-[#6C4DFF]/35 via-[#8C5CFF]/20 to-transparent',
-      icon: 'text-indigo-100',
+      gradient: 'from-[#00FF41]/35 via-[#00CC34]/20 to-transparent',
+      icon: 'text-[#00FF41]',
       chip: 'chip-info',
-      ring: 'ring-indigo-400/25'
+      ring: 'ring-[#00FF41]/25'
     },
     success: {
       gradient: 'from-emerald-400/35 via-emerald-500/18 to-transparent',
@@ -44,10 +44,10 @@ const AnalystNotificationDropdown: React.FC = () => {
       ring: 'ring-rose-400/25'
     },
     message: {
-      gradient: 'from-fuchsia-400/30 via-purple-500/18 to-transparent',
-      icon: 'text-fuchsia-100',
+      gradient: 'from-[#00FF41]/30 via-[#00CC34]/18 to-transparent',
+      icon: 'text-[#00FF41]',
       chip: 'chip-info',
-      ring: 'ring-fuchsia-400/25'
+      ring: 'ring-[#00FF41]/25'
     },
     schedule: {
       gradient: 'from-amber-400/35 via-orange-500/18 to-transparent',
@@ -108,9 +108,9 @@ const AnalystNotificationDropdown: React.FC = () => {
         onClick={() => setIsOpen(prev => !prev)}
         className="relative btn-ghost-glass h-11 w-11 rounded-full p-0"
       >
-        <Bell className="h-5 w-5 text-indigo-100" />
+        <Bell className="h-5 w-5 text-[#00FF41]" />
         {unreadCount > 0 && (
-          <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-rose-500 via-rose-400 to-pink-500 text-[10px] font-semibold text-white shadow-lg shadow-rose-500/40">
+          <span className="absolute -top-1.5 -right-1.5 flex h-5 w-5 items-center justify-center rounded-full bg-gradient-to-br from-red-500 via-red-400 to-red-600 text-[10px] font-semibold text-white shadow-lg shadow-red-500/40">
             {unreadCount > 9 ? '9+' : unreadCount}
           </span>
         )}
@@ -122,7 +122,7 @@ const AnalystNotificationDropdown: React.FC = () => {
             className="fixed inset-0 z-40"
             onClick={() => setIsOpen(false)}
           />
-          <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-white/12 bg-slate-950/95 p-0 backdrop-blur-[30px] saturate-150 shadow-[0_25px_70px_-30px_rgba(12,18,45,0.85)] ring-1 ring-fuchsia-400/10 z-50">
+          <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-2xl border border-white/12 bg-black/95 p-0 backdrop-blur-[30px] saturate-150 shadow-[0_25px_70px_-30px_rgba(0,0,0,0.9)] ring-1 ring-[#00FF41]/10 z-50">
             <div className="flex items-center justify-between px-5 py-4 border-b border-white/10">
               <div>
                 <p className="text-sm font-semibold text-white">Notificações</p>
@@ -131,7 +131,7 @@ const AnalystNotificationDropdown: React.FC = () => {
                 {unreadCount > 0 && (
                   <button
                     onClick={markAllAsRead}
-                    className="text-xs font-semibold text-indigo-200 transition-colors hover:text-indigo-100"
+                    className="text-xs font-semibold text-[#00FF41] transition-colors hover:text-[#00CC34]"
                   >
                     Marcar todas como lidas
                   </button>
@@ -149,7 +149,7 @@ const AnalystNotificationDropdown: React.FC = () => {
                   <div
                     key={notification.id}
                     className={`flex cursor-pointer flex-col gap-3 px-5 py-4 transition-all duration-200 hover:bg-white/5 ${
-                      !notification.read ? 'ring-1 ring-fuchsia-400/25 bg-white/[0.04]' : 'bg-transparent'
+                      !notification.read ? 'ring-1 ring-[#00FF41]/25 bg-white/[0.04]' : 'bg-transparent'
                     }`}
                     onClick={() => handleNotificationClick(notification)}
                   >
@@ -177,7 +177,7 @@ const AnalystNotificationDropdown: React.FC = () => {
                             </p>
                             <div className="flex items-center gap-2">
                               <span className={`glass-chip ${tone.chip} text-[0.6rem]`}>{config.label}</span>
-                              {!notification.read && <span className="h-2 w-2 rounded-full bg-fuchsia-300" />}
+                              {!notification.read && <span className="h-2 w-2 rounded-full bg-[#00FF41]" />}
                             </div>
                           </div>
                         </div>
@@ -190,7 +190,7 @@ const AnalystNotificationDropdown: React.FC = () => {
 
             {notifications.length > 0 && (
               <div className="border-t border-white/10 px-5 py-3">
-                <button className="w-full text-sm font-semibold text-indigo-200 transition-colors hover:text-indigo-100">
+                <button className="w-full text-sm font-semibold text-[#00FF41] transition-colors hover:text-[#00CC34]">
                   Ver todas as notificações
                 </button>
               </div>

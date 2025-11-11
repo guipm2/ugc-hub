@@ -3,6 +3,7 @@ import { Eye, Calendar, Award, Target, Clock, ArrowRight, TrendingUp, DollarSign
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
+import { useTabVisibility } from '../hooks/useTabVisibility';
 import { OnboardingRecoveryBanner } from './common/OnboardingRecoveryBanner';
 import { IncompleteDataBanner } from './common/IncompleteDataBanner';
 
@@ -14,8 +15,7 @@ interface Application {
     id: string;
     title: string;
     company: string;
-    budget_min: number;
-    budget_max: number;
+    budget: number;
     deadline: string;
   };
 }
@@ -30,8 +30,7 @@ interface Deliverable {
   opportunity: {
     title: string;
     company: string;
-    budget_min?: number;
-    budget_max?: number;
+    budget?: number;
   };
 }
 
@@ -52,6 +51,113 @@ const Dashboard = () => {
   const [totalEarnings, setTotalEarnings] = useState(0);
   const { user } = useAuth();
   const { navigate } = useRouter();
+
+  // Função para recarregar dados quando a aba voltar a ficar visível
+  const reloadDashboardData = async () => {
+    if (!user) return;
+    
+    console.log('🔄 [DASHBOARD] Recarregando dados após aba voltar a ficar visível');
+    
+    // Validar sessão antes de fazer requisições
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('⚠️ [DASHBOARD] Sessão inválida ao tentar recarregar dados');
+        return;
+      }
+    } catch (err) {
+      console.error('❌ [DASHBOARD] Erro ao validar sessão:', err);
+      return;
+    }
+    
+    // Recarregar candidaturas - NÃO limpa dados existentes se falhar
+    try {
+      const { data, error } = await supabase
+        .from('opportunity_applications')
+        .select(`
+          id,
+          status,
+          applied_at,
+          opportunity:opportunities (
+            id,
+            title,
+            company,
+            budget,
+            deadline
+          )
+        `)
+        .eq('creator_id', user.id)
+        .order('applied_at', { ascending: false });
+
+      if (error) {
+        console.error('❌ [DASHBOARD] Erro ao recarregar candidaturas:', error);
+        // NÃO limpa dados existentes
+      } else if (data) {
+        const fixedData = data?.map((app: any) => ({
+          ...app,
+          opportunity: Array.isArray(app.opportunity) ? app.opportunity[0] : app.opportunity
+        })) || [];
+        setApplications(fixedData);
+        console.log('✅ [DASHBOARD] Candidaturas recarregadas com sucesso');
+      }
+    } catch (err) {
+      console.error('❌ [DASHBOARD] Exceção ao recarregar candidaturas:', err);
+      // NÃO limpa dados existentes
+    }
+    
+    // Recarregar deliverables - NÃO limpa dados existentes se falhar
+    try {
+      const { data, error } = await supabase
+        .from('project_deliverables')
+        .select(`
+          id,
+          title,
+          description,
+          due_date,
+          priority,
+          status,
+          opportunities!deliverables_opportunity_fkey (
+            title,
+            company,
+            budget
+          )
+        `)
+        .eq('creator_id', user.id)
+        .order('due_date', { ascending: true });
+
+      if (error) {
+        console.error('❌ [DASHBOARD] Erro ao recarregar deliverables:', error);
+        // NÃO limpa dados existentes
+      } else if (data) {
+        const allDeliverables = data?.map((deliverable: any) => {
+          const opportunity = Array.isArray(deliverable.opportunities) 
+            ? deliverable.opportunities[0] 
+            : deliverable.opportunities;
+          
+          return {
+            ...deliverable,
+            opportunity: opportunity || { title: 'Projeto', company: 'Empresa', budget: 0 }
+          };
+        }) as Deliverable[];
+        
+        setDeliverables(allDeliverables || []);
+        
+        // Calcular earnings
+        const completedDeliverables = allDeliverables?.filter(d => d.status === 'completed') || [];
+        const estimatedEarnings = completedDeliverables.reduce((total, deliverable) => {
+          return total + (deliverable.opportunity?.budget || 0);
+        }, 0);
+        setTotalEarnings(estimatedEarnings);
+        console.log('✅ [DASHBOARD] Deliverables recarregados com sucesso');
+      }
+    } catch (err) {
+      console.error('❌ [DASHBOARD] Exceção ao recarregar deliverables:', err);
+      // NÃO limpa dados existentes
+    }
+  };
+
+  // Usar o hook de visibilidade da aba
+  useTabVisibility(reloadDashboardData);
 
   const getPriorityLabel = (priority: number) => {
     const labels = { 1: 'Baixa', 2: 'Normal', 3: 'Alta', 4: 'Urgente', 5: 'Crítica' };
@@ -124,8 +230,7 @@ const Dashboard = () => {
               id,
               title,
               company,
-              budget_min,
-              budget_max,
+              budget,
               deadline
             )
           `)
@@ -166,11 +271,10 @@ const Dashboard = () => {
             due_date,
             priority,
             status,
-            opportunity:opportunities(
+            opportunities!deliverables_opportunity_fkey (
               title,
               company,
-              budget_min,
-              budget_max
+              budget
             )
           `)
           .eq('creator_id', user.id)
@@ -183,13 +287,13 @@ const Dashboard = () => {
         } else {
           // Separar deliverables por status e calcular earnings
           const allDeliverables = data?.map(deliverable => {
-            const opportunity = Array.isArray(deliverable.opportunity) 
-              ? deliverable.opportunity[0] 
-              : deliverable.opportunity;
+            const opportunity = Array.isArray(deliverable.opportunities) 
+              ? deliverable.opportunities[0] 
+              : deliverable.opportunities;
             
             return {
               ...deliverable,
-              opportunity: opportunity || { title: 'Projeto', company: 'Empresa', budget_min: 0, budget_max: 0 }
+              opportunity: opportunity || { title: 'Projeto', company: 'Empresa', budget: 0 }
             };
           }) as Deliverable[];
           
@@ -198,10 +302,7 @@ const Dashboard = () => {
           // Calcular earnings estimados baseado em projetos aprovados
           const completedDeliverables = allDeliverables?.filter(d => d.status === 'completed') || [];
           const estimatedEarnings = completedDeliverables.reduce((total, deliverable) => {
-            const budgetMin = deliverable.opportunity.budget_min || 0;
-            const budgetMax = deliverable.opportunity.budget_max || 0;
-            const avgBudget = budgetMin && budgetMax ? (budgetMin + budgetMax) / 2 : 0;
-            return total + avgBudget;
+            return total + (deliverable.opportunity?.budget || 0);
           }, 0);
           setTotalEarnings(estimatedEarnings);
 
@@ -241,32 +342,38 @@ const Dashboard = () => {
         const thirtyDaysFromNow = new Date();
         thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
         
-        const { data, error } = await supabase
+        // Buscar oportunidades aprovadas diretamente
+        const { data: applications, error: appError } = await supabase
           .from('opportunity_applications')
-          .select(`
-            opportunity:opportunities (
-              id,
-              title,
-              company,
-              deadline,
-              description
-            )
-          `)
+          .select('opportunity_id')
           .eq('creator_id', user.id)
-          .eq('status', 'approved')
-          .gte('opportunity.deadline', new Date().toISOString().split('T')[0])
-          .lte('opportunity.deadline', thirtyDaysFromNow.toISOString().split('T')[0])
-          .order('opportunity.deadline', { ascending: true })
+          .eq('status', 'approved');
+
+        if (appError) {
+          console.error('Erro ao buscar candidaturas aprovadas:', appError);
+          return;
+        }
+
+        if (!applications || applications.length === 0) {
+          setUpcomingDeadlines([]);
+          return;
+        }
+
+        const opportunityIds = applications.map(app => app.opportunity_id);
+
+        const { data, error } = await supabase
+          .from('opportunities')
+          .select('id, title, company, deadline, description')
+          .in('id', opportunityIds)
+          .gte('deadline', new Date().toISOString().split('T')[0])
+          .lte('deadline', thirtyDaysFromNow.toISOString().split('T')[0])
+          .order('deadline', { ascending: true })
           .limit(3);
 
         if (error) {
           console.error('Erro ao buscar prazos fallback:', error);
         } else {
-          const upcomingDeadlinesData = data
-            ?.map(app => Array.isArray(app.opportunity) ? app.opportunity[0] : app.opportunity)
-            .filter(Boolean) as UpcomingDeadline[];
-          
-          setUpcomingDeadlines(upcomingDeadlinesData || []);
+          setUpcomingDeadlines((data || []) as UpcomingDeadline[]);
         }
       } catch (error) {
         console.error('Erro ao buscar prazos fallback:', error);

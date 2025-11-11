@@ -33,22 +33,23 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle, topS
   ];
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-[#05060F] text-slate-100">
-      <div className="pointer-events-none absolute -left-56 top-[-10rem] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle_at_center,rgba(73,121,255,0.45)_0%,rgba(9,9,23,0)_72%)] blur-3xl" />
-      <div className="pointer-events-none absolute -right-40 top-24 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle_at_center,rgba(172,64,255,0.42)_0%,rgba(9,9,23,0)_75%)] blur-3xl" />
-      <div className="pointer-events-none absolute inset-x-20 bottom-[-18rem] h-[400px] rounded-full bg-[radial-gradient(circle_at_top,rgba(67,97,238,0.28)_0%,rgba(9,9,23,0)_70%)] blur-3xl" />
+    <div className="relative min-h-screen overflow-hidden bg-black text-slate-100">
+      {/* Efeitos de fundo sutis verde neon */}
+      <div className="pointer-events-none absolute -left-56 top-[-10rem] h-[520px] w-[520px] rounded-full bg-[radial-gradient(circle_at_center,rgba(0,255,65,0.08)_0%,rgba(0,0,0,0)_70%)] blur-3xl" />
+      <div className="pointer-events-none absolute -right-40 top-24 h-[560px] w-[560px] rounded-full bg-[radial-gradient(circle_at_center,rgba(0,204,52,0.06)_0%,rgba(0,0,0,0)_75%)] blur-3xl" />
+      <div className="pointer-events-none absolute inset-x-20 bottom-[-18rem] h-[400px] rounded-full bg-[radial-gradient(circle_at_top,rgba(0,255,65,0.05)_0%,rgba(0,0,0,0)_70%)] blur-3xl" />
 
       <div className="relative z-10 flex min-h-screen flex-col lg:flex-row">
         {/* Left column */}
         <div className="hidden lg:flex lg:w-[48%] flex-col justify-between px-14 py-16">
           <div>
             <div className="flex items-center gap-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#4361EE] via-[#5F3BFF] to-[#A855F7] text-lg font-semibold">
-                UGC
+              <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#00FF41] to-[#00CC34] text-lg font-bold text-black shadow-neon">
+                I
               </div>
               <div>
-                <p className="text-xs uppercase tracking-[0.38em] text-slate-400">Marketplace de creators</p>
-                <span className="text-xl font-semibold text-white">UGC Hub</span>
+                <p className="text-xs uppercase tracking-[0.38em] text-slate-400">Plataforma</p>
+                <span className="text-xl font-semibold text-white">Influenciando</span>
               </div>
             </div>
 
@@ -63,8 +64,8 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle, topS
           <div className="mt-12 space-y-5">
             {features.map(({ icon: Icon, title: featureTitle, description }) => (
               <div key={featureTitle} className="glass-panel flex items-start gap-4 p-6">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/10">
-                  <Icon className="h-6 w-6 text-[#A78BFA]" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#00FF41]/20 bg-[#00FF41]/10">
+                  <Icon className="h-6 w-6 text-[#00FF41]" />
                 </div>
                 <div className="text-sm">
                   <h3 className="text-base font-semibold text-white">{featureTitle}</h3>
@@ -77,7 +78,7 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle, topS
               {highlightStats.map((stat) => (
                 <div
                   key={stat.label}
-                  className="rounded-3xl border border-white/15 bg-white/5 px-5 py-4 text-center shadow-[0_20px_45px_rgba(15,23,42,0.35)] backdrop-blur-2xl"
+                  className="rounded-3xl border border-white/15 bg-white/5 px-5 py-4 text-center shadow-[0_20px_45px_rgba(0,0,0,0.4)] backdrop-blur-2xl"
                 >
                   <p className="text-2xl font-semibold text-white">{stat.value}</p>
                   <p className="mt-2 text-xs uppercase tracking-[0.3em] text-slate-300">{stat.label}</p>
@@ -91,12 +92,12 @@ const AuthLayout: React.FC<AuthLayoutProps> = ({ children, title, subtitle, topS
         <div className="flex flex-1 items-center justify-center px-6 py-12 md:px-12">
           <div className="w-full max-w-md space-y-10">
             <div className="flex items-center gap-3 md:hidden">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#4361EE] via-[#5F3BFF] to-[#A855F7] text-sm font-semibold">
-                UGC
+              <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-black shadow-neon text-2xl font-black text-[#00FF41]">
+                I
               </div>
               <div>
-                <p className="text-[0.65rem] uppercase tracking-[0.38em] text-slate-400">Marketplace</p>
-                <span className="text-base font-semibold text-white">UGC Hub</span>
+                <p className="text-[0.65rem] uppercase tracking-[0.38em] text-slate-400">Plataforma</p>
+                <span className="text-base font-semibold text-white">Influenciando</span>
               </div>
             </div>
 

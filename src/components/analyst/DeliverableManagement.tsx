@@ -292,7 +292,7 @@ const DeliverableManagement: React.FC = () => {
       },
       submitted: { 
         label: 'Enviado', 
-        color: 'bg-purple-100 text-purple-800',
+        color: 'bg-[#00FF41]/10 text-[#00FF41]',
         icon: Eye
       },
       approved: { 
@@ -321,7 +321,7 @@ const DeliverableManagement: React.FC = () => {
   const getPriorityBadge = (priority: number) => {
     const configs = {
       1: { label: 'Baixa', color: 'bg-gray-100 text-gray-800' },
-      2: { label: 'Normal', color: 'bg-blue-100 text-blue-800' },
+      2: { label: 'Normal', color: 'bg-[#00FF41]/10 text-[#00FF41]' },
       3: { label: 'Alta', color: 'bg-orange-100 text-orange-800' },
       4: { label: 'Urgente', color: 'bg-red-100 text-red-800' },
       5: { label: 'Crítica', color: 'bg-red-200 text-red-900' }
@@ -369,7 +369,7 @@ const DeliverableManagement: React.FC = () => {
           <p className="text-gray-600 mt-1">Carregando deliverables...</p>
         </div>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF41]"></div>
         </div>
       </div>
     );
@@ -385,7 +385,7 @@ const DeliverableManagement: React.FC = () => {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+          className="bg-[#00FF41] hover:bg-[#00CC34] text-black px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           Novo Deliverable
@@ -408,7 +408,7 @@ const DeliverableManagement: React.FC = () => {
                 onClick={() => setFilter(option.key as 'all' | 'pending' | 'overdue' | 'completed')}
                 className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                   filter === option.key
-                    ? 'bg-blue-100 text-blue-700 font-medium'
+                    ? 'bg-[#00FF41]/10 text-[#00FF41] font-medium'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -503,7 +503,7 @@ const DeliverableManagement: React.FC = () => {
                 <div className="flex items-center gap-2 ml-4">
                   <button
                     onClick={() => openEditModal(deliverable)}
-                    className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                    className="p-2 text-gray-600 hover:text-[#00FF41] hover:bg-[#00FF41]/10 rounded-lg transition-colors"
                   >
                     <Edit3 className="h-4 w-4" />
                   </button>
@@ -535,7 +535,7 @@ const DeliverableManagement: React.FC = () => {
                   <select
                     value={selectedApplication}
                     onChange={(e) => setSelectedApplication(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                   >
                     <option value="">Selecione um projeto</option>
                     {applications.map(app => (
@@ -554,7 +554,7 @@ const DeliverableManagement: React.FC = () => {
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                     placeholder="Ex: Briefing e Conceito"
                   />
                 </div>
@@ -566,7 +566,7 @@ const DeliverableManagement: React.FC = () => {
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                     placeholder="Descreva o que deve ser entregue..."
                     rows={3}
                   />
@@ -582,7 +582,7 @@ const DeliverableManagement: React.FC = () => {
                       value={formData.due_date}
                       onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
                       min={new Date().toISOString().split('T')[0]}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                     />
                   </div>
 
@@ -593,7 +593,7 @@ const DeliverableManagement: React.FC = () => {
                     <select
                       value={formData.priority}
                       onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                     >
                       <option value={1}>Baixa</option>
                       <option value={2}>Normal</option>
@@ -618,7 +618,7 @@ const DeliverableManagement: React.FC = () => {
                 </button>
                 <button
                   onClick={handleCreateDeliverable}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  className="flex-1 px-4 py-2 bg-[#00FF41] hover:bg-[#00CC34] text-black rounded-lg font-medium transition-colors"
                 >
                   Criar Deliverable
                 </button>
@@ -644,7 +644,7 @@ const DeliverableManagement: React.FC = () => {
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                   />
                 </div>
 
@@ -655,7 +655,7 @@ const DeliverableManagement: React.FC = () => {
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                     rows={3}
                   />
                 </div>
@@ -669,7 +669,7 @@ const DeliverableManagement: React.FC = () => {
                       type="date"
                       value={formData.due_date}
                       onChange={(e) => setFormData({ ...formData, due_date: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                     />
                   </div>
 
@@ -680,7 +680,7 @@ const DeliverableManagement: React.FC = () => {
                     <select
                       value={formData.priority}
                       onChange={(e) => setFormData({ ...formData, priority: parseInt(e.target.value) })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                     >
                       <option value={1}>Baixa</option>
                       <option value={2}>Normal</option>
@@ -701,7 +701,7 @@ const DeliverableManagement: React.FC = () => {
                 </button>
                 <button
                   onClick={() => handleUpdateDeliverable(showEditModal)}
-                  className="flex-1 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                  className="flex-1 px-4 py-2 bg-[#00FF41] hover:bg-[#00CC34] text-black rounded-lg font-medium transition-colors"
                 >
                   Atualizar
                 </button>

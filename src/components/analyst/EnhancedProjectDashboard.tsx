@@ -8,6 +8,7 @@ import {
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRouter } from '../../hooks/useRouter';
+import { useTabVisibility } from '../../hooks/useTabVisibility';
 
 interface ProjectDashboardStats {
   // Project stats
@@ -385,7 +386,7 @@ const EnhancedProjectDashboard: React.FC = () => {
   const getStatusStyle = (status: string) => {
     switch (status) {
       case 'completed': return 'bg-green-100 text-green-800';
-      case 'active': return 'bg-blue-100 text-blue-800';
+      case 'active': return 'bg-[#00FF41]/10 text-[#00FF41]';
       case 'overdue': return 'bg-red-100 text-red-800';
       case 'at_risk': return 'bg-yellow-100 text-yellow-800';
       default: return 'bg-gray-100 text-gray-800';
@@ -403,10 +404,16 @@ const EnhancedProjectDashboard: React.FC = () => {
     fetchDashboardStats();
   }, [fetchDashboardStats]);
 
+  // Recarregar quando a aba voltar a ficar visível
+  useTabVisibility(() => {
+    console.log('🔄 [ANALYST PROJECTS] Recarregando dashboard de projetos após aba voltar a ficar visível');
+    fetchDashboardStats();
+  });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF41]"></div>
       </div>
     );
   }
@@ -425,7 +432,7 @@ const EnhancedProjectDashboard: React.FC = () => {
             <select
               value={timeFilter}
               onChange={(e) => setTimeFilter(e.target.value as typeof timeFilter)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
             >
               <option value="7d">Últimos 7 dias</option>
               <option value="30d">Últimos 30 dias</option>
@@ -436,7 +443,7 @@ const EnhancedProjectDashboard: React.FC = () => {
             <button
               onClick={handleRefresh}
               disabled={refreshing}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2 disabled:opacity-50"
+              className="px-4 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34] flex items-center space-x-2 disabled:opacity-50"
             >
               <RefreshCw className={`h-4 w-4 ${refreshing ? 'animate-spin' : ''}`} />
               <span>Atualizar</span>
@@ -461,7 +468,7 @@ const EnhancedProjectDashboard: React.FC = () => {
                     onClick={() => setActiveTab(tab.key as 'overview' | 'projects' | 'performance' | 'analytics')}
                     className={`flex items-center space-x-2 py-2 px-1 border-b-2 font-medium text-sm ${
                       activeTab === tab.key
-                        ? 'border-purple-500 text-purple-600'
+                        ? 'border-[#00FF41] text-[#00FF41]'
                         : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
                     }`}
                   >
@@ -488,8 +495,8 @@ const EnhancedProjectDashboard: React.FC = () => {
                       +{stats.thisMonthProjects} este mês
                     </p>
                   </div>
-                  <div className="p-3 bg-blue-50 rounded-full">
-                    <Folder className="h-6 w-6 text-blue-600" />
+                  <div className="p-3 bg-[#00FF41]/10 rounded-full">
+                    <Folder className="h-6 w-6 text-[#00FF41]" />
                   </div>
                 </div>
               </div>
@@ -537,8 +544,8 @@ const EnhancedProjectDashboard: React.FC = () => {
                       Média: R$ {(stats.avgProjectBudget / 1000).toFixed(1)}k
                     </p>
                   </div>
-                  <div className="p-3 bg-purple-50 rounded-full">
-                    <DollarSign className="h-6 w-6 text-purple-600" />
+                  <div className="p-3 bg-[#00FF41]/10 rounded-full">
+                    <DollarSign className="h-6 w-6 text-[#00FF41]" />
                   </div>
                 </div>
               </div>
@@ -598,7 +605,7 @@ const EnhancedProjectDashboard: React.FC = () => {
                   {upcomingDeadlines.length > 5 && (
                     <button 
                       onClick={() => setActiveTab('projects')}
-                      className="w-full mt-4 text-sm text-purple-600 hover:text-purple-700"
+                      className="w-full mt-4 text-sm text-[#00FF41] hover:text-[#00CC34]"
                     >
                       Ver todos os prazos →
                     </button>
@@ -622,7 +629,7 @@ const EnhancedProjectDashboard: React.FC = () => {
                           project.status === 'completed' ? 'bg-green-400' :
                           project.status === 'overdue' ? 'bg-red-400' :
                           project.status === 'at_risk' ? 'bg-yellow-400' :
-                          'bg-blue-400'
+                          'bg-[#00FF41]'
                         }`}></div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">
@@ -694,7 +701,7 @@ const EnhancedProjectDashboard: React.FC = () => {
                   <select
                     value={statusFilter}
                     onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   >
                     <option value="all">Todos os Status</option>
                     <option value="active">Ativos</option>
@@ -705,7 +712,7 @@ const EnhancedProjectDashboard: React.FC = () => {
                 
                 <button
                   onClick={() => navigate('/analysts/projects')}
-                  className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+                  className="px-4 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34] flex items-center space-x-2"
                 >
                   <Eye className="h-4 w-4" />
                   <span>Ver Detalhes</span>
@@ -763,7 +770,7 @@ const EnhancedProjectDashboard: React.FC = () => {
                         <div 
                           className={`h-2 rounded-full ${
                             project.progress === 100 ? 'bg-green-500' :
-                            project.progress >= 80 ? 'bg-blue-500' :
+                            project.progress >= 80 ? 'bg-[#00FF41]' :
                             project.progress >= 50 ? 'bg-yellow-500' :
                             'bg-red-500'
                           }`}
@@ -787,7 +794,7 @@ const EnhancedProjectDashboard: React.FC = () => {
                     <div className="flex space-x-2">
                       <button
                         onClick={() => navigate(`/analysts/projects/${project.id}`)}
-                        className="flex-1 px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
+                        className="flex-1 px-3 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34] text-sm"
                       >
                         Ver Projeto
                       </button>
@@ -833,17 +840,17 @@ const EnhancedProjectDashboard: React.FC = () => {
                 </div>
                 
                 <div className="text-center">
-                  <div className="p-4 bg-blue-50 rounded-lg">
-                    <Timer className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-blue-600">{stats.onTimeCompletionRate.toFixed(1)}%</p>
+                  <div className="p-4 bg-[#00FF41]/10 rounded-lg">
+                    <Timer className="h-8 w-8 text-[#00FF41] mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-[#00FF41]">{stats.onTimeCompletionRate.toFixed(1)}%</p>
                     <p className="text-sm text-gray-600">Entregas no Prazo</p>
                   </div>
                 </div>
                 
                 <div className="text-center">
-                  <div className="p-4 bg-purple-50 rounded-lg">
-                    <Zap className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                    <p className="text-2xl font-bold text-purple-600">{stats.avgProjectDuration || 'N/A'}</p>
+                  <div className="p-4 bg-[#00FF41]/10 rounded-lg">
+                    <Zap className="h-8 w-8 text-[#00FF41] mx-auto mb-2" />
+                    <p className="text-2xl font-bold text-[#00FF41]">{stats.avgProjectDuration || 'N/A'}</p>
                     <p className="text-sm text-gray-600">Duração Média (dias)</p>
                   </div>
                 </div>

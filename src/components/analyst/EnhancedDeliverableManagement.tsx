@@ -830,7 +830,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
       case 'pending':
         return 'bg-yellow-100 text-yellow-800';
       case 'submitted':
-        return 'bg-purple-100 text-purple-800';
+        return 'bg-[#00FF41]/10 text-[#00FF41]';
       case 'approved':
         return 'bg-green-100 text-green-800';
       case 'rejected':
@@ -865,7 +865,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF41]"></div>
       </div>
     );
   }
@@ -883,7 +883,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
           <div className="flex space-x-3">
             <button
               onClick={() => setShowTemplateModal(true)}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center space-x-2"
+              className="px-4 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34] flex items-center space-x-2"
             >
               <Copy className="h-4 w-4" />
               <span>Usar Template</span>
@@ -891,7 +891,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
             
             <button
               onClick={() => setShowCustomModal(true)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center space-x-2"
+              className="px-4 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34] flex items-center space-x-2"
             >
               <Plus className="h-4 w-4" />
               <span>Novo Deliverable</span>
@@ -960,7 +960,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                   placeholder="Buscar deliverables..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                 />
               </div>
             </div>
@@ -969,7 +969,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
             >
               <option value="all">Todos os Status</option>
               <option value="pending">Pendente</option>
@@ -984,7 +984,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
             <select
               value={creatorFilter}
               onChange={(e) => setCreatorFilter(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
             >
               <option value="all">Todos os Creators</option>
               {uniqueCreators.map((creator) => (
@@ -998,7 +998,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
             <select
               value={priorityFilter}
               onChange={(e) => setPriorityFilter(e.target.value as typeof priorityFilter)}
-              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
             >
               <option value="all">Todas as Prioridades</option>
               <option value="high">Alta (1-2)</option>
@@ -1010,10 +1010,10 @@ const EnhancedDeliverableManagement: React.FC = () => {
 
         {/* Bulk Actions */}
         {selectedDeliverables.size > 0 && (
-          <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg mb-6">
+          <div className="bg-[#00FF41]/5 border border-[#00FF41]/30 p-4 rounded-lg mb-6">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-4">
-                <span className="text-sm font-medium text-blue-800">
+                <span className="text-sm font-medium text-[#00FF41]">
                   {selectedDeliverables.size} deliverable(s) selecionado(s)
                 </span>
               </div>
@@ -1039,13 +1039,13 @@ const EnhancedDeliverableManagement: React.FC = () => {
                 </button>
                 <button
                   onClick={handleBulkDelete}
-                  className="px-3 py-1 bg-gray-600 text-white rounded text-sm hover:bg-gray-700"
+                  className="px-3 py-1 bg-red-600/80 text-white border border-red-500/50 rounded text-sm hover:bg-red-700"
                 >
                   Deletar
                 </button>
                 <button
                   onClick={() => setSelectedDeliverables(new Set())}
-                  className="px-3 py-1 bg-gray-300 text-gray-700 rounded text-sm hover:bg-gray-400"
+                  className="px-3 py-1 bg-white/5 text-gray-300 border border-white/20 rounded text-sm hover:bg-white/10"
                 >
                   Cancelar
                 </button>
@@ -1231,14 +1231,14 @@ const EnhancedDeliverableManagement: React.FC = () => {
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => navigate(`/analysts/projects/${deliverable.application_id}`)}
-                            className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded"
+                            className="p-2 text-gray-400 hover:text-[#00FF41] hover:bg-[#00FF41]/10 rounded"
                             title="Ver projeto"
                           >
                             <Link2 className="h-4 w-4" />
                           </button>
                           <button
                             onClick={() => openEditModal(deliverable)}
-                            className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded"
+                            className="p-2 text-gray-400 hover:text-[#00FF41] hover:bg-[#00FF41]/10 rounded"
                           >
                             <Edit3 className="h-4 w-4" />
                           </button>
@@ -1295,9 +1295,9 @@ const EnhancedDeliverableManagement: React.FC = () => {
                                   {deliverable.deliverable_files.map((file, index) => (
                                     <div
                                       key={`expanded-${deliverable.id}-file-${index}`}
-                                      className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:border-purple-400 hover:shadow-sm transition"
+                                      className="flex items-center gap-2 p-2 bg-white rounded border border-gray-200 hover:border-[#00FF41] hover:shadow-sm transition"
                                     >
-                                      <FileText className="h-4 w-4 text-purple-500" />
+                                      <FileText className="h-4 w-4 text-[#00FF41]" />
                                       <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium text-gray-900 truncate">{file.name || 'Arquivo'}</p>
                                         <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
@@ -1326,7 +1326,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                                               alert('Erro ao gerar link do arquivo.');
                                             }
                                           }}
-                                          className="text-xs font-medium text-purple-600 hover:text-purple-700 px-2 py-1 rounded hover:bg-purple-50 transition"
+                                          className="text-xs font-medium text-[#00FF41] hover:text-[#00CC34] px-2 py-1 rounded hover:bg-[#00FF41]/10 transition"
                                         >
                                           Baixar
                                         </button>
@@ -1423,7 +1423,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                     type="text"
                     value={editForm.title}
                     onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   />
                 </div>
                 <div>
@@ -1431,7 +1431,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                   <select
                     value={editForm.status}
                     onChange={(e) => setEditForm({ ...editForm, status: e.target.value as ProjectDeliverable['status'] })}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   >
                     <option value="pending">Pendente</option>
                     <option value="submitted">Enviado</option>
@@ -1446,7 +1446,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                 <textarea
                   value={editForm.description}
                   onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   rows={3}
                   placeholder="Descreva o que deve ser entregue..."
                 />
@@ -1459,7 +1459,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                     type="date"
                     value={editForm.due_date}
                     onChange={(e) => setEditForm({ ...editForm, due_date: e.target.value })}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   />
                 </div>
                 <div>
@@ -1470,7 +1470,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                       const parsed = parseInt(e.target.value, 10);
                       setEditForm({ ...editForm, priority: Number.isNaN(parsed) ? 1 : parsed });
                     }}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   >
                     <option value={1}>1 - Mais Alta</option>
                     <option value={2}>2 - Alta</option>
@@ -1492,7 +1492,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                       const parsed = parseInt(e.target.value, 10);
                       setEditForm({ ...editForm, estimated_hours: Number.isNaN(parsed) ? 0 : parsed });
                     }}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   />
                 </div>
                 <div>
@@ -1501,7 +1501,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                     type="text"
                     value={editForm.tags}
                     onChange={(e) => setEditForm({ ...editForm, tags: e.target.value })}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                     placeholder="design, roteiro"
                   />
                 </div>
@@ -1512,7 +1512,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                 <select
                   value={editForm.depends_on}
                   onChange={(e) => setEditForm({ ...editForm, depends_on: e.target.value })}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                 >
                   <option value="">Sem dependência</option>
                   {deliverables
@@ -1532,9 +1532,9 @@ const EnhancedDeliverableManagement: React.FC = () => {
                     {editingDeliverable.deliverable_files.map((file, index) => (
                       <div
                         key={`modal-${editingDeliverable.id}-file-${index}`}
-                        className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200 hover:border-purple-500 transition"
+                        className="flex items-center gap-2 p-2 bg-gray-50 rounded border border-gray-200 hover:border-[#00FF41] transition"
                       >
-                        <FileText className="h-4 w-4 text-purple-500" />
+                        <FileText className="h-4 w-4 text-[#00FF41]" />
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-medium text-gray-900 truncate">{file.name || 'Arquivo'}</p>
                           <p className="text-xs text-gray-500">{formatFileSize(file.size)}</p>
@@ -1563,7 +1563,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                                 alert('Erro ao gerar link do arquivo.');
                               }
                             }}
-                            className="text-xs font-medium text-purple-600 hover:text-purple-700 px-2 py-1 rounded hover:bg-purple-50 transition"
+                            className="text-xs font-medium text-[#00FF41] hover:text-[#00CC34] px-2 py-1 rounded hover:bg-[#00FF41]/10 transition"
                           >
                             Baixar
                           </button>
@@ -1587,7 +1587,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
               </button>
               <button
                 onClick={handleUpdateDeliverable}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+                className="px-4 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34]"
               >
                 Salvar Alterações
               </button>
@@ -1612,7 +1612,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                 <select
                   value={selectedApplication}
                   onChange={(e) => setSelectedApplication(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                 >
                   <option value="">Selecione um projeto...</option>
                   {applications.map((app) => (
@@ -1644,9 +1644,9 @@ const EnhancedDeliverableManagement: React.FC = () => {
                           key={template.name}
                           className={`border rounded-lg p-4 cursor-pointer transition-colors ${
                             selectedTemplate === template.name
-                              ? 'border-purple-500 bg-purple-50'
+                              ? 'border-[#00FF41] bg-[#00FF41]/10'
                               : isCompatible
-                              ? 'border-gray-300 hover:border-purple-300'
+                              ? 'border-gray-300 hover:border-[#00FF41]/50'
                               : 'border-gray-200 bg-gray-50 cursor-not-allowed opacity-60'
                           }`}
                           onClick={() => isCompatible && setSelectedTemplate(template.name)}
@@ -1659,7 +1659,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                                 {template.content_types.map((type) => (
                                   <span
                                     key={type}
-                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                                    className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-[#00FF41]/10 text-[#00FF41]"
                                   >
                                     {type}
                                   </span>
@@ -1674,7 +1674,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                                 <div className="space-y-1">
                                   {template.deliverables.map((deliverable, index) => (
                                     <div key={index} className="text-xs text-gray-600 flex items-center">
-                                      <span className="w-4 h-4 bg-purple-100 text-purple-600 rounded-full text-center text-xs font-medium mr-2">
+                                      <span className="w-4 h-4 bg-[#00FF41]/10 text-[#00FF41] rounded-full text-center text-xs font-medium mr-2">
                                         {deliverable.priority}
                                       </span>
                                       <span>{deliverable.title}</span>
@@ -1718,7 +1718,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
               <button
                 onClick={() => createDeliverablesFromTemplate(selectedApplication, selectedTemplate)}
                 disabled={!selectedApplication || !selectedTemplate}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Criar Deliverables
               </button>
@@ -1743,7 +1743,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                 <select
                   value={selectedApplication}
                   onChange={(e) => setSelectedApplication(e.target.value)}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                 >
                   <option value="">Selecione um projeto...</option>
                   {applications.map((app) => (
@@ -1762,7 +1762,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                   type="text"
                   value={customForm.title}
                   onChange={(e) => setCustomForm({...customForm, title: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   placeholder="Ex: Briefing e Conceito Creative"
                 />
               </div>
@@ -1774,7 +1774,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                 <textarea
                   value={customForm.description}
                   onChange={(e) => setCustomForm({...customForm, description: e.target.value})}
-                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                  className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   placeholder="Descreva o que deve ser entregue..."
                   rows={3}
                 />
@@ -1790,7 +1790,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                     value={customForm.due_date}
                     onChange={(e) => setCustomForm({...customForm, due_date: e.target.value})}
                     min={new Date().toISOString().split('T')[0]}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   />
                 </div>
                 
@@ -1801,7 +1801,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                   <select
                     value={customForm.priority}
                     onChange={(e) => setCustomForm({...customForm, priority: parseInt(e.target.value)})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   >
                     <option value={1}>1 - Mais Alta</option>
                     <option value={2}>2 - Alta</option>
@@ -1822,7 +1822,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                     value={customForm.estimated_hours}
                     onChange={(e) => setCustomForm({...customForm, estimated_hours: parseInt(e.target.value) || 0})}
                     min="0"
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                     placeholder="0"
                   />
                 </div>
@@ -1835,7 +1835,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
                     type="text"
                     value={customForm.tags}
                     onChange={(e) => setCustomForm({...customForm, tags: e.target.value})}
-                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                     placeholder="design, conceito, briefing"
                   />
                 </div>
@@ -1863,7 +1863,7 @@ const EnhancedDeliverableManagement: React.FC = () => {
               <button
                 onClick={createCustomDeliverable}
                 disabled={!selectedApplication || !customForm.title || !customForm.due_date}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 Criar Deliverable
               </button>

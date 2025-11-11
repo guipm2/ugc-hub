@@ -18,8 +18,8 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
             <ArrowLeft className="h-5 w-5" />
           </button>
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-              <FileText className="h-6 w-6 text-blue-600" />
+            <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+              <FileText className="h-6 w-6 text-influenciando-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Termos de Uso</h1>
@@ -31,8 +31,8 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
 
       {!onBack && (
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-12 h-12 bg-blue-100 rounded-xl flex items-center justify-center">
-            <FileText className="h-6 w-6 text-blue-600" />
+          <div className="w-12 h-12 bg-green-100 rounded-xl flex items-center justify-center">
+            <FileText className="h-6 w-6 text-influenciando-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold text-gray-900">Termos de Uso</h1>
@@ -47,11 +47,11 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
             {/* Seção 1: Introdução */}
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Users className="h-5 w-5 text-blue-600" />
+                <Users className="h-5 w-5 text-influenciando-primary" />
                 1. Introdução e Aceitação
               </h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                Bem-vindo à UGC Hub, uma plataforma que conecta criadores de conteúdo com empresas e analistas para campanhas de marketing. 
+                Bem-vindo à Influenciando, uma plataforma que conecta criadores de conteúdo com empresas e analistas para campanhas de marketing. 
                 Ao utilizar nossa plataforma, você concorda com estes Termos de Uso e nossa Política de Privacidade.
               </p>
               <p className="text-gray-700 leading-relaxed">
@@ -65,7 +65,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">2. Definições</h2>
               <div className="bg-gray-50 rounded-lg p-4 mb-4">
                 <ul className="space-y-2 text-gray-700">
-                  <li><strong>Plataforma:</strong> A UGC Hub e todos os seus serviços</li>
+                  <li><strong>Plataforma:</strong> A Influenciando e todos os seus serviços</li>
                   <li><strong>Criador:</strong> Usuário que produz conteúdo para campanhas</li>
                   <li><strong>Analista:</strong> Representante de empresa que cria oportunidades</li>
                   <li><strong>Oportunidade:</strong> Campanha de marketing criada por analistas</li>
@@ -146,7 +146,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
                 Em caso de cancelamento da campanha, as partes devem negociar uma compensação justa pelo trabalho já realizado.
               </p>
               <p className="text-gray-700 leading-relaxed">
-                A plataforma UGC Hub atua como intermediária, mas não é responsável por disputas contratuais entre as partes.
+                A plataforma Influenciando atua como intermediária, mas não é responsável por disputas contratuais entre as partes.
               </p>
             </section>
 
@@ -154,7 +154,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">6. Limitação de Responsabilidade</h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                A UGC Hub fornece a plataforma "como está" e não garante resultados específicos das campanhas. 
+                A Influenciando fornece a plataforma "como está" e não garante resultados específicos das campanhas. 
                 Nossa responsabilidade é limitada ao funcionamento técnico da plataforma.
               </p>
               <p className="text-gray-700 leading-relaxed">
@@ -177,8 +177,8 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
               <h2 className="text-xl font-semibold text-gray-900 mb-4">8. Contato</h2>
               <p className="text-gray-700 leading-relaxed">
                 Para dúvidas sobre estes termos, entre em contato conosco através do email: 
-                <a href="mailto:legal@ugchub.com" className="text-blue-600 hover:text-blue-700 font-medium">
-                  legal@ugchub.com
+                <a href="mailto:legal@influenciando.com" className="text-[#00FF41] hover:text-[#00CC34] font-medium">
+                  legal@influenciando.com
                 </a>
               </p>
             </section>
@@ -187,7 +187,7 @@ const TermsOfService: React.FC<TermsOfServiceProps> = ({ onBack }) => {
 
       {/* Footer */}
       <div className="text-center mt-8 text-gray-500 text-sm">
-        <p>© 2025 UGC Hub. Todos os direitos reservados.</p>
+        <p>© 2025 Influenciando. Todos os direitos reservados.</p>
       </div>
     </div>
   );

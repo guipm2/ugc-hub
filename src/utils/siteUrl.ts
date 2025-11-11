@@ -9,6 +9,6 @@ export const resolveSiteUrl = () => {
     return window.location.origin;
   }
 
-  // Fallback para o domínio Netlify padrão caso esteja fora do navegador
-  return 'https://turbocontent.netlify.app';
+  // Fallback genérico - configure VITE_SITE_URL nas variáveis de ambiente
+  return 'http://localhost:5173';
 };

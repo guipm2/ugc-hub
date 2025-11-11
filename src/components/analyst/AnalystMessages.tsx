@@ -4,6 +4,7 @@ import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRouter } from '../../hooks/useRouter';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
+import { useTabVisibility } from '../../hooks/useTabVisibility';
 
 // Unified conversation - one per analyst-creator pair
 interface UnifiedConversation {
@@ -430,6 +431,15 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
 
   useAutoRefresh(fetchConversations, 20000, Boolean(analyst));
 
+  // Recarregar quando a aba voltar a ficar visível
+  useTabVisibility(() => {
+    console.log('🔄 [ANALYST MESSAGES] Recarregando conversas após aba voltar a ficar visível');
+    fetchConversations();
+    if (selectedConversation?.id) {
+      fetchMessages(selectedConversation.id);
+    }
+  });
+
   useEffect(() => {
     if (selectedConversationId) {
       const conversation = conversations.find(c => c.id === selectedConversationId);
@@ -514,7 +524,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
   if (loading) {
     return (
       <div className="flex items-center justify-center h-96">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF41]"></div>
       </div>
     );
   }
@@ -538,7 +548,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
               placeholder="Buscar conversas..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+              className="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
             />
           </div>
         </div>
@@ -561,12 +571,12 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                   key={conversation.id}
                   onClick={() => setSelectedConversation(conversation)}
                   className={`p-4 border-b border-gray-100 cursor-pointer hover:bg-gray-50 ${
-                    selectedConversation?.id === conversation.id ? 'bg-purple-50' : ''
+                    selectedConversation?.id === conversation.id ? 'bg-[#00FF41]/10' : ''
                   }`}
                 >
                   <div className="flex items-start space-x-3">
-                    <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                      <span className="text-purple-600 font-medium text-sm">
+                    <div className="w-10 h-10 bg-[#00FF41]/10 rounded-full flex items-center justify-center">
+                      <span className="text-[#00FF41] font-medium text-sm">
                         {conversation.creator?.name?.[0] || 'U'}
                       </span>
                     </div>
@@ -591,7 +601,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                           {tags.map((tag) => (
                             <span
                               key={tag}
-                              className="inline-flex items-center rounded-full bg-purple-50 px-2.5 py-0.5 text-[11px] font-medium text-purple-700"
+                              className="inline-flex items-center rounded-full bg-[#00FF41]/10 px-2.5 py-0.5 text-[11px] font-medium text-[#00FF41]"
                             >
                               #{tag}
                             </span>
@@ -603,7 +613,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                       {conversation.projects.length > 0 && (
                         <div className="mt-2">
                           {conversation.projects.slice(0, 2).map((project) => (
-                            <p key={project.id} className="text-xs text-purple-600 font-medium truncate">
+                            <p key={project.id} className="text-xs text-[#00FF41] font-medium truncate">
                               📁 {project.opportunity_title}
                             </p>
                           ))}
@@ -644,8 +654,8 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                 >
                   <ArrowLeft className="h-5 w-5" />
                 </button>
-                <div className="w-10 h-10 bg-purple-100 rounded-full flex items-center justify-center">
-                  <span className="text-purple-600 font-medium text-sm">
+                <div className="w-10 h-10 bg-[#00FF41]/10 rounded-full flex items-center justify-center">
+                  <span className="text-[#00FF41] font-medium text-sm">
                     {selectedConversation.creator?.name?.[0] || 'U'}
                   </span>
                 </div>
@@ -666,7 +676,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                 {activeProject && (
                   <button
                     onClick={() => navigate(`/analysts/projects/${activeProject.id}`)}
-                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700"
+                    className="inline-flex items-center justify-center gap-2 rounded-lg bg-[#00FF41] px-4 py-2 text-black transition-colors hover:bg-[#00CC34]"
                   >
                     <ExternalLink className="h-4 w-4" />
                     <span>Ver Projeto</span>
@@ -694,7 +704,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                 {chatTags.map((tag) => (
                   <span
                     key={tag}
-                    className="inline-flex items-center rounded-full bg-purple-50 px-3 py-1 text-xs font-medium text-purple-700"
+                    className="inline-flex items-center rounded-full bg-[#00FF41]/10 px-3 py-1 text-xs font-medium text-[#00FF41]"
                   >
                     #{tag}
                   </span>
@@ -725,7 +735,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                     value={chatTitleInput}
                     onChange={(event) => setChatTitleInput(event.target.value)}
                     placeholder="Defina um nome descritivo para este chat"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-500"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-[#00FF41] focus:ring-2 focus:ring-[#00FF41]"
                   />
                   <p className="mt-2 text-xs text-gray-500">
                     Deixe em branco para usar o nome do criador ou do projeto automaticamente.
@@ -738,7 +748,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                     value={chatTagsInput}
                     onChange={(event) => setChatTagsInput(event.target.value)}
                     placeholder="ex: briefing, revisão, contrato"
-                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-purple-500 focus:ring-2 focus:ring-purple-500"
+                    className="mt-1 w-full rounded-lg border border-gray-300 px-3 py-2 focus:border-[#00FF41] focus:ring-2 focus:ring-[#00FF41]"
                   />
                   <p className="mt-2 text-xs text-gray-500">
                     Máximo de 10 tags. Utilize palavras-chave curtas para categorizar o chat.
@@ -756,7 +766,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                     type="button"
                     onClick={handleSaveChatDetails}
                     disabled={savingChatDetails}
-                    className="flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-white transition-colors hover:bg-purple-700 disabled:cursor-not-allowed disabled:bg-purple-400"
+                    className="flex items-center gap-2 rounded-lg bg-[#00FF41] px-4 py-2 text-black transition-colors hover:bg-[#00CC34] disabled:cursor-not-allowed disabled:bg-[#00CC34]"
                   >
                     {savingChatDetails ? (
                       <span className="h-5 w-5 animate-spin rounded-full border-b-2 border-white"></span>
@@ -782,7 +792,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                 <div
                   className={`max-w-xs lg:max-w-md px-4 py-2 rounded-lg ${
                     message.sender_type === 'analyst'
-                      ? 'bg-purple-600 text-white'
+                      ? 'bg-[#00FF41] text-black'
                       : 'bg-gray-100 text-gray-900'
                   }`}
                 >
@@ -821,7 +831,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
                 value={newMessage}
                 onChange={(e) => setNewMessage(e.target.value)}
                 placeholder="Digite sua mensagem..."
-                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-500"
+                className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                 onKeyPress={(e) => {
                   if (e.key === 'Enter') {
                     e.preventDefault();
@@ -832,7 +842,7 @@ const AnalystMessages: React.FC<AnalystMessagesProps> = ({
               <button
                 onClick={sendMessage}
                 disabled={!newMessage.trim()}
-                className="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-4 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34] disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Send className="h-5 w-5" />
               </button>

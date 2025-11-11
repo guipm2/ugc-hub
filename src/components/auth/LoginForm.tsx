@@ -93,7 +93,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, onForgotPassword, o
           <div className="glass-panel w-full max-w-md space-y-5 px-6 py-7">
             <h3 className="text-lg font-semibold text-white">Aceitar Termos de Uso</h3>
             <p className="text-sm text-slate-300">
-              Para continuar usando o UGC Hub, aceite os novos termos de uso. Eles garantem pagamentos protegidos e transparência nos fluxos.
+              Para continuar usando a Influenciando, aceite os novos termos de uso. Eles garantem pagamentos protegidos e transparência nos fluxos.
             </p>
             <div className="flex items-center gap-3 pt-2">
               <button
@@ -107,7 +107,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, onForgotPassword, o
               </button>
               <button
                 onClick={handleAcceptTerms}
-                className="flex-1 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] px-4 py-2 text-sm font-semibold text-white shadow-[0_18px_38px_rgba(74,91,255,0.45)] transition hover:shadow-[0_22px_48px_rgba(74,91,255,0.55)]"
+                className="flex-1 rounded-full bg-gradient-to-r from-[#00FF41] via-[#00CC34] to-[#00FF41] px-4 py-2 text-sm font-semibold text-black shadow-neon transition hover:shadow-neon-lg"
               >
                 Aceitar termos
               </button>
@@ -128,14 +128,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, onForgotPassword, o
             Email
           </label>
           <div className="relative">
-            <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+            <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
               placeholder="seu@email.com"
             />
           </div>
@@ -146,14 +146,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, onForgotPassword, o
             Senha
           </label>
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+            <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
             <input
               id="password"
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
-              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
               placeholder="Sua senha"
             />
             <button
@@ -170,14 +170,14 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, onForgotPassword, o
           <label className="flex items-center gap-2">
             <input
               type="checkbox"
-              className="h-4 w-4 rounded border-white/20 bg-white/5 text-[#6E4FFF] focus:ring-[#6E4FFF]"
+              className="h-4 w-4 rounded border-white/20 bg-white/5 text-influenciando-primary focus:ring-influenciando-primary"
             />
             <span className="tracking-wide">Lembrar de mim</span>
           </label>
           <button
             type="button"
             onClick={onForgotPassword}
-            className="font-semibold uppercase tracking-[0.25em] text-[#9A91FF] transition hover:text-white"
+            className="font-semibold uppercase tracking-[0.25em] text-[#00FF41] transition hover:text-white"
           >
             Esqueceu a senha?
           </button>
@@ -186,7 +186,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, onForgotPassword, o
         <button
           type="submit"
           disabled={loading}
-          className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] px-6 py-3 text-sm font-semibold text-white shadow-[0_25px_55px_-18px_rgba(74,91,255,0.6)] transition hover:scale-[1.02] hover:shadow-[0_30px_65px_-20px_rgba(74,91,255,0.65)] disabled:opacity-50"
+          className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#00FF41] via-[#00CC34] to-[#00FF41] px-6 py-3 text-sm font-semibold text-black shadow-neon transition hover:scale-[1.02] hover:shadow-neon-lg disabled:opacity-50"
         >
           {loading ? (
             <>
@@ -203,7 +203,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, onForgotPassword, o
           <button
             type="button"
             onClick={onToggleMode}
-            className="font-semibold text-[#9A91FF] transition hover:text-white"
+            className="font-semibold text-[#00FF41] transition hover:text-white"
           >
             Cadastre-se
           </button>
@@ -214,7 +214,7 @@ const LoginForm: React.FC<LoginFormProps> = ({ onToggleMode, onForgotPassword, o
           <button
             type="button"
             onClick={onNavigateToAnalysts}
-            className="font-semibold text-[#9A91FF] transition hover:text-white"
+            className="font-semibold text-[#00FF41] transition hover:text-white"
           >
             Acesse a área de analistas →
           </button>

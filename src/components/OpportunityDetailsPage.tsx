@@ -13,8 +13,7 @@ interface OpportunityDetails {
   company: string;
   company_link?: string;
   description: string;
-  budget_min: number;
-  budget_max: number;
+  budget: number;
   location: string;
   content_type: string;
   requirements: string[];
@@ -117,7 +116,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
         .insert({
           opportunity_id: opportunity.id,
           creator_id: user.id,
-          message: applicationMessage || 'Candidatura enviada através da plataforma UGC Hub',
+          message: applicationMessage || 'Candidatura enviada através da plataforma',
           status: 'pending'
         });
 
@@ -224,7 +223,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
   const isClosed = opportunity.status !== 'ativo' || daysLeft <= 0;
   const deadlineStatusClass = daysLeft <= 0 ? 'chip-danger' : daysLeft <= 3 ? 'chip-danger' : daysLeft <= 7 ? 'chip-warning' : 'chip-success';
   const deadlineLabel = daysLeft > 0 ? `${daysLeft} dias restantes` : 'Prazo expirado';
-  const budgetDisplay = formatBudget(opportunity.budget_min, opportunity.budget_max);
+  const budgetDisplay = opportunity.budget ? `R$ ${opportunity.budget.toFixed(2)}` : 'A combinar';
 
   return (
     <div className="min-h-screen pb-16">
@@ -284,7 +283,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   <div className="surface-muted rounded-2xl border border-white/12 p-4 flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                      <Building2 className="h-4 w-4 text-indigo-200" />
+                      <Building2 className="h-4 w-4 text-[#00FF41]" />
                     </div>
                     <div>
                       <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Empresa</p>
@@ -344,15 +343,15 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
               </div>
               <div className="surface-muted rounded-2xl border border-white/12 p-4 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-300">
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-indigo-200" />
+                  <Users className="h-4 w-4 text-[#00FF41]" />
                   {opportunity.candidates_count || 0} candidatos
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-indigo-200" />
+                  <Calendar className="h-4 w-4 text-[#00FF41]" />
                   Criada em {formatDate(opportunity.created_at)}
                 </div>
                 <div className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-indigo-200" />
+                  <Calendar className="h-4 w-4 text-[#00FF41]" />
                   Prazo: {formatDate(opportunity.deadline)}
                 </div>
               </div>
@@ -370,7 +369,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                   {opportunity.requirements.map((req, index) => (
                     <div key={index} className="surface-muted rounded-2xl border border-white/12 p-4 flex items-start gap-3">
                       <div className="p-2 rounded-full bg-white/5 border border-white/10 mt-0.5">
-                        <Check className="h-3.5 w-3.5 text-indigo-200" />
+                        <Check className="h-3.5 w-3.5 text-[#00FF41]" />
                       </div>
                       <span className="text-sm text-gray-200">{req}</span>
                     </div>
@@ -417,7 +416,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                 </div>
                 <div className="surface-muted rounded-2xl border border-white/12 p-5 flex items-start gap-4">
                   <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex-shrink-0">
-                    <Building2 className="h-6 w-6 text-indigo-200" />
+                    <Building2 className="h-6 w-6 text-[#00FF41]" />
                   </div>
                   <div className="flex-1 min-w-0 space-y-2">
                     <p className="text-lg font-semibold text-white/95 truncate">{opportunity.company}</p>
@@ -426,7 +425,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                       Membro desde {formatDate(opportunity.created_at)}
                     </p>
                     <p className="text-sm text-gray-300 leading-relaxed">
-                      A marca utiliza o ecossistema da UGC Hub para encontrar criadores alinhados ao seu posicionamento digital.
+                      A marca utiliza a plataforma para encontrar criadores alinhados ao seu posicionamento digital.
                     </p>
                   </div>
                 </div>
@@ -503,7 +502,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                 <div className="surface-muted rounded-2xl border border-white/12 p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                      <Tag className="h-4 w-4 text-indigo-200" />
+                      <Tag className="h-4 w-4 text-[#00FF41]" />
                     </div>
                     <div>
                       <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Tipo de conteúdo</p>
@@ -526,7 +525,7 @@ const OpportunityDetailsPage: React.FC<OpportunityDetailsPageProps> = ({ opportu
                 <div className="surface-muted rounded-2xl border border-white/12 p-4">
                   <div className="flex items-center gap-3">
                     <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                      <Users className="h-4 w-4 text-indigo-200" />
+                      <Users className="h-4 w-4 text-[#00FF41]" />
                     </div>
                     <div>
                       <p className="text-xs uppercase tracking-[0.25em] text-gray-500">Candidatos</p>

@@ -100,7 +100,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
           </p>
           <button
             onClick={onToggleMode}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] px-6 py-3 text-sm font-semibold text-white shadow-[0_25px_55px_-18px_rgba(74,91,255,0.6)] transition hover:scale-[1.02] hover:shadow-[0_30px_65px_-20px_rgba(74,91,255,0.65)]"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#00FF41] via-[#00CC34] to-[#00FF41] px-6 py-3 text-sm font-semibold text-black shadow-neon transition hover:scale-[1.02] hover:shadow-neon-lg"
           >
             Voltar para login
           </button>
@@ -126,7 +126,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
             Nome completo
           </label>
           <div className="relative">
-            <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+            <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
             <input
               id="name"
               name="name"
@@ -134,7 +134,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
               value={formData.name}
               onChange={handleInputChange}
               required
-              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
               placeholder="Seu nome completo"
             />
           </div>
@@ -145,7 +145,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
             Email
           </label>
           <div className="relative">
-            <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+            <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
             <input
               id="email"
               name="email"
@@ -153,7 +153,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
               value={formData.email}
               onChange={handleInputChange}
               required
-              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
               placeholder="seu@email.com"
             />
           </div>
@@ -164,7 +164,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
             Senha
           </label>
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+            <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
             <input
               id="password"
               name="password"
@@ -172,7 +172,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
               value={formData.password}
               onChange={handleInputChange}
               required
-              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
               placeholder="Mínimo 6 caracteres"
             />
             <button
@@ -190,7 +190,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
             Confirmar senha
           </label>
           <div className="relative">
-            <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+            <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
             <input
               id="confirmPassword"
               name="confirmPassword"
@@ -198,7 +198,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
               value={formData.confirmPassword}
               onChange={handleInputChange}
               required
-              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
               placeholder="Confirme sua senha"
             />
             <button
@@ -217,7 +217,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
             type="checkbox"
             checked={termsAccepted}
             onChange={(e) => setTermsAccepted(e.target.checked)}
-            className="mt-1 h-4 w-4 rounded border-white/20 bg-white/10 text-[#6E4FFF] focus:ring-[#6E4FFF]"
+            className="mt-1 h-4 w-4 rounded border-white/20 bg-white/10 text-influenciando-primary focus:ring-influenciando-primary"
           />
           <label htmlFor="terms" className="leading-relaxed">
             Eu concordo com os{' '}
@@ -227,7 +227,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
                 setLegalModalTab('terms');
                 setShowLegalModal(true);
               }}
-              className="font-semibold text-[#9A91FF] underline underline-offset-4 transition hover:text-white"
+              className="font-semibold text-[#00FF41] underline underline-offset-4 transition hover:text-white"
             >
               Termos de Uso
             </button>{' '}
@@ -238,7 +238,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
                 setLegalModalTab('privacy');
                 setShowLegalModal(true);
               }}
-              className="font-semibold text-[#9A91FF] underline underline-offset-4 transition hover:text-white"
+              className="font-semibold text-[#00FF41] underline underline-offset-4 transition hover:text-white"
             >
               Política de Privacidade
             </button>
@@ -248,7 +248,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
         <button
           type="submit"
           disabled={loading || !termsAccepted}
-          className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] px-6 py-3 text-sm font-semibold text-white shadow-[0_25px_55px_-18px_rgba(74,91,255,0.6)] transition hover:scale-[1.02] hover:shadow-[0_30px_65px_-20px_rgba(74,91,255,0.65)] disabled:opacity-50"
+          className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#00FF41] via-[#00CC34] to-[#00FF41] px-6 py-3 text-sm font-semibold text-black shadow-neon transition hover:scale-[1.02] hover:shadow-neon-lg disabled:opacity-50"
         >
           {loading ? (
             <>
@@ -265,7 +265,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onToggleMode }) => {
           <button
             type="button"
             onClick={onToggleMode}
-            className="font-semibold text-[#9A91FF] transition hover:text-white"
+            className="font-semibold text-[#00FF41] transition hover:text-white"
           >
             Faça login
           </button>

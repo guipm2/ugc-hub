@@ -93,7 +93,7 @@ const OpportunityImageGallery: React.FC<OpportunityImageGalleryProps> = ({
             <button
               key={image.id}
               onClick={() => openLightbox(index)}
-              className="aspect-square rounded-2xl overflow-hidden border-2 border-white/12 hover:border-indigo-400/50 transition-all group relative"
+              className="aspect-square rounded-2xl overflow-hidden border-2 border-white/12 hover:border-[#00FF41]/50 transition-all group relative"
             >
               <img
                 src={image.image_url}
@@ -182,7 +182,7 @@ const OpportunityImageGallery: React.FC<OpportunityImageGalleryProps> = ({
                       onClick={() => setCurrentImageIndex(index)}
                       className={`
                         flex-shrink-0 w-16 h-16 rounded-lg overflow-hidden border-2 transition-all
-                        ${index === currentImageIndex ? 'border-indigo-400 scale-110' : 'border-white/30 opacity-60 hover:opacity-100'}
+                        ${index === currentImageIndex ? 'border-[#00FF41] scale-110' : 'border-white/30 opacity-60 hover:opacity-100'}
                       `}
                     >
                       <img

@@ -72,7 +72,7 @@ const CreatorProfilePage: React.FC = () => {
 
     const cleanPhone = creator.phone.replace(/\D/g, '');
     const phoneWithCountry = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
-    const message = `Olá ${creator.name || creator.email}! Sou ${analyst.name || analyst.email}. Vi seu perfil na UGC Hub e gostaria de conversar sobre uma oportunidade.`;
+    const message = `Olá ${creator.name || creator.email}! Sou ${analyst.name || analyst.email}. Vi seu perfil na plataforma e gostaria de conversar sobre uma oportunidade.`;
     const whatsappUrl = `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(message)}`;
 
     window.open(whatsappUrl, '_blank', 'noopener,noreferrer');
@@ -150,7 +150,7 @@ const CreatorProfilePage: React.FC = () => {
         <p className="text-gray-600 mb-6">{error ?? 'O creator solicitado não existe ou foi removido.'}</p>
         <button
           onClick={() => navigate('/analysts/creators')}
-          className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34] transition-colors"
         >
           <ArrowLeft className="h-4 w-4" />
           Voltar para lista de creators
@@ -178,7 +178,7 @@ const CreatorProfilePage: React.FC = () => {
         <div className="bg-white rounded-xl shadow border border-gray-200 p-6 space-y-6">
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold">
+              <div className="w-16 h-16 bg-gradient-to-br from-[#00FF41] to-[#00CC34] rounded-full flex items-center justify-center text-white text-2xl font-bold">
                 {creator.name?.charAt(0) || creator.email?.charAt(0).toUpperCase()}
               </div>
               <div>
@@ -188,7 +188,7 @@ const CreatorProfilePage: React.FC = () => {
                   {creator.email}
                 </div>
                 {creator.niche && (
-                  <span className="inline-flex items-center px-2 py-1 mt-2 text-xs font-medium bg-purple-100 text-purple-700 rounded-full">
+                  <span className="inline-flex items-center px-2 py-1 mt-2 text-xs font-medium bg-[#00FF41]/10 text-[#00FF41] rounded-full">
                     {creator.niche.charAt(0).toUpperCase() + creator.niche.slice(1)}
                   </span>
                 )}
@@ -208,7 +208,7 @@ const CreatorProfilePage: React.FC = () => {
               <button
                 onClick={startConversation}
                 disabled={contacting}
-                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 disabled:bg-purple-300"
+                className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-[#00FF41] rounded-lg hover:bg-[#00CC34] disabled:bg-[#00FF41]/30"
               >
                 {contacting ? <Loader2 className="h-4 w-4 animate-spin" /> : <MessageCircle className="h-4 w-4" />}
                 {contacting ? 'Abrindo conversa...' : 'Enviar mensagem interna'}
@@ -218,7 +218,7 @@ const CreatorProfilePage: React.FC = () => {
                   href={creator.website.startsWith('http') ? creator.website : `https://${creator.website}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-purple-600 border border-purple-200 rounded-lg hover:bg-purple-50"
+                  className="inline-flex items-center gap-2 px-4 py-2 text-sm font-medium text-[#00FF41] border border-[#00FF41]/30 rounded-lg hover:bg-[#00FF41]/10"
                 >
                   <Globe className="h-4 w-4" />
                   Ver portfolio
@@ -228,9 +228,9 @@ const CreatorProfilePage: React.FC = () => {
           </div>
 
           {creator.bio && (
-            <div className="bg-purple-50 border border-purple-100 rounded-lg p-4">
-              <h2 className="text-sm font-semibold text-purple-800 mb-2">Sobre o creator</h2>
-              <p className="text-sm text-purple-900 leading-relaxed">{creator.bio}</p>
+            <div className="bg-[#00FF41]/5 border border-[#00FF41]/20 rounded-lg p-4">
+              <h2 className="text-sm font-semibold text-[#00FF41] mb-2">Sobre o creator</h2>
+              <p className="text-sm text-gray-900 leading-relaxed">{creator.bio}</p>
             </div>
           )}
 
@@ -277,7 +277,7 @@ const CreatorProfilePage: React.FC = () => {
                       href={creator.website.startsWith('http') ? creator.website : `https://${creator.website}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-purple-600 hover:text-purple-700"
+                      className="text-[#00FF41] hover:text-[#00CC34]"
                     >
                       {creator.website}
                     </a>

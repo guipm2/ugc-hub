@@ -40,16 +40,16 @@ const Training = () => {
       {/* Blur Overlay */}
       <div className="absolute inset-0 bg-white/80 backdrop-blur-sm z-10 flex items-center justify-center">
         <div className="text-center bg-white rounded-2xl shadow-xl p-8 max-w-md mx-4 border border-gray-200">
-          <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Lock className="h-8 w-8 text-blue-600" />
+          <div className="w-16 h-16 bg-[#00FF41]/10 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Lock className="h-8 w-8 text-[#00FF41]" />
           </div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">Em Breve</h2>
           <p className="text-gray-600 mb-4">
             Estamos preparando conteúdos incríveis para acelerar sua carreira como criador de conteúdo.
           </p>
-          <div className="bg-blue-50 rounded-lg p-4 text-left">
-            <h3 className="font-semibold text-blue-900 mb-2">O que você encontrará:</h3>
-            <ul className="text-sm text-blue-800 space-y-1">
+          <div className="bg-[#00FF41]/10 rounded-lg p-4 text-left">
+            <h3 className="font-semibold text-black mb-2">O que você encontrará:</h3>
+            <ul className="text-sm text-gray-700 space-y-1">
               <li>• Cursos de criação de conteúdo</li>
               <li>• Técnicas de negociação</li>
               <li>• Análise de métricas</li>
@@ -86,7 +86,7 @@ const Training = () => {
                 <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50">
                   <div className="h-1 bg-gray-300">
                     <div 
-                      className="h-full bg-blue-500 transition-all duration-300"
+                      className="h-full bg-[#00FF41] transition-all duration-300"
                       style={{ width: `${course.progress}%` }}
                     ></div>
                   </div>
@@ -118,9 +118,9 @@ const Training = () => {
                 <div className="space-y-2">
                   <div className="flex justify-between text-sm">
                     <span className="text-gray-600">Progresso</span>
-                    <span className="text-blue-600 font-medium">{course.progress}%</span>
+                    <span className="text-[#00FF41] font-medium">{course.progress}%</span>
                   </div>
-                  <button className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded-lg font-medium transition-colors">
+                  <button className="w-full bg-[#00FF41] hover:bg-[#00CC34] text-black py-2 px-4 rounded-lg font-medium transition-colors">
                     Continuar
                   </button>
                 </div>
@@ -139,7 +139,7 @@ const Training = () => {
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Seu Progresso</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <div className="text-center">
-            <div className="text-2xl font-bold text-blue-600">3</div>
+            <div className="text-2xl font-bold text-[#00FF41]">3</div>
             <div className="text-sm text-gray-600">Cursos Iniciados</div>
           </div>
           <div className="text-center">
@@ -147,7 +147,7 @@ const Training = () => {
             <div className="text-sm text-gray-600">Cursos Concluídos</div>
           </div>
           <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">8h</div>
+            <div className="text-2xl font-bold text-[#00FF41]">8h</div>
             <div className="text-sm text-gray-600">Tempo de Estudo</div>
           </div>
         </div>

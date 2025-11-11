@@ -234,14 +234,14 @@ const BasicCollaborationHub: React.FC<BasicCollaborationHubProps> = ({
                     className={`p-3 rounded-lg border transition-colors cursor-pointer hover:bg-gray-50 ${
                       activity.read
                         ? 'bg-white border-gray-100'
-                        : 'bg-blue-50 border-blue-100'
+                        : 'bg-[#00FF41]/10 border-[#00FF41]/30'
                     }`}
                     onClick={() => handleActivityClick(activity.id)}
                   >
                     <div className="flex items-start space-x-2">
                       <div className="flex items-center space-x-2 flex-shrink-0">
                         <div className={`w-2 h-2 rounded-full ${
-                          activity.read ? 'bg-gray-300' : 'bg-blue-500'
+                          activity.read ? 'bg-gray-300' : 'bg-[#00FF41]'
                         }`}></div>
                         <div className={`text-gray-600 ${
                           activity.read ? 'opacity-60' : ''
@@ -278,7 +278,7 @@ const BasicCollaborationHub: React.FC<BasicCollaborationHubProps> = ({
               {onlineUsers.length > 0 ? (
                 onlineUsers.map((user: SafeOnlineUser) => (
                   <div key={user.id} className="flex items-center space-x-3 p-2 rounded-lg hover:bg-gray-50">
-                    <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-blue-500 rounded-full flex items-center justify-center text-white text-sm font-medium">
+                    <div className="w-8 h-8 bg-gradient-to-br from-green-400 to-[#00FF41] rounded-full flex items-center justify-center text-white text-sm font-medium">
                       {user.name.charAt(0)}
                     </div>
                     <div className="flex-1">

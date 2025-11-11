@@ -18,7 +18,6 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
   selectedConversationId, 
   onBackToList 
 }) => {
-  const [sidebarExpanded, setSidebarExpanded] = useState(false);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [showSidebarUserDropdown, setShowSidebarUserDropdown] = useState(false);
   const { profile, signOut } = useAnalystAuth();
@@ -50,23 +49,13 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
     <div className="relative flex min-h-screen overflow-hidden text-slate-100">
       {/* Sidebar */}
       <div
-        className={`glass-sidebar fixed left-0 top-0 z-50 h-full overflow-hidden transition-all duration-300 ${
-          sidebarExpanded ? 'w-72' : 'w-20'
-        }`}
-        onMouseEnter={() => setSidebarExpanded(true)}
-        onMouseLeave={() => setSidebarExpanded(false)}
+        className="glass-sidebar fixed left-0 top-0 z-50 h-full w-72 overflow-hidden"
       >
         <div className="flex h-20 items-center px-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#6C4DFF] via-[#8C5CFF] to-[#C14DFF] text-sm font-bold text-white">
-            UGC
+          <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br from-[#00FF41] to-[#00CC34] text-sm font-bold text-black shadow-neon">
+            I
           </div>
-          <span
-            className={`text-sm font-semibold uppercase tracking-[0.45em] text-slate-200 transition-all duration-300 ${
-              sidebarExpanded
-                ? 'ml-3 max-w-[160px] opacity-100'
-                : 'ml-0 max-w-0 overflow-hidden opacity-0'
-            }`}
-          >
+          <span className="ml-3 text-sm font-semibold uppercase tracking-[0.45em] text-slate-200">
             Analyst
           </span>
         </div>
@@ -76,26 +65,19 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
             const Icon = item.icon;
             const isActive = isActiveRoute(item.path);
             const buttonClasses = [
-              'group relative w-full rounded-2xl transition-all duration-300',
-              sidebarExpanded
-                ? 'flex items-center gap-2 px-4 py-2.5'
-                : 'flex flex-col items-center justify-center gap-1 px-0 py-3'
+              'group relative w-full rounded-2xl transition-all duration-300 flex items-center gap-2 px-4 py-2.5'
             ];
 
             buttonClasses.push(
               isActive
-                ? sidebarExpanded
-                  ? 'bg-gradient-to-r from-[#6C4DFF]/85 via-[#8C5CFF]/80 to-[#C14DFF]/70 text-white shadow-[0_20px_55px_-26px_rgba(132,88,255,0.65)]'
-                  : 'text-white'
-                : sidebarExpanded
-                  ? 'text-slate-300 hover:bg-white/10 hover:text-white'
-                  : 'text-slate-300 hover:text-white'
+                ? 'bg-gradient-to-r from-[#00FF41]/85 to-[#00CC34]/70 text-black shadow-neon'
+                : 'text-slate-300 hover:bg-white/10 hover:text-white'
             );
 
             const iconWrapperClasses = [
               'flex h-11 w-11 items-center justify-center rounded-2xl border border-white/12 transition-all duration-300 shadow-inner shadow-black/30',
               isActive
-                ? 'bg-gradient-to-br from-[#6C4DFF] via-[#8C5CFF] to-[#C14DFF]'
+                ? 'bg-gradient-to-br from-[#00FF41] to-[#00CC34] shadow-neon-sm'
                 : 'bg-white/5 group-hover:bg-white/10'
             ].join(' ');
 
@@ -104,25 +86,13 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
                 <div className={iconWrapperClasses}>
                   <Icon
                     className={`h-5 w-5 ${
-                      isActive ? 'text-white drop-shadow-[0_0_12px_rgba(156,88,255,0.6)]' : 'text-slate-300 group-hover:text-white/90'
+                      isActive ? 'text-black drop-shadow-[0_0_12px_rgba(0,255,65,0.6)]' : 'text-slate-300 group-hover:text-white/90'
                     }`}
                   />
                 </div>
-                <span
-                  className={`whitespace-nowrap text-sm font-medium tracking-wide transition-all duration-300 ${
-                    sidebarExpanded
-                      ? 'ml-1 opacity-100 translate-x-0'
-                      : 'ml-0 max-w-0 overflow-hidden opacity-0 -translate-x-2 pointer-events-none'
-                  }`}
-                >
+                <span className="ml-1 whitespace-nowrap text-sm font-medium tracking-wide">
                   {item.label}
                 </span>
-
-                {!sidebarExpanded && (
-                  <div className="pointer-events-none absolute left-full ml-3 rounded-full border border-white/10 bg-slate-950/75 px-3 py-1 text-xs font-semibold uppercase tracking-[0.35em] text-slate-200 opacity-0 backdrop-blur-xl transition-opacity duration-200 group-hover:opacity-100">
-                    {item.label}
-                  </div>
-                )}
               </button>
             );
           })}
@@ -132,18 +102,12 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
           <div className="relative">
             <button
               onClick={() => setShowSidebarUserDropdown(!showSidebarUserDropdown)}
-              className={`group flex w-full items-center rounded-2xl bg-white/5 text-left transition-all duration-300 hover:bg-white/10 ${
-                sidebarExpanded ? 'justify-start gap-3 px-4 py-3' : 'justify-center px-0 py-2'
-              }`}
+              className="group flex w-full items-center justify-start gap-3 rounded-2xl bg-white/5 px-4 py-3 text-left transition-all duration-300 hover:bg-white/10"
             >
-              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#6C4DFF] via-[#8C5CFF] to-[#C14DFF] text-sm font-semibold text-white">
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#00FF41] to-[#00CC34] text-sm font-semibold text-black shadow-neon-sm">
                 {profile?.name?.charAt(0) || profile?.email?.charAt(0).toUpperCase()}
               </div>
-              <div
-                className={`min-w-0 transition-all duration-300 ${
-                  sidebarExpanded ? 'opacity-100 ml-2' : 'pointer-events-none opacity-0 max-w-0 ml-0 overflow-hidden'
-                }`}
-              >
+              <div className="min-w-0">
                 <div className="truncate text-sm font-semibold text-white">{profile?.name}</div>
                 <div className="text-xs uppercase tracking-[0.4em] text-slate-400">Analyst</div>
               </div>
@@ -152,11 +116,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
             {showSidebarUserDropdown && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setShowSidebarUserDropdown(false)} />
-                <div
-                  className={`absolute bottom-full mb-3 w-52 overflow-hidden rounded-2xl border border-white/12 bg-slate-950/95 backdrop-blur-[30px] saturate-150 ${
-                    sidebarExpanded ? 'left-0' : 'left-1/2 -translate-x-1/2'
-                  } z-20`}
-                >
+                <div className="absolute bottom-full left-0 mb-3 w-52 overflow-hidden rounded-2xl border border-white/12 bg-black/95 backdrop-blur-[30px] saturate-150 z-20">
                   <div className="divide-y divide-white/10 text-sm text-slate-200">
                     <button
                       onClick={() => {
@@ -193,10 +153,10 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
         </div>
       </div>
 
-      <div className={`flex-1 transition-all duration-300 ${sidebarExpanded ? 'ml-72' : 'ml-20'}`}>
+      <div className="flex-1 ml-72">
         <header
           className="glass-header overflow-visible fixed top-0 right-0 z-40 flex h-20 items-center justify-between px-6"
-          style={{ left: sidebarExpanded ? '288px' : '80px' }}
+          style={{ left: '288px' }}
         >
           <div className="w-full max-w-xl">
             <AnalystGlobalSearch />
@@ -210,7 +170,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
                 onClick={() => setShowUserDropdown(!showUserDropdown)}
                 className="group flex items-center gap-3 rounded-full border border-white/10 bg-white/5 px-3 py-2 transition hover:bg-white/10"
               >
-                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#6C4DFF] via-[#8C5CFF] to-[#C14DFF] text-sm font-semibold text-white">
+                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#00FF41] to-[#00CC34] text-sm font-semibold text-black shadow-neon-sm">
                   {profile?.name?.charAt(0) || profile?.email?.charAt(0).toUpperCase()}
                 </div>
                 <div className="text-left">
@@ -222,7 +182,7 @@ const AnalystDashboard: React.FC<AnalystDashboardProps> = ({
               {showUserDropdown && (
                 <>
                   <div className="fixed inset-0 z-10" onClick={() => setShowUserDropdown(false)} />
-                  <div className="absolute right-0 mt-3 w-56 overflow-hidden rounded-2xl border border-white/12 bg-slate-950/95 backdrop-blur-[30px] saturate-150 shadow-[0_25px_70px_-30px_rgba(12,18,45,0.85)]">
+                  <div className="absolute right-0 mt-3 w-56 overflow-hidden rounded-2xl border border-white/12 bg-black/95 backdrop-blur-[30px] saturate-150 shadow-[0_25px_70px_-30px_rgba(0,0,0,0.9)]">
                     <div className="divide-y divide-white/10 text-sm text-slate-200">
                       <button
                         onClick={() => {

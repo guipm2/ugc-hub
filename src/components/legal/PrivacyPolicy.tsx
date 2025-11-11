@@ -51,7 +51,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
                 1. Introdução
               </h2>
               <p className="text-gray-700 leading-relaxed mb-4">
-                A UGC Hub valoriza sua privacidade e está comprometida em proteger seus dados pessoais. 
+                A Influenciando valoriza sua privacidade e está comprometida em proteger seus dados pessoais. 
                 Esta Política de Privacidade explica como coletamos, usamos, armazenamos e protegemos suas informações.
               </p>
               <p className="text-gray-700 leading-relaxed">
@@ -62,7 +62,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
             {/* Seção 2: Informações que Coletamos */}
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <Database className="h-5 w-5 text-blue-600" />
+                <Database className="h-5 w-5 text-influenciando-primary" />
                 2. Informações que Coletamos
               </h2>
               
@@ -88,9 +88,9 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
             <section className="mb-8">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">3. Como Usamos suas Informações</h2>
               
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-6 mb-6">
-                <h3 className="text-lg font-semibold text-blue-900 mb-3">Finalidades Principais</h3>
-                <ul className="list-disc list-inside space-y-2 text-blue-800">
+              <div className="bg-[#00FF41]/10 border border-[#00FF41]/30 rounded-lg p-6 mb-6">
+                <h3 className="text-lg font-semibold text-black mb-3">Finalidades Principais</h3>
+                <ul className="list-disc list-inside space-y-2 text-gray-700">
                   <li>Facilitar conexões entre criadores e empresas</li>
                   <li>Processar pagamentos e transações</li>
                   <li>Fornecer suporte ao cliente</li>
@@ -238,8 +238,8 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
                   Para exercer seus direitos ou esclarecer dúvidas sobre privacidade, entre em contato:
                 </p>
                 <div className="space-y-2 text-gray-700">
-                  <p><strong>Email:</strong> <a href="mailto:privacidade@ugchub.com" className="text-blue-600 hover:text-blue-700">privacidade@ugchub.com</a></p>
-                  <p><strong>DPO (Encarregado de Dados):</strong> <a href="mailto:dpo@ugchub.com" className="text-blue-600 hover:text-blue-700">dpo@ugchub.com</a></p>
+                  <p><strong>Email:</strong> <a href="mailto:privacidade@influenciando.com" className="text-influenciando-primary hover:text-influenciando-secondary">privacidade@influenciando.com</a></p>
+                  <p><strong>DPO (Encarregado de Dados):</strong> <a href="mailto:dpo@influenciando.com" className="text-influenciando-primary hover:text-influenciando-secondary">dpo@influenciando.com</a></p>
                   <p><strong>Telefone:</strong> (11) 3000-0000</p>
                 </div>
               </div>
@@ -249,7 +249,7 @@ const PrivacyPolicy: React.FC<PrivacyPolicyProps> = ({ onBack }) => {
 
       {/* Footer */}
       <div className="text-center mt-8 text-gray-500 text-sm">
-        <p>© 2025 UGC Hub. Todos os direitos reservados.</p>
+        <p>© 2025 Influenciando. Todos os direitos reservados.</p>
       </div>
     </div>
   );

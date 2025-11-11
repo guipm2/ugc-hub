@@ -44,7 +44,7 @@ const ConfirmationStatusMessage: React.FC<{ state: ConfirmationState; errorMessa
   return (
     <div className="mx-auto mt-6 max-w-xl rounded-2xl border border-white/15 bg-white/5 px-6 py-5 text-left backdrop-blur-md">
       <div className="flex items-start gap-3 text-sm text-slate-200">
-        <MailCheck className="mt-1 h-6 w-6 text-[#8A7CFF]" />
+        <MailCheck className="mt-1 h-6 w-6 text-influenciando-primary" />
         <div className="space-y-1">
           <h2 className="text-base font-semibold text-white">Validando seu email...</h2>
           <p className="text-slate-200/80">Aguarde só um instante enquanto confirmamos suas credenciais.</p>
@@ -109,7 +109,7 @@ const EmailConfirmationPage: React.FC = () => {
           </div>
           <div className="space-y-2 text-sm text-slate-300">
             <p className="text-base text-slate-200">
-              Obrigado por confirmar seu email. Agora você pode acessar normalmente a plataforma UGC Hub.
+              Obrigado por confirmar seu email. Agora você pode acessar normalmente a plataforma Influenciando.
             </p>
             <p className="text-xs uppercase tracking-[0.35em] text-slate-400">
               Link detectado para <span className="font-semibold text-white">{accountType === 'analyst' ? 'analistas' : 'criadores'}</span>
@@ -124,18 +124,18 @@ const EmailConfirmationPage: React.FC = () => {
             <button
               type="button"
               onClick={() => handleNavigate('/login/analysts')}
-              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-semibold text-white transition hover:border-transparent hover:bg-gradient-to-r hover:from-[#4A5BFF] hover:via-[#6E4FFF] hover:to-[#B249FF] hover:shadow-[0_30px_60px_-25px_rgba(74,91,255,0.65)]"
+              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-semibold text-white transition hover:border-transparent hover:bg-gradient-to-r hover:from-[#00FF41] hover:to-[#00CC34] hover:shadow-neon-lg hover:text-black"
             >
-              <LogIn className="h-5 w-5 text-[#A69CFF] group-hover:text-white" />
+              <LogIn className="h-5 w-5 text-influenciando-primary group-hover:text-black" />
               Acessar como analista
             </button>
           ) : (
             <button
               type="button"
               onClick={() => handleNavigate('/login/creators')}
-              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-semibold text-white transition hover:border-transparent hover:bg-gradient-to-r hover:from-[#FF6CAB] hover:via-[#736FFF] hover:to-[#4BE1EC] hover:shadow-[0_30px_60px_-25px_rgba(255,108,171,0.55)]"
+              className="group inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-white/5 px-8 py-4 text-sm font-semibold text-white transition hover:border-transparent hover:bg-gradient-to-r hover:from-[#00FF41] hover:to-[#00CC34] hover:shadow-neon-lg hover:text-black"
             >
-              <LogIn className="h-5 w-5 text-[#FF9BCF] group-hover:text-white" />
+              <LogIn className="h-5 w-5 text-influenciando-primary group-hover:text-black" />
               Acessar como criador
             </button>
           )}

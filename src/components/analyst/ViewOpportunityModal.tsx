@@ -7,8 +7,7 @@ interface Opportunity {
   title: string;
   company: string;
   description: string;
-  budget_min: number;
-  budget_max: number;
+  budget: number;
   location: string;
   content_type: string;
   requirements: string[];
@@ -71,16 +70,16 @@ const ViewOpportunityModal: React.FC<ViewOpportunityModalProps> = ({ opportunity
               <div>
                 <p className="text-sm text-gray-500">Valor para Criador</p>
                 <p className="font-medium">
-                  {opportunity.budget_min === 0 && opportunity.budget_max === 0 
+                  {opportunity.budget === 0 
                     ? 'Permuta' 
-                    : `R$ ${opportunity.budget_min.toFixed(2)}`
+                    : `R$ ${opportunity.budget.toFixed(2)}`
                   }
                 </p>
               </div>
             </div>
 
             <div className="flex items-center gap-3">
-              <MapPin className="w-5 h-5 text-blue-600" />
+              <MapPin className="w-5 h-5 text-[#00FF41]" />
               <div>
                 <p className="text-sm text-gray-500">Localização</p>
                 <p className="font-medium">{opportunity.location}</p>
@@ -88,7 +87,7 @@ const ViewOpportunityModal: React.FC<ViewOpportunityModalProps> = ({ opportunity
             </div>
 
             <div className="flex items-center gap-3">
-              <Tag className="w-5 h-5 text-purple-600" />
+              <Tag className="w-5 h-5 text-[#00FF41]" />
               <div>
                 <p className="text-sm text-gray-500">Tipo de Conteúdo</p>
                 <p className="font-medium">{opportunity.content_type}</p>

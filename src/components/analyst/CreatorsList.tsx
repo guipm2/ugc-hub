@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Search, Filter, MapPin, Users, ExternalLink, Grid3X3, List, X, Phone, Calendar, Globe, MessageCircle, Mail } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
+import { useTabVisibility } from '../../hooks/useTabVisibility';
 import ModalPortal from '../common/ModalPortal';
 
 interface Creator {
@@ -36,6 +37,13 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
   useEffect(() => {
     fetchCreators();
   }, []);
+
+  // Recarregar quando a aba voltar a ficar visível
+  useTabVisibility(() => {
+    console.log('🔄 [ANALYST CREATORS] Recarregando creators após aba voltar a ficar visível');
+    setLoading(true);
+    fetchCreators();
+  });
 
   const fetchCreators = async () => {
     try {
@@ -75,7 +83,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
     const phoneWithCountryCode = cleanPhone.startsWith('55') ? cleanPhone : `55${cleanPhone}`;
     
     // Mensagem personalizada
-    const message = `Olá ${name}! Sou ${analyst?.name || analyst?.email}. Vi seu perfil na UGC Hub e gostaria de conversar sobre uma possível parceria.`;
+    const message = `Olá ${name}! Sou ${analyst?.name || analyst?.email}. Vi seu perfil na plataforma e gostaria de conversar sobre uma possível parceria.`;
     
     // Criar URL do WhatsApp
     const whatsappUrl = `https://wa.me/${phoneWithCountryCode}?text=${encodeURIComponent(message)}`;
@@ -141,7 +149,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF41]"></div>
       </div>
     );
   }
@@ -164,7 +172,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
               placeholder="Pesquisar criadores..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
             />
           </div>
         </div>
@@ -176,7 +184,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-md transition-colors ${
                 viewMode === 'grid'
-                  ? 'bg-white text-purple-600 shadow-sm'
+                  ? 'bg-white text-[#00FF41] shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -186,7 +194,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
               onClick={() => setViewMode('list')}
               className={`p-2 rounded-md transition-colors ${
                 viewMode === 'list'
-                  ? 'bg-white text-purple-600 shadow-sm'
+                  ? 'bg-white text-[#00FF41] shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -197,7 +205,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
           <select
             value={nicheFilter}
             onChange={(e) => setNicheFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
           >
             <option value="">Todos os nichos</option>
             {niches.map(niche => (
@@ -228,14 +236,14 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
               /* List View */
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
-                  <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-sm font-bold flex-shrink-0">
+                  <div className="w-12 h-12 bg-gradient-to-br from-[#00FF41] to-[#00CC34] rounded-full flex items-center justify-center text-black text-sm font-bold flex-shrink-0">
                     {creator.name?.charAt(0) || creator.email?.charAt(0).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center gap-2 mb-1">
                       <h3 className="font-semibold text-gray-900 truncate">{creator.name || 'Nome não informado'}</h3>
                       {creator.niche && (
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium flex-shrink-0">
+                        <span className="px-2 py-1 bg-[#00FF41]/10 text-[#00FF41] rounded-full text-xs font-medium flex-shrink-0">
                           {creator.niche.charAt(0).toUpperCase() + creator.niche.slice(1)}
                         </span>
                       )}
@@ -301,7 +309,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
                       e.stopPropagation();
                       setShowContactModal(creator.id);
                     }}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+                    className="bg-[#00FF41] hover:bg-[#00CC34] text-black px-4 py-2 rounded-lg text-sm font-medium transition-colors"
                   >
                     Iniciar Conversa
                   </button>
@@ -312,7 +320,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
               <>
                 {/* Profile Header */}
                 <div className="text-center mb-4">
-                  <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-xl font-bold mx-auto mb-3">
+                  <div className="w-16 h-16 bg-gradient-to-br from-[#00FF41] to-[#00CC34] rounded-full flex items-center justify-center text-black text-xl font-bold mx-auto mb-3">
                     {creator.name?.charAt(0) || creator.email?.charAt(0).toUpperCase()}
                   </div>
                   <h3 className="font-semibold text-gray-900">{creator.name || 'Nome não informado'}</h3>
@@ -331,7 +339,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
                   {creator.niche && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 text-sm">
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                        <span className="px-2 py-1 bg-[#00FF41]/10 text-[#00FF41] rounded-full text-xs font-medium">
                           {creator.niche.charAt(0).toUpperCase() + creator.niche.slice(1)}
                         </span>
                       </div>
@@ -341,7 +349,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
                           e.stopPropagation();
                           setShowContactModal(creator.id);
                         }}
-                        className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                        className="w-full bg-[#00FF41] hover:bg-[#00CC34] text-black px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                       >
                         <MessageCircle className="h-4 w-4" />
                         Iniciar Conversa
@@ -354,7 +362,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
                         e.stopPropagation();
                         setShowContactModal(creator.id);
                       }}
-                      className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
+                      className="w-full bg-[#00FF41] hover:bg-[#00CC34] text-black px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <MessageCircle className="h-4 w-4" />
                       Iniciar Conversa
@@ -384,13 +392,13 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
 
               <div className="p-6 space-y-6">
                 <div className="text-center">
-                  <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
+                  <div className="w-24 h-24 bg-gradient-to-br from-[#00FF41] to-[#00CC34] rounded-full flex items-center justify-center text-black text-2xl font-bold mx-auto mb-4">
                     {selectedCreator.name?.charAt(0) || selectedCreator.email?.charAt(0).toUpperCase()}
                   </div>
                   <h3 className="text-2xl font-bold text-gray-900">{selectedCreator.name || 'Nome não informado'}</h3>
                   <p className="text-gray-600">{selectedCreator.email}</p>
                   {selectedCreator.niche && (
-                    <span className="inline-block mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                    <span className="inline-block mt-2 px-3 py-1 bg-[#00FF41]/10 text-[#00FF41] rounded-full text-sm font-medium">
                       {selectedCreator.niche.charAt(0).toUpperCase() + selectedCreator.niche.slice(1)}
                     </span>
                   )}
@@ -457,7 +465,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
                             href={selectedCreator.website}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-purple-600 hover:text-purple-700 transition-colors"
+                            className="text-[#00FF41] hover:text-[#00CC34] transition-colors"
                           >
                             {selectedCreator.website}
                           </a>
@@ -467,11 +475,11 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                  <Calendar className="h-5 w-5 text-blue-600" />
+                <div className="flex items-center gap-3 p-3 bg-[#00FF41]/5 rounded-lg">
+                  <Calendar className="h-5 w-5 text-[#00FF41]" />
                   <div>
-                    <p className="text-sm font-medium text-blue-900">Membro desde</p>
-                    <p className="text-blue-700">
+                    <p className="text-sm font-medium text-gray-900">Membro desde</p>
+                    <p className="text-[#00FF41]">
                       {new Date(selectedCreator.created_at).toLocaleDateString('pt-BR', {
                         year: 'numeric',
                         month: 'long',
@@ -502,7 +510,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
                       e.stopPropagation();
                       setShowContactModal(selectedCreator.id);
                     }}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 bg-[#00FF41] hover:bg-[#00CC34] text-black px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     <MessageCircle className="h-4 w-4" />
                     Iniciar Conversa
@@ -514,7 +522,7 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
                         e.stopPropagation();
                         window.open(selectedCreator.website, '_blank');
                       }}
-                      className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                      className="flex-1 bg-white/5 hover:bg-white/10 text-white border border-white/20 hover:border-[#00FF41]/30 px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                     >
                       <ExternalLink className="h-4 w-4" />
                       Ver Portfolio
@@ -577,9 +585,9 @@ const CreatorsList: React.FC<CreatorsListProps> = ({ onOpenConversation }) => {
                     setShowContactModal(null);
                   }}
                   disabled={contactingCreator === showContactModal}
-                  className="w-full flex items-center gap-4 p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-200 transition-colors disabled:opacity-50"
+                  className="w-full flex items-center gap-4 p-4 border border-white/20 rounded-lg hover:bg-[#00FF41]/5 hover:border-[#00FF41]/40 transition-colors disabled:opacity-50"
                 >
-                  <div className="w-12 h-12 bg-blue-600 rounded-full flex items-center justify-center">
+                  <div className="w-12 h-12 bg-[#00FF41] rounded-full flex items-center justify-center">
                     {contactingCreator === showContactModal ? (
                       <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white" />
                     ) : (

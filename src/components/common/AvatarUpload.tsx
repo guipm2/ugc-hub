@@ -149,7 +149,7 @@ const AvatarUpload: React.FC<AvatarUploadProps> = ({
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={uploading}
-            className="absolute -bottom-1 -right-1 p-2.5 rounded-full border-2 border-white/20 bg-gradient-to-r from-indigo-500 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="absolute -bottom-1 -right-1 p-2.5 rounded-full border-2 border-white/20 bg-gradient-to-r from-[#00FF41] to-[#00CC34] text-black shadow-neon hover:shadow-neon-lg transition-all hover:scale-110 disabled:opacity-50 disabled:cursor-not-allowed"
             title="Alterar foto de perfil"
           >
             {uploading ? (

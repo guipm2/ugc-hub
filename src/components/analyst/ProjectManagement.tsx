@@ -229,8 +229,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
             description,
             deadline,
             content_type,
-            budget_min,
-            budget_max,
+            budget,
             created_by,
             briefing
           ),
@@ -305,7 +304,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
           company: opportunity.company,
           content_type: opportunity.content_type,
           deadline: opportunity.deadline,
-          budget: `R$ ${opportunity.budget_min} - R$ ${opportunity.budget_max}`,
+          budget: `R$ ${opportunity.budget?.toFixed(2) || '0.00'}`,
           creator_id: app.creator_id,
           creator_name: creator.name || 'Nome não informado',
           creator_email: creator.email || '',
@@ -408,12 +407,12 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
       },
       in_progress: { 
         label: isOverdue ? 'Atrasado (Em andamento)' : 'Em andamento', 
-        color: isOverdue ? 'bg-red-100 text-red-800' : 'bg-blue-100 text-blue-800',
+        color: isOverdue ? 'bg-red-100 text-red-800' : 'bg-[#00FF41]/10 text-[#00FF41]',
         icon: isOverdue ? AlertCircle : Clock
       },
       submitted: { 
         label: 'Aguardando Revisão', 
-        color: 'bg-purple-100 text-purple-800',
+        color: 'bg-[#00FF41]/10 text-[#00FF41]',
         icon: Eye
       },
       approved: { 
@@ -547,7 +546,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
                     ...prev,
                     title: e.target.value
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   placeholder="Ex: Roteiro do vídeo"
                   required
                 />
@@ -564,7 +563,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
                     ...prev,
                     description: e.target.value
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   placeholder="Descreva o que precisa ser entregue..."
                   required
                 />
@@ -581,7 +580,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
                     ...prev,
                     due_date: e.target.value
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                   required
                 />
               </div>
@@ -596,7 +595,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
                     ...prev,
                     status: e.target.value as 'pending' | 'in_progress' | 'submitted' | 'approved' | 'rejected'
                   }))}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-[#00FF41]"
                 >
                   <option value="pending">Pendente</option>
                   <option value="in_progress">Em Progresso</option>
@@ -616,7 +615,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
               </button>
               <button
                 type="submit"
-                className="flex-1 px-4 py-2 text-white bg-blue-600 rounded-lg hover:bg-blue-700"
+                className="flex-1 px-4 py-2 text-black bg-[#00FF41] rounded-lg hover:bg-[#00CC34]"
               >
                 Criar Entrega
               </button>
@@ -636,7 +635,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
           <p className="text-gray-600 mt-1">Carregando projetos...</p>
         </div>
         <div className="flex items-center justify-center h-64">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF41]"></div>
         </div>
       </div>
     );
@@ -681,7 +680,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
             </button>
             <button
               onClick={() => openConversation(selectedProject)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+              className="bg-[#00FF41] hover:bg-[#00CC34] text-black px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
             >
               <MessageCircle className="h-4 w-4" />
               Conversar
@@ -733,7 +732,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
                 value={briefing}
                 onChange={(e) => setBriefing(e.target.value)}
                 placeholder="Digite aqui as instruções, conceito criativo, direcionamentos específicos e todas as informações que o creator precisa saber para desenvolver o projeto..."
-                className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                className="w-full h-32 p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-[#00FF41] resize-none"
                 disabled={briefingSaving}
               />
             </div>
@@ -741,11 +740,11 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
               <button
                 onClick={saveBriefing}
                 disabled={briefingSaving}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                className="bg-[#00FF41] hover:bg-[#00CC34] disabled:bg-[#00FF41]/40 text-black px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
               >
                 {briefingSaving ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-black"></div>
                     Salvando...
                   </>
                 ) : (
@@ -768,12 +767,12 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
             {selectedProject.standardDeliverables.length > 0 && (
               <div>
                 <h4 className="text-md font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-blue-600" />
+                  <Clock className="h-4 w-4 text-[#00FF41]" />
                   Entregas Padrão ({selectedProject.standardDeliverables.length})
                 </h4>
                 <div className="space-y-3">
                   {selectedProject.standardDeliverables.map((deliverable) => (
-                    <div key={deliverable.id} className="border border-gray-200 rounded-lg p-4 bg-blue-50/30">
+                    <div key={deliverable.id} className="border border-gray-200 rounded-lg p-4 bg-[#00FF41]/5">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
@@ -823,19 +822,19 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
             {selectedProject.customDeliverables.length > 0 && (
               <div>
                 <h4 className="text-md font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                  <AlertCircle className="h-4 w-4 text-purple-600" />
+                  <AlertCircle className="h-4 w-4 text-[#00FF41]" />
                   Entregas Específicas ({selectedProject.customDeliverables.length})
                 </h4>
                 <div className="space-y-3">
                   {selectedProject.customDeliverables.map((deliverable) => (
-                    <div key={deliverable.id} className="border border-purple-200 rounded-lg p-4 bg-purple-50/30">
+                    <div key={deliverable.id} className="border border-[#00FF41]/30 rounded-lg p-4 bg-[#00FF41]/5">
                       <div className="flex items-center justify-between">
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-2">
                             <h5 className="font-medium text-gray-900">{deliverable.title}</h5>
                             {getStatusBadge(deliverable.status, deliverable.due_date)}
                             {deliverable.priority && (
-                              <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                              <span className="px-2 py-1 bg-[#00FF41]/10 text-[#00FF41] rounded-full text-xs font-medium">
                                 Prioridade: {deliverable.priority}
                               </span>
                             )}
@@ -922,7 +921,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
                 onClick={() => setStatusFilter(option.key as 'all' | 'active' | 'completed' | 'overdue')}
                 className={`px-3 py-1 text-sm rounded-lg transition-colors ${
                   statusFilter === option.key
-                    ? 'bg-blue-100 text-blue-700 font-medium'
+                    ? 'bg-[#00FF41]/10 text-[#00FF41] font-medium'
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
               >
@@ -945,9 +944,9 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
                 : 'Nenhum projeto corresponde ao filtro selecionado'
               }
             </p>
-            <div className="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
-              <p className="text-sm text-blue-800 font-medium mb-2">💡 Como testar deliverables:</p>
-              <ol className="text-sm text-blue-700 space-y-1">
+            <div className="mt-4 p-4 bg-[#00FF41]/5 rounded-lg border border-[#00FF41]/30">
+              <p className="text-sm text-[#00FF41] font-medium mb-2">💡 Como testar deliverables:</p>
+              <ol className="text-sm text-gray-700 space-y-1">
                 <li>1. Vá para <strong>Oportunidades</strong> e crie uma nova oportunidade</li>
                 <li>2. Com outro usuário (criador), candidate-se à oportunidade</li>
                 <li>3. Volte aqui e aprove a candidatura</li>
@@ -969,8 +968,8 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                      <Folder className="h-6 w-6 text-blue-600" />
+                    <div className="w-12 h-12 bg-[#00FF41]/10 rounded-lg flex items-center justify-center">
+                      <Folder className="h-6 w-6 text-[#00FF41]" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900">{project.opportunity_title}</h3>
@@ -1004,7 +1003,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
                             ? 'bg-green-600' 
                             : projectStatus === 'overdue'
                             ? 'bg-red-600'
-                            : 'bg-blue-600'
+                            : 'bg-[#00FF41]'
                         }`}
                         style={{
                           width: `${progress.total > 0 ? (progress.completed / progress.total) * 100 : 0}%`
@@ -1025,7 +1024,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
                         </span>
                       )}
                       {projectStatus === 'review' && (
-                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-purple-100 text-purple-800">
+                        <span className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium rounded-full bg-[#00FF41]/10 text-[#00FF41]">
                           <Eye className="h-3 w-3" />
                           Revisar
                         </span>
@@ -1035,7 +1034,7 @@ const ProjectManagement: React.FC<ProjectManagementProps> = ({ onOpenConversatio
                           e.stopPropagation();
                           openConversation(project);
                         }}
-                        className="flex items-center gap-1 text-blue-600 hover:text-blue-700 transition-colors text-sm"
+                        className="flex items-center gap-1 text-[#00FF41] hover:text-[#00CC34] transition-colors text-sm"
                       >
                         <MessageCircle className="h-4 w-4" />
                         Chat

@@ -1,10 +1,10 @@
-# 🎯 Influenciando - Plataforma UGC
+# 🚀 Influenciando - Sua Plataforma UGC
 
-Uma plataforma completa para gestão de User Generated Content (UGC) que conecta **criadores de conteúdo** com **analistas** de forma eficiente e organizada.
+Uma plataforma inovadora que conecta **criadores de conteúdo** com **oportunidades de marcas** de forma eficiente, moderna e tecnológica.
 
 ## 📋 Sobre o Projeto
 
-O UGC Hub é uma aplicação web full-stack desenvolvida para facilitar a gestão de campanhas de UGC, onde analistas podem criar oportunidades, gerenciar projetos e definir prazos específicos, enquanto criadores podem se candidatar a projetos e acompanhar suas entregas.
+**Influenciando** é uma aplicação web full-stack desenvolvida para revolucionar a gestão de campanhas de UGC (User Generated Content). Com uma identidade visual moderna em preto e verde neon, a plataforma oferece uma experiência única onde analistas podem criar oportunidades, gerenciar projetos e definir prazos, enquanto criadores podem se candidatar a projetos e acompanhar suas entregas em tempo real.
 
 ### 🎪 Funcionalidades Principais
 
@@ -52,8 +52,8 @@ O UGC Hub é uma aplicação web full-stack desenvolvida para facilitar a gestã
 
 ### 1. Clone o repositório
 ```bash
-git clone https://github.com/guipm2/ugc-hub.git
-cd ugc-hub
+git clone https://github.com/your-username/ugc-platform.git
+cd ugc-platform
 ```
 
 ### 2. Instale as dependências
@@ -64,8 +64,18 @@ npm install
 ### 3. Configure as variáveis de ambiente
 Crie um arquivo `.env` na raiz do projeto:
 ```env
-VITE_SUPABASE_URL=sua_supabase_url
-VITE_SUPABASE_ANON_KEY=sua_supabase_anon_key
+# Supabase Configuration
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+
+# Site Configuration
+VITE_SITE_URL=https://your-platform-domain.com
+
+# Webhooks (opcional)
+VITE_OPPORTUNITY_CREATED_WEBHOOK_URL=https://your-webhook-url.com/webhook/opportunity-created
+
+# Analyst Access Control
+VITE_ANALYST_SIGNUP_SECRET=your_secure_secret_key
 ```
 
 ### 4. Configure o banco de dados
@@ -87,7 +97,7 @@ Acesse `http://localhost:5173` no seu navegador.
 ## 📁 Estrutura do Projeto
 
 ```
-ugc-hub/
+ugc-platform/
 ├── 📱 src/
 │   ├── 🎨 components/          # Componentes React
 │   │   ├── analyst/           # Componentes específicos para analistas
@@ -176,9 +186,19 @@ Este projeto está sob a licença MIT. Veja o arquivo [LICENSE](LICENSE) para ma
 
 ## 📞 Suporte
 
-Para dúvidas ou suporte, entre em contato:
-- 📧 Email: [guilherme.miranda@utopiasolutions.com.br]
-- 🐛 Issues: [GitHub Issues](https://github.com/guipm2/ugc-hub/issues)
+Para dúvidas ou suporte:
+- 📧 Email: [your-email@example.com]
+- 🐛 Issues: [GitHub Issues](https://github.com/your-username/ugc-platform/issues)
+
+## 🎨 Personalização (White Label)
+
+Esta plataforma foi desenvolvida para ser completamente personalizável:
+
+1. **Branding**: Altere cores, logos e identidade visual no `tailwind.config.js` e componentes
+2. **Domínio**: Configure sua própria URL através da variável `VITE_SITE_URL`
+3. **Email**: Personalize os endereços de contato nos componentes (ex: `Help.tsx`)
+4. **Webhooks**: Configure suas próprias integrações via variáveis de ambiente
+5. **Conteúdo**: Todos os textos podem ser customizados diretamente nos componentes
 
 ---
 

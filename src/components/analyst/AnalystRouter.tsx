@@ -39,26 +39,26 @@ const AnalystRouter: React.FC<AnalystRouterProps> = ({
   
   switch (route) {
     case '/overview':
-      return <AnalystOverview />;
+      return <AnalystOverview key={route} />;
     case '/project-dashboard':
-      return <EnhancedProjectDashboard />;
+      return <EnhancedProjectDashboard key={route} />;
     case '/opportunities':
-      return <OpportunityManagement />;
+      return <OpportunityManagement key={route} />;
     case '/stages':
-      return <OpportunityStagesManagementWrapper />;
+      return <OpportunityStagesManagementWrapper key={route} />;
     case '/projects':
-      return <ProjectManagement onOpenConversation={onOpenConversation} />;
+      return <ProjectManagement key={route} onOpenConversation={onOpenConversation} />;
     case '/deliverables':
-      return <EnhancedDeliverableManagement />;
+      return <EnhancedDeliverableManagement key={route} />;
     case '/creators':
-      return <CreatorsList onOpenConversation={onOpenConversation} />;
+      return <CreatorsList key={route} onOpenConversation={onOpenConversation} />;
     case '/messages':
-      return <AnalystMessages selectedConversationId={selectedConversationId} onBackToList={onBackToList} />;
+      return <AnalystMessages key={route} selectedConversationId={selectedConversationId} onBackToList={onBackToList} />;
     case '/settings':
     case '/profile':
-      return <AnalystAccountSettings />;
+      return <AnalystAccountSettings key={route} />;
     default:
-      return <AnalystOverview />;
+      return <AnalystOverview key={route} />;
   }
 };
 

@@ -3,6 +3,7 @@ import { Target, Users, TrendingUp, Eye, ArrowRight, Calendar, Folder } from 'lu
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
 import { useRouter } from '../../hooks/useRouter';
+import { useTabVisibility } from '../../hooks/useTabVisibility';
 import ViewOpportunityModal from './ViewOpportunityModal';
 
 interface DashboardStats {
@@ -207,6 +208,134 @@ const AnalystOverview: React.FC = () => {
     }
   }, [user]);
 
+  // Recarregar dados quando a aba voltar a ficar visível
+  useTabVisibility(() => {
+    if (user) {
+      console.log('🔄 [ANALYST OVERVIEW] Recarregando dados após aba voltar a ficar visível');
+      setLoading(true);
+      setLoadingProjects(true);
+      
+      const fetchDashboardData = async () => {
+        try {
+          const { data: opportunities, error: opportunitiesError } = await supabase
+            .from('opportunities')
+            .select('*')
+            .eq('created_by', user.id)
+            .order('created_at', { ascending: false });
+
+          if (opportunitiesError) {
+            console.error('Erro ao buscar oportunidades:', opportunitiesError);
+            return;
+          }
+
+          const activeOpportunities = opportunities?.filter(op => op.status === 'ativo').length || 0;
+          const completedOpportunities = opportunities?.filter(op => op.status === 'concluido').length || 0;
+
+          const { count: totalApplications } = await supabase
+            .from('opportunity_applications')
+            .select('*', { count: 'exact', head: true })
+            .in('opportunity_id', opportunities?.map(op => op.id) || []);
+
+          setStats({
+            activeOpportunities,
+            totalOpportunities: opportunities?.length || 0,
+            completedOpportunities,
+            totalApplications: totalApplications || 0,
+          });
+
+          const opportunitiesWithCandidatesCount = await Promise.all(
+            (opportunities || []).map(async (opp) => {
+              const { count, error: countError } = await supabase
+                .from('opportunity_applications')
+                .select('*', { count: 'exact', head: true })
+                .eq('opportunity_id', opp.id);
+
+              if (countError) {
+                console.error('Erro ao buscar contagem de candidatos:', countError);
+              }
+
+              return {
+                ...opp,
+                candidates_count: count || 0
+              };
+            })
+          );
+
+          setRecentOpportunities(opportunitiesWithCandidatesCount.slice(0, 5));
+        } catch (error) {
+          console.error('Erro ao buscar dados do dashboard:', error);
+        } finally {
+          setLoading(false);
+        }
+      };
+
+      const fetchUpcomingProjects = async () => {
+        try {
+          const thirtyDaysFromNow = new Date();
+          thirtyDaysFromNow.setDate(thirtyDaysFromNow.getDate() + 30);
+          
+          const { data: opportunities, error: opportunitiesError } = await supabase
+            .from('opportunities')
+            .select('id, title, company, deadline, created_by')
+            .eq('created_by', user.id)
+            .gte('deadline', new Date().toISOString().split('T')[0])
+            .lte('deadline', thirtyDaysFromNow.toISOString().split('T')[0])
+            .order('deadline', { ascending: true })
+            .limit(10);
+
+          if (opportunitiesError) {
+            console.error('Erro ao buscar oportunidades:', opportunitiesError);
+            setUpcomingProjects([]);
+            return;
+          }
+
+          if (!opportunities || opportunities.length === 0) {
+            setUpcomingProjects([]);
+            return;
+          }
+
+          const { data: applications, error: applicationsError } = await supabase
+            .from('opportunity_applications')
+            .select('*')
+            .eq('status', 'approved')
+            .in('opportunity_id', opportunities.map(opp => opp.id));
+
+          if (applicationsError) {
+            console.error('Erro ao buscar aplicações:', applicationsError);
+            setUpcomingProjects([]);
+            return;
+          }
+
+          const projectsData = (opportunities || [])
+            .map(opportunity => {
+              const application = applications?.find(app => app.opportunity_id === opportunity.id);
+              
+              if (!application) return null;
+
+              return {
+                id: opportunity.id,
+                title: opportunity.title,
+                company: opportunity.company,
+                creator_name: 'Creator',
+                deadline: opportunity.deadline,
+                status: 'Em andamento'
+              };
+            })
+            .filter(Boolean) as UpcomingProject[];
+
+          setUpcomingProjects(projectsData.slice(0, 5));
+        } catch (error) {
+          console.error('Erro ao buscar projetos:', error);
+        } finally {
+          setLoadingProjects(false);
+        }
+      };
+
+      fetchDashboardData();
+      fetchUpcomingProjects();
+    }
+  });
+
   const handleViewOpportunity = (opportunity: RecentOpportunity) => {
     setSelectedOpportunity(opportunity);
     setShowViewModal(true);
@@ -239,22 +368,22 @@ const AnalystOverview: React.FC = () => {
       label: 'Oportunidades Ativas', 
       value: loading ? '...' : stats.activeOpportunities.toString(), 
       icon: Target, 
-      color: 'text-purple-600', 
-      bg: 'bg-purple-100' 
+      color: 'text-[#00FF41]', 
+      bg: 'bg-[#00FF41]/10' 
     },
     { 
       label: 'Total de Candidaturas', 
       value: loading ? '...' : stats.totalApplications.toString(), 
       icon: Users, 
-      color: 'text-blue-600', 
-      bg: 'bg-blue-100' 
+      color: 'text-[#00FF41]', 
+      bg: 'bg-[#00FF41]/10' 
     },
     { 
       label: 'Campanhas Concluídas', 
       value: loading ? '...' : stats.completedOpportunities.toString(), 
       icon: TrendingUp, 
-      color: 'text-green-600', 
-      bg: 'bg-green-100' 
+      color: 'text-[#00FF41]', 
+      bg: 'bg-[#00FF41]/10' 
     },
     { 
       label: 'Total de Oportunidades', 
@@ -276,7 +405,7 @@ const AnalystOverview: React.FC = () => {
         <div className="flex gap-3">
           <button 
             onClick={() => navigate('/analysts/opportunities')}
-            className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors flex items-center gap-2"
+            className="px-4 py-2 bg-[#00FF41] hover:bg-[#00CC34] text-white rounded-lg font-medium transition-colors flex items-center gap-2"
           >
             <Target className="h-4 w-4" />
             Criar Oportunidade
@@ -313,7 +442,7 @@ const AnalystOverview: React.FC = () => {
           return (
             <div 
               key={index} 
-              className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all duration-200 cursor-pointer group hover:border-purple-200"
+              className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-all duration-200 cursor-pointer group hover:border-[#00FF41]/30"
               onClick={() => navigate(getNavigationPath())}
             >
               <div className="flex items-center justify-between">
@@ -340,7 +469,7 @@ const AnalystOverview: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Oportunidades Recentes</h3>
             <button 
               onClick={() => navigate('/analysts/opportunities')}
-              className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+              className="text-sm text-[#00FF41] hover:text-[#00FF41] font-medium flex items-center gap-1"
             >
               Ver todas <ArrowRight className="w-4 h-4" />
             </button>
@@ -348,7 +477,7 @@ const AnalystOverview: React.FC = () => {
           <div className="space-y-4 max-h-80 overflow-y-auto">
             {loading ? (
               <div className="text-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600 mx-auto"></div>
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF41] mx-auto"></div>
                 <p className="text-gray-500 mt-2">Carregando...</p>
               </div>
             ) : recentOpportunities.length === 0 ? (
@@ -367,11 +496,11 @@ const AnalystOverview: React.FC = () => {
                     onClick={() => handleViewOpportunity(opportunity)}
                   >
                     <div className="flex items-center gap-3 min-w-0 flex-1">
-                      <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Target className="h-5 w-5 text-purple-600" />
+                      <div className="w-10 h-10 bg-[#00FF41]/10 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <Target className="h-5 w-5 text-[#00FF41]" />
                       </div>
                       <div className="min-w-0 flex-1">
-                        <h4 className="font-medium text-gray-900 hover:text-purple-600 transition-colors truncate">{opportunity.title}</h4>
+                        <h4 className="font-medium text-gray-900 hover:text-[#00FF41] transition-colors truncate">{opportunity.title}</h4>
                         <p className="text-sm text-gray-600 truncate">
                           {opportunity.candidates_count || 0} candidatos • {formatTimeAgo(opportunity.created_at)}
                         </p>
@@ -396,7 +525,7 @@ const AnalystOverview: React.FC = () => {
             <h3 className="text-lg font-semibold text-gray-900">Projetos Ativos</h3>
             <button 
               onClick={() => navigate('/analysts/projects')}
-              className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+              className="text-sm text-[#00FF41] hover:text-[#00FF41] font-medium flex items-center gap-1"
             >
               Ver todos <ArrowRight className="w-4 h-4" />
             </button>
@@ -417,7 +546,7 @@ const AnalystOverview: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-900">Próximos Prazos</h3>
           <button 
             onClick={() => navigate('/analysts/projects')}
-            className="text-sm text-purple-600 hover:text-purple-700 font-medium flex items-center gap-1"
+            className="text-sm text-[#00FF41] hover:text-[#00FF41] font-medium flex items-center gap-1"
           >
             Ver todos <ArrowRight className="w-4 h-4" />
           </button>
@@ -425,7 +554,7 @@ const AnalystOverview: React.FC = () => {
         
         {loadingProjects ? (
           <div className="flex items-center justify-center py-8">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF41]"></div>
           </div>
         ) : upcomingProjects.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -438,7 +567,7 @@ const AnalystOverview: React.FC = () => {
               const getUrgencyColor = (days: number) => {
                 if (days <= 3) return { border: 'border-red-200', bg: 'bg-red-50', text: 'text-red-800', icon: 'text-red-600', hover: 'hover:border-red-300' };
                 if (days <= 7) return { border: 'border-orange-200', bg: 'bg-orange-50', text: 'text-orange-800', icon: 'text-orange-600', hover: 'hover:border-orange-300' };
-                return { border: 'border-purple-200', bg: 'bg-purple-50', text: 'text-purple-800', icon: 'text-purple-600', hover: 'hover:border-purple-300' };
+                return { border: 'border-[#00FF41]/30', bg: 'bg-[#00FF41]/10', text: 'text-gray-800', icon: 'text-[#00FF41]', hover: 'hover:border-[#00FF41]' };
               };
               
               const colors = getUrgencyColor(daysLeft);

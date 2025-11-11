@@ -764,14 +764,14 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
             className={`glass-card border px-5 py-4 text-sm flex items-center gap-3 ${
               chatDetailsStatus.type === 'success'
                 ? 'border-emerald-400/40 bg-emerald-500/10 text-emerald-200'
-                : 'border-rose-400/40 bg-rose-500/10 text-rose-200'
+                : 'border-red-400/40 bg-red-500/10 text-red-200'
             }`}
           >
             <div
               className={`flex h-10 w-10 items-center justify-center rounded-xl border ${
                 chatDetailsStatus.type === 'success'
                   ? 'border-emerald-300/30 bg-emerald-400/15 text-emerald-200'
-                  : 'border-rose-300/30 bg-rose-400/15 text-rose-200'
+                  : 'border-red-300/30 bg-red-400/15 text-red-200'
               }`}
             >
               {chatDetailsStatus.type === 'success' ? <Check className="h-4 w-4" /> : <AlertTriangle className="h-4 w-4" />}
@@ -792,7 +792,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                   value={chatTitleInput}
                   onChange={(event) => setChatTitleInput(event.target.value)}
                   placeholder="Digite um título descritivo para este chat"
-                  className="mt-2 w-full rounded-xl border border-transparent bg-white/5 px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:border-indigo-400/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
+                  className="mt-2 w-full rounded-xl border border-transparent bg-white/5 px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:border-[#00FF41] focus:outline-none focus:ring-2 focus:ring-[#00FF41]/40"
                 />
                 <p className="mt-2 text-xs text-gray-400">
                   Deixe em branco para usar automaticamente o título da oportunidade.
@@ -807,7 +807,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                   value={chatTagsInput}
                   onChange={(event) => setChatTagsInput(event.target.value)}
                   placeholder="ex: briefing, entrega, revisão"
-                  className="mt-2 w-full rounded-xl border border-transparent bg-white/5 px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:border-indigo-400/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
+                  className="mt-2 w-full rounded-xl border border-transparent bg-white/5 px-3 py-2 text-sm text-white placeholder:text-gray-400 focus:border-[#00FF41] focus:outline-none focus:ring-2 focus:ring-[#00FF41]/40"
                 />
                 <p className="mt-2 text-xs text-gray-400">
                   Máximo de 10 tags. Use palavras-chave curtas para facilitar futuras buscas.
@@ -841,14 +841,14 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
 
         {/* Project Deleted Warning */}
         {isProjectDeleted && (
-          <div className="glass-card border border-rose-400/40 bg-rose-500/10 px-5 py-4">
+          <div className="glass-card border border-red-400/40 bg-red-500/10 px-5 py-4">
             <div className="flex items-center gap-4">
-              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-rose-300/40 bg-rose-400/15 text-rose-200">
+              <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-red-300/40 bg-red-400/15 text-red-200">
                 <AlertTriangle className="h-5 w-5" />
               </div>
               <div className="flex-1">
-                <h3 className="text-sm font-semibold text-rose-100">Projeto Encerrado</h3>
-                <p className="text-xs text-rose-200/90">
+                <h3 className="text-sm font-semibold text-red-100">Projeto Encerrado</h3>
+                <p className="text-xs text-red-200/90">
                   Este projeto foi encerrado ou removido. Você não pode mais enviar mensagens.
                 </p>
               </div>
@@ -874,9 +874,9 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                   />
                 )}
                 <div
-                  className={`max-w-xs lg:max-w-md rounded-2xl px-4 py-3 shadow-[0_18px_40px_-24px_rgba(16,40,120,0.55)] ${
+                  className={`max-w-xs lg:max-w-md rounded-2xl px-4 py-3 shadow-[0_18px_40px_-24px_rgba(0,0,0,0.6)] ${
                     message.sender_type === 'creator'
-                      ? 'bg-gradient-to-br from-indigo-500/85 via-sky-500/75 to-violet-500/80 text-white'
+                      ? 'bg-gradient-to-br from-[#00FF41]/85 via-[#00CC34]/75 to-[#00FF41]/80 text-black'
                       : 'bg-white/7 border border-white/12 text-gray-100 backdrop-blur-xl'
                   }`}
                 >
@@ -914,7 +914,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                 onKeyPress={(e) => e.key === 'Enter' && !isProjectDeleted && sendMessage()}
                 placeholder={isProjectDeleted ? 'Projeto encerrado - não é possível enviar mensagens' : 'Digite sua mensagem...'}
                 disabled={isProjectDeleted}
-                className="flex-1 rounded-xl border border-transparent bg-white/10 px-4 py-3 text-sm text-white placeholder:text-gray-400 focus:border-indigo-400/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40 disabled:bg-white/5 disabled:text-gray-500/70"
+                className="flex-1 rounded-xl border border-transparent bg-white/10 px-4 py-3 text-sm text-white placeholder:text-gray-400 focus:border-[#00FF41] focus:outline-none focus:ring-2 focus:ring-[#00FF41]/40 disabled:bg-white/5 disabled:text-gray-500/70"
               />
               <button
                 onClick={sendMessage}
@@ -937,7 +937,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
             <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md px-4">
               <div className="glass-card w-full max-w-md border px-6 py-6">
                 <div className="flex items-center gap-3 mb-5">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-rose-400/40 bg-rose-500/15 text-rose-200">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-red-400/40 bg-red-500/15 text-red-200">
                     <AlertTriangle className="h-5 w-5" />
                   </div>
                   <h3 className="text-lg font-semibold text-white">Confirmar Exclusão</h3>
@@ -954,7 +954,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                   </button>
                   <button
                     onClick={deleteChat}
-                    className="btn-ghost-glass px-4 py-2 border border-rose-400/60 bg-rose-500/20 text-rose-100 hover:border-rose-300 hover:text-rose-50"
+                    className="btn-ghost-glass px-4 py-2 border border-red-400/60 bg-red-500/20 text-red-100 hover:border-red-300 hover:text-red-50"
                   >
                     Apagar Chat
                   </button>
@@ -990,7 +990,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
             <input
               type="text"
               placeholder="Buscar conversas..."
-              className="w-full rounded-xl border border-transparent bg-white/8 px-10 py-3 text-sm text-white placeholder:text-gray-400 focus:border-indigo-400/70 focus:outline-none focus:ring-2 focus:ring-indigo-400/40"
+              className="w-full rounded-xl border border-transparent bg-white/8 px-10 py-3 text-sm text-white placeholder:text-gray-400 focus:border-[#00FF41] focus:outline-none focus:ring-2 focus:ring-[#00FF41]/40"
             />
           </div>
         </div>
@@ -1033,7 +1033,7 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
                         <span
                           className={`inline-flex h-2 w-2 rounded-full ${
                             projectChat.opportunity?.status === 'inativo' || projectChat.opportunity?.status === 'deleted'
-                              ? 'bg-rose-400'
+                              ? 'bg-red-400'
                               : 'bg-emerald-400'
                           }`}
                           title={projectChat.opportunity?.status === 'inativo' || projectChat.opportunity?.status === 'deleted' ? 'Projeto encerrado' : 'Projeto ativo'}
@@ -1080,9 +1080,9 @@ const Messages: React.FC<MessagesProps> = ({ selectedProjectId, onBackToList }) 
         {/* Empty State */}
         {projectChats.length === 0 && (
           <div className="glass-card text-center py-16 px-8 flex flex-col items-center gap-6">
-            <div className="relative flex items-center justify-center h-16 w-16 rounded-2xl border border-white/10 bg-gradient-to-br from-indigo-500/25 via-sky-400/25 to-purple-500/25 shadow-[0_22px_45px_-20px_rgba(46,180,255,0.45)]">
+            <div className="relative flex items-center justify-center h-16 w-16 rounded-2xl border border-white/10 bg-gradient-to-br from-[#00FF41]/25 via-[#00CC34]/25 to-[#00FF41]/25 shadow-[0_22px_45px_-20px_rgba(0,255,65,0.45)]">
               <div className="absolute inset-0 rounded-2xl border border-white/20 opacity-60" />
-              <MessageCircle className="h-6 w-6 text-white" />
+              <MessageCircle className="h-6 w-6 text-[#00FF41]" />
             </div>
             <div className="space-y-2 max-w-lg">
               <h3 className="text-lg font-semibold text-white">Nenhuma conversa ainda</h3>

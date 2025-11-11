@@ -13,8 +13,7 @@ interface OpportunityData {
   company: string;
   company_link?: string;
   description: string;
-  budget_min: number;
-  budget_max: number;
+  budget: number;
   location: string;
   content_type: string;
   requirements: string[];
@@ -91,17 +90,17 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
     
     switch (formData.payment_type) {
       case 'permuta':
-        return { min: 0, max: 0 };
+        return 0;
       case 'percentage': {
         const percentage = (contractValue * 0.15) / creatorsCount;
-        return { min: percentage, max: percentage };
+        return percentage;
       }
       case 'custom': {
         const customValue = (parseFloat(formData.custom_budget) || 0) / creatorsCount;
-        return { min: customValue, max: customValue };
+        return customValue;
       }
       default:
-        return { min: 0, max: 0 };
+        return 0;
     }
   };
 
@@ -126,8 +125,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
       company: formData.company || 'Empresa não informada',
       company_link: normalizeCompanyLink(formData.company_link),
       description: formData.description,
-      budget_min: budget.min,
-      budget_max: budget.max,
+      budget: budget,
       location: 'Remoto', // Sempre remoto por padrão
       content_type: formData.content_type,
       requirements: filteredRequirements,
@@ -149,9 +147,9 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
       case 'permuta':
         return 'Permuta';
       case 'percentage':
-        return `R$ ${budget.min.toFixed(2)} por criador (15% ÷ ${creatorsCount})`;
+        return `R$ ${budget.toFixed(2)} por criador (15% ÷ ${creatorsCount})`;
       case 'custom':
-        return `R$ ${budget.min.toFixed(2)} por criador`;
+        return `R$ ${budget.toFixed(2)} por criador`;
       default:
         return 'Selecione o tipo de pagamento';
     }
@@ -185,7 +183,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               value={formData.title}
               onChange={handleInputChange}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
               placeholder="Ex: Campanha Skincare - Verão 2024"
             />
           </div>
@@ -200,7 +198,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               value={formData.company}
               onChange={handleInputChange}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
               placeholder="Ex: Beauty Corp"
             />
           </div>
@@ -214,7 +212,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               name="company_link"
               value={formData.company_link}
               onChange={handleInputChange}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
               placeholder="Ex: https://instagram.com/empresa ou https://empresa.com.br"
             />
             <p className="text-sm text-gray-500 mt-1">
@@ -232,7 +230,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               onChange={handleInputChange}
               required
               rows={4}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
               placeholder="Descreva a oportunidade, objetivos e expectativas..."
             />
           </div>
@@ -249,7 +247,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               required
               min="0"
               step="0.01"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
               placeholder="10000.00"
             />
           </div>
@@ -266,7 +264,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               required
               min="1"
               max="50"
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
               placeholder="1"
             />
             <p className="text-sm text-gray-500 mt-1">
@@ -283,7 +281,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               value={formData.payment_type}
               onChange={handlePaymentTypeChange}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
             >
               <option value="">Selecione o tipo de pagamento</option>
               <option value="permuta">Permuta</option>
@@ -305,7 +303,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
                 required
                 min="0"
                 step="0.01"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                 placeholder="1500.00"
               />
             </div>
@@ -317,7 +315,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
                 <span className="text-sm font-medium text-gray-700">
                   Valor por Criador ({formData.creators_count} criador{parseInt(formData.creators_count) > 1 ? 'es' : ''}):
                 </span>
-                <span className="text-lg font-semibold text-purple-600">{getBudgetDisplay()}</span>
+                <span className="text-lg font-semibold text-[#00FF41]">{getBudgetDisplay()}</span>
               </div>
               {formData.payment_type !== 'permuta' && (
                 <div className="mt-2 text-sm text-gray-600">
@@ -336,7 +334,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               value={formData.content_type}
               onChange={handleInputChange}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
             >
               <option value="">Selecione o tipo</option>
               <option value="Foto">Foto</option>
@@ -354,7 +352,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               value={formData.niche}
               onChange={handleInputChange}
               required
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
             >
               <option value="">Selecione o nicho</option>
               <option value="lifestyle">Lifestyle</option>
@@ -390,7 +388,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
                     min="13"
                     max="100"
                     placeholder="Idade mín."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                   />
                 </div>
                 <div>
@@ -402,7 +400,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
                     min="13"
                     max="100"
                     placeholder="Idade máx."
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                   />
                 </div>
               </div>
@@ -420,7 +418,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
                 value={formData.gender}
                 onChange={handleInputChange}
                 required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
               >
                 <option value="">Selecione o gênero</option>
                 <option value="Feminino">Feminino</option>
@@ -442,7 +440,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               onChange={handleInputChange}
               required
               min={new Date().toISOString().split('T')[0]}
-              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
             />
           </div>
 
@@ -457,7 +455,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
                     type="text"
                     value={requirement}
                     onChange={(e) => handleRequirementChange(index, e.target.value)}
-                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                    className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                     placeholder="Ex: Seguidores: 10K+"
                   />
                   {formData.requirements.length > 1 && (
@@ -474,7 +472,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
               <button
                 type="button"
                 onClick={addRequirement}
-                className="flex items-center gap-2 text-purple-600 hover:text-purple-700 transition-colors"
+                className="flex items-center gap-2 text-[#00FF41] hover:text-[#00FF41] transition-colors"
               >
                 <Plus className="h-4 w-4" />
                 Adicionar Requisito
@@ -558,7 +556,7 @@ const CreateOpportunityModal: React.FC<CreateOpportunityModalProps> = ({ onClose
             </button>
             <button
               type="submit"
-              className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+              className="px-6 py-2 bg-[#00FF41] hover:bg-[#00CC34] text-white rounded-lg transition-colors"
             >
               Criar Oportunidade
             </button>

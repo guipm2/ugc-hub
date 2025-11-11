@@ -27,7 +27,7 @@ const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, initialTab = '
                 onClick={() => setActiveTab('terms')}
                 className={`flex items-center gap-2 rounded-full px-4 py-2 transition ${
                   activeTab === 'terms'
-                    ? 'bg-white text-[#4A5BFF]' : 'text-slate-300 hover:text-white'
+                    ? 'bg-[#00FF41] text-black shadow-neon-sm' : 'text-slate-300 hover:text-[#00FF41]'
                 }`}
               >
                 <FileText className="h-4 w-4" />
@@ -37,7 +37,7 @@ const LegalModal: React.FC<LegalModalProps> = ({ isOpen, onClose, initialTab = '
                 onClick={() => setActiveTab('privacy')}
                 className={`flex items-center gap-2 rounded-full px-4 py-2 transition ${
                   activeTab === 'privacy'
-                    ? 'bg-white text-[#4A5BFF]' : 'text-slate-300 hover:text-white'
+                    ? 'bg-[#00FF41] text-black shadow-neon-sm' : 'text-slate-300 hover:text-[#00FF41]'
                 }`}
               >
                 <Shield className="h-4 w-4" />

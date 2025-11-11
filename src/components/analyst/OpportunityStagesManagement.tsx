@@ -109,16 +109,16 @@ const OpportunityStagesManagement: React.FC = () => {
       key: 'produtos_enviados',
       label: 'Produtos Enviados',
       icon: Package,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-100',
+      color: 'text-[#00FF41]',
+      bgColor: 'bg-[#00FF41]/10',
       description: 'Produtos enviados, aguardando recebimento'
     },
     {
       key: 'material_roteirizacao',
       label: 'Material em Roteirização',
       icon: FileText,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-100',
+      color: 'text-[#00FF41]',
+      bgColor: 'bg-[#00FF41]/10',
       description: 'Criador está desenvolvendo o roteiro'
     },
     {
@@ -133,16 +133,16 @@ const OpportunityStagesManagement: React.FC = () => {
       key: 'pronto_edicao',
       label: 'Pronto pra Edição',
       icon: Edit,
-      color: 'text-indigo-600',
-      bgColor: 'bg-indigo-100',
+      color: 'text-[#00FF41]',
+      bgColor: 'bg-[#00FF41]/10',
       description: 'Material gravado, pronto para edição'
     },
     {
       key: 'material_edicao',
       label: 'Material em Edição',
       icon: Edit,
-      color: 'text-pink-600',
-      bgColor: 'bg-pink-100',
+      color: 'text-[#00FF41]',
+      bgColor: 'bg-[#00FF41]/10',
       description: 'Conteúdo sendo editado pelo criador'
     },
     {
@@ -449,7 +449,7 @@ const OpportunityStagesManagement: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF41]"></div>
       </div>
     );
   }
@@ -471,7 +471,7 @@ const OpportunityStagesManagement: React.FC = () => {
               key={group.key}
               className={`flex-shrink-0 w-80 bg-gray-50 rounded-xl border-2 transition-all duration-200 ${
                 isDropTarget 
-                  ? 'border-blue-500 bg-blue-50 shadow-lg' 
+                  ? 'border-[#00FF41] bg-[#00FF41]/5 shadow-lg' 
                   : 'border-gray-200'
               }`}
               onDragOver={(e) => handleDragOver(e, group.key)}
@@ -496,8 +496,8 @@ const OpportunityStagesManagement: React.FC = () => {
 
               {/* Drop Zone */}
               {isDropTarget && (
-                <div className="p-4 border-2 border-dashed border-blue-400 bg-blue-100 m-2 rounded-lg">
-                  <div className="text-center text-blue-700">
+                <div className="p-4 border-2 border-dashed border-[#00FF41] bg-[#00FF41]/10 m-2 rounded-lg">
+                  <div className="text-center text-[#00FF41]">
                     <Package className="h-8 w-8 mx-auto mb-2" />
                     <p className="text-sm font-medium">Solte aqui para mover</p>
                   </div>
@@ -549,7 +549,7 @@ const OpportunityStagesManagement: React.FC = () => {
                       {stage.tracking_code && (
                         <div className="flex justify-between">
                           <span>Rastreio:</span>
-                          <span className="font-medium text-blue-600 truncate max-w-20" title={stage.tracking_code}>
+                          <span className="font-medium text-[#00FF41] truncate max-w-20" title={stage.tracking_code}>
                             {stage.tracking_code}
                           </span>
                         </div>
@@ -577,10 +577,10 @@ const OpportunityStagesManagement: React.FC = () => {
                               e.stopPropagation();
                               setShowTrackingModal(stage.id);
                             }}
-                            className="p-1 hover:bg-blue-100 rounded transition-colors"
+                            className="p-1 hover:bg-[#00FF41]/10 rounded transition-colors"
                             title="Adicionar código de rastreio"
                           >
-                            <Truck className="h-3 w-3 text-blue-600" />
+                            <Truck className="h-3 w-3 text-[#00FF41]" />
                           </button>
                         )}
                         
@@ -677,7 +677,7 @@ const OpportunityStagesManagement: React.FC = () => {
                     </div>
                     
                     <div className="text-center">
-                      <div className="flex items-center gap-1 text-blue-600">
+                      <div className="flex items-center gap-1 text-[#00FF41]">
                         <Package className="h-4 w-4" />
                         <span className="font-medium">{opportunity.creators.length}</span>
                       </div>
@@ -716,7 +716,7 @@ const OpportunityStagesManagement: React.FC = () => {
                               <div className="flex items-center gap-4">
                                 <button
                                   onClick={() => setSelectedCreatorProfile(creator.creator)}
-                                  className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-bold hover:scale-105 transition-transform"
+                                  className="w-10 h-10 bg-gradient-to-br from-[#00FF41] to-[#00CC34] rounded-full flex items-center justify-center text-black text-sm font-bold hover:scale-105 transition-transform"
                                   title="Ver perfil completo"
                                 >
                                   {creator.creator?.name?.charAt(0) || creator.creator?.email?.charAt(0).toUpperCase()}
@@ -724,13 +724,13 @@ const OpportunityStagesManagement: React.FC = () => {
                                 <div>
                                   <button
                                     onClick={() => setSelectedCreatorProfile(creator.creator)}
-                                    className="font-medium text-gray-900 hover:text-purple-600 transition-colors text-left"
+                                    className="font-medium text-gray-900 hover:text-[#00FF41] transition-colors text-left"
                                   >
                                     {creator.creator?.name || 'Nome não informado'}
                                   </button>
                                   <p className="text-sm text-gray-600">{creator.creator?.email}</p>
                                   {creator.creator?.niche && (
-                                    <span className="inline-block mt-1 px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                                    <span className="inline-block mt-1 px-2 py-1 bg-[#00FF41]/10 text-[#00FF41] rounded-full text-xs font-medium">
                                       {creator.creator.niche.charAt(0).toUpperCase() + creator.creator.niche.slice(1)}
                                     </span>
                                   )}
@@ -750,7 +750,7 @@ const OpportunityStagesManagement: React.FC = () => {
                                 {creator.tracking_code && (
                                   <div className="text-sm">
                                     <span className="text-gray-600">Rastreio: </span>
-                                    <span className="font-medium text-blue-600">{creator.tracking_code}</span>
+                                    <span className="font-medium text-[#00FF41]">{creator.tracking_code}</span>
                                   </div>
                                 )}
                                 
@@ -764,7 +764,7 @@ const OpportunityStagesManagement: React.FC = () => {
                                         trackingCode: '',
                                         notes: ''
                                       })}
-                                      className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1"
+                                      className="bg-[#00FF41] hover:bg-[#00CC34] text-black px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1"
                                     >
                                       <Truck className="h-3 w-3" />
                                       Rastreio
@@ -788,7 +788,7 @@ const OpportunityStagesManagement: React.FC = () => {
                                   
                                   <button
                                     onClick={() => setSelectedCreatorProfile(creator.creator)}
-                                    className="bg-gray-600 hover:bg-gray-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1"
+                                    className="bg-white/5 hover:bg-white/10 text-white border border-white/20 hover:border-[#00FF41]/30 px-3 py-1 rounded text-sm font-medium transition-colors flex items-center gap-1"
                                   >
                                     <Eye className="h-3 w-3" />
                                     Perfil
@@ -818,7 +818,7 @@ const OpportunityStagesManagement: React.FC = () => {
                                     href={creator.creator.website}
                                     target="_blank"
                                     rel="noopener noreferrer"
-                                    className="text-purple-600 hover:text-purple-700 transition-colors"
+                                    className="text-[#00FF41] hover:text-[#00CC34] transition-colors"
                                   >
                                     Ver portfolio
                                   </a>
@@ -874,7 +874,7 @@ const OpportunityStagesManagement: React.FC = () => {
               onClick={() => setViewMode('list')}
               className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                 viewMode === 'list'
-                  ? 'bg-white text-purple-600 shadow-sm'
+                  ? 'bg-white text-[#00FF41] shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -885,7 +885,7 @@ const OpportunityStagesManagement: React.FC = () => {
               onClick={() => setViewMode('kanban')}
               className={`flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-md text-sm font-medium transition-colors ${
                 viewMode === 'kanban'
-                  ? 'bg-white text-purple-600 shadow-sm'
+                  ? 'bg-white text-[#00FF41] shadow-sm'
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
@@ -907,7 +907,7 @@ const OpportunityStagesManagement: React.FC = () => {
                 placeholder="Pesquisar oportunidades..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent text-sm"
               />
             </div>
           </div>
@@ -918,7 +918,7 @@ const OpportunityStagesManagement: React.FC = () => {
             <select
               value={stageFilter}
               onChange={(e) => setStageFilter(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent text-sm"
             >
               <option value="todos">Todas as etapas</option>
               {stageConfigs.map(config => (
@@ -960,7 +960,7 @@ const OpportunityStagesManagement: React.FC = () => {
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-600">Em Andamento:</span>
-                <span className="font-medium text-blue-600">
+                <span className="font-medium text-[#00FF41]">
                   {stages.filter(s => s.stage !== 'finalizado').length}
                 </span>
               </div>
@@ -1038,7 +1038,7 @@ const OpportunityStagesManagement: React.FC = () => {
                   type="text"
                   value={trackingCode}
                   onChange={(e) => setTrackingCode(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                   placeholder="Ex: BR123456789BR"
                 />
               </div>
@@ -1051,7 +1051,7 @@ const OpportunityStagesManagement: React.FC = () => {
                   value={notes}
                   onChange={(e) => setNotes(e.target.value)}
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                   placeholder="Informações adicionais sobre o envio..."
                 />
               </div>
@@ -1070,7 +1070,7 @@ const OpportunityStagesManagement: React.FC = () => {
                 <button
                   onClick={() => handleTrackingSubmit(showTrackingModal)}
                   disabled={!trackingCode.trim()}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-[#00FF41] hover:bg-[#00CC34] disabled:bg-[#00FF41]/40 text-black font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <Save className="h-4 w-4" />
                   Salvar
@@ -1107,7 +1107,7 @@ const OpportunityStagesManagement: React.FC = () => {
                     ...showCreatorTrackingModal,
                     trackingCode: e.target.value
                   })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                   placeholder="Ex: BR123456789BR"
                 />
               </div>
@@ -1123,7 +1123,7 @@ const OpportunityStagesManagement: React.FC = () => {
                     notes: e.target.value
                   })}
                   rows={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                   placeholder="Informações adicionais sobre o envio..."
                 />
               </div>
@@ -1138,7 +1138,7 @@ const OpportunityStagesManagement: React.FC = () => {
                 <button
                   onClick={handleCreatorTrackingSubmit}
                   disabled={!showCreatorTrackingModal.trackingCode.trim()}
-                  className="flex-1 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-400 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-[#00FF41] hover:bg-[#00CC34] disabled:bg-[#00FF41]/40 text-black font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2"
                 >
                   <Save className="h-4 w-4" />
                   Salvar
@@ -1232,9 +1232,9 @@ const OpportunityStagesManagement: React.FC = () => {
                   <h4 className="text-md font-semibold text-gray-900 mb-3">Informações Adicionais</h4>
                   <div className="space-y-3">
                     {selectedStage.tracking_code && (
-                      <div className="p-3 bg-blue-50 rounded-lg">
-                        <p className="text-sm font-medium text-blue-900">Código de Rastreio</p>
-                        <p className="text-blue-700">{selectedStage.tracking_code}</p>
+                      <div className="p-3 bg-[#00FF41]/5 rounded-lg">
+                        <p className="text-sm font-medium text-gray-900">Código de Rastreio</p>
+                        <p className="text-[#00FF41]">{selectedStage.tracking_code}</p>
                       </div>
                     )}
                     {selectedStage.notes && (
@@ -1268,13 +1268,13 @@ const OpportunityStagesManagement: React.FC = () => {
             <div className="p-6 space-y-6">
               {/* Profile Header */}
               <div className="text-center">
-                <div className="w-24 h-24 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-2xl font-bold mx-auto mb-4">
+                <div className="w-24 h-24 bg-gradient-to-br from-[#00FF41] to-[#00CC34] rounded-full flex items-center justify-center text-black text-2xl font-bold mx-auto mb-4">
                   {selectedCreatorProfile.name?.charAt(0) || selectedCreatorProfile.email?.charAt(0).toUpperCase()}
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900">{selectedCreatorProfile.name || 'Nome não informado'}</h3>
                 <p className="text-gray-600">{selectedCreatorProfile.email}</p>
                 {selectedCreatorProfile.niche && (
-                  <span className="inline-block mt-2 px-3 py-1 bg-purple-100 text-purple-700 rounded-full text-sm font-medium">
+                  <span className="inline-block mt-2 px-3 py-1 bg-[#00FF41]/10 text-[#00FF41] rounded-full text-sm font-medium">
                     {selectedCreatorProfile.niche.charAt(0).toUpperCase() + selectedCreatorProfile.niche.slice(1)}
                   </span>
                 )}
@@ -1331,7 +1331,7 @@ const OpportunityStagesManagement: React.FC = () => {
                           href={selectedCreatorProfile.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-purple-600 hover:text-purple-700 transition-colors"
+                          className="text-[#00FF41] hover:text-[#00CC34] transition-colors"
                         >
                           {selectedCreatorProfile.website}
                         </a>
@@ -1342,11 +1342,11 @@ const OpportunityStagesManagement: React.FC = () => {
               </div>
 
               {/* Member Since */}
-              <div className="flex items-center gap-3 p-3 bg-blue-50 rounded-lg">
-                <Calendar className="h-5 w-5 text-blue-600" />
+              <div className="flex items-center gap-3 p-3 bg-[#00FF41]/5 rounded-lg">
+                <Calendar className="h-5 w-5 text-[#00FF41]" />
                 <div>
-                  <p className="text-sm font-medium text-blue-900">Membro desde</p>
-                  <p className="text-blue-700">
+                  <p className="text-sm font-medium text-gray-900">Membro desde</p>
+                  <p className="text-[#00FF41]">
                     {new Date(selectedCreatorProfile.created_at).toLocaleDateString('pt-BR', {
                       year: 'numeric',
                       month: 'long',
@@ -1388,7 +1388,7 @@ const OpportunityStagesManagement: React.FC = () => {
                 
                 <button
                   onClick={() => window.open(`mailto:${selectedCreatorProfile.email}`, '_blank')}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                  className="flex-1 bg-[#00FF41] hover:bg-[#00CC34] text-black px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                 >
                   <Mail className="h-4 w-4" />
                   Email
@@ -1397,7 +1397,7 @@ const OpportunityStagesManagement: React.FC = () => {
                 {selectedCreatorProfile.website && (
                   <button
                     onClick={() => window.open(selectedCreatorProfile.website, '_blank')}
-                    className="flex-1 bg-gray-600 hover:bg-gray-700 text-white px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+                    className="flex-1 bg-white/5 hover:bg-white/10 text-white border border-white/20 hover:border-[#00FF41]/30 px-4 py-3 rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
                   >
                     <ExternalLink className="h-4 w-4" />
                     Portfolio

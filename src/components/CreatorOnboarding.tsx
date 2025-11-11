@@ -469,7 +469,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
     if (status === 'invalid') {
       return (
         <div className="absolute right-4 top-1/2 -translate-y-1/2">
-          <AlertTriangle className="h-5 w-5 text-rose-400" />
+          <AlertTriangle className="h-5 w-5 text-red-400" />
         </div>
       );
     }
@@ -1035,19 +1035,19 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
   return (
     <div className="relative min-h-screen overflow-hidden px-4 py-12 text-slate-100">
       <div className="pointer-events-none absolute inset-0 -z-10">
-        <div className="absolute -top-24 -left-[8%] h-[420px] w-[420px] rounded-full bg-gradient-to-br from-[#4A5BFF]/35 via-[#6E4FFF]/28 to-transparent blur-[180px]" />
-        <div className="absolute top-[35%] -right-[12%] h-[480px] w-[480px] rounded-full bg-gradient-to-br from-[#2ED3FF]/32 via-transparent to-transparent blur-[220px]" />
+        <div className="absolute -top-24 -left-[8%] h-[420px] w-[420px] rounded-full bg-gradient-to-br from-[#00FF41]/25 via-[#00CC34]/18 to-transparent blur-[180px]" />
+        <div className="absolute top-[35%] -right-[12%] h-[480px] w-[480px] rounded-full bg-gradient-to-br from-[#00FF41]/22 via-transparent to-transparent blur-[220px]" />
       </div>
 
       <div className="mx-auto w-full max-w-4xl">
         <div className="glass-panel space-y-12 px-8 py-10 md:px-12 md:py-12">
           <div className="text-center">
-            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] font-semibold uppercase tracking-[0.3em] text-white">
-              UGC
+            <div className="mx-auto mb-6 flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#00FF41] to-[#00CC34] text-xl font-bold text-black shadow-neon">
+              I
             </div>
             <h1 className="text-3xl font-bold tracking-tight text-white">Complete seu perfil</h1>
             <p className="mt-3 text-sm text-slate-300">
-              Avance pelas etapas para desbloquear oportunidades com a estética neon do hub.
+              Avance pelas etapas para desbloquear oportunidades na plataforma tecnológica.
             </p>
 
             <div className="mt-8 flex items-center justify-center space-x-5">
@@ -1056,7 +1056,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                   <div
                     className={`flex h-12 w-12 items-center justify-center rounded-full text-sm font-semibold transition ${
                       currentStep >= step
-                        ? 'bg-gradient-to-br from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] text-white shadow-[0_18px_45px_-22px_rgba(91,99,255,0.75)]'
+                        ? 'bg-gradient-to-br from-[#00FF41] to-[#00CC34] text-black shadow-neon'
                         : 'border border-white/15 bg-white/5 text-slate-400'
                     }`}
                   >
@@ -1066,7 +1066,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     <div
                       className={`mx-3 h-[2px] w-20 rounded-full ${
                         currentStep > step
-                          ? 'bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF]'
+                          ? 'bg-gradient-to-r from-[#00FF41] to-[#00CC34] shadow-neon-sm'
                           : 'bg-white/10'
                       }`}
                     />
@@ -1076,17 +1076,17 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
             </div>
 
             <div className="mt-4 flex justify-center gap-10 text-xs uppercase tracking-[0.35em]">
-              <span className={currentStep >= 1 ? 'text-[#B7C5FF]' : 'text-slate-500'}>Qualificação</span>
-              <span className={currentStep >= 2 ? 'text-[#B7C5FF]' : 'text-slate-500'}>Dados Bancários</span>
-              <span className={currentStep >= 3 ? 'text-[#B7C5FF]' : 'text-slate-500'}>Dados Contratuais</span>
+              <span className={currentStep >= 1 ? 'text-[#00FF41]' : 'text-slate-500'}>Qualificação</span>
+              <span className={currentStep >= 2 ? 'text-[#00FF41]' : 'text-slate-500'}>Dados Bancários</span>
+              <span className={currentStep >= 3 ? 'text-[#00FF41]' : 'text-slate-500'}>Dados Contratuais</span>
             </div>
           </div>
 
           {currentStep === 1 && (
             <div className="space-y-10">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[#9FA8FF]">
-                  <User className="h-6 w-6" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#00FF41]/30 bg-[#00FF41]/10">
+                  <User className="h-6 w-6 text-[#00FF41]" />
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-white">Dados de Qualificação</h2>
@@ -1100,7 +1100,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     Data de nascimento *
                   </label>
                   <div className="relative">
-                    <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <Calendar className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#00FF41]" />
                     <input
                       type="date"
                       value={data.birth_date || ''}
@@ -1121,7 +1121,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     </p>
                   )}
                   {fieldErrors.birth_date && (
-                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                    <p className="mt-2 flex items-center gap-2 text-xs text-red-300">
                       <AlertTriangle className="h-4 w-4" />
                       {fieldErrors.birth_date}
                     </p>
@@ -1133,7 +1133,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     Gênero *
                   </label>
                   <div className="relative">
-                    <Users className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <Users className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#00FF41]" />
                     <select
                       value={data.gender || ''}
                       onChange={event => handleSimpleFieldChange('gender', event.target.value)}
@@ -1149,7 +1149,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     </select>
                   </div>
                   {fieldErrors.gender && (
-                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                    <p className="mt-2 flex items-center gap-2 text-xs text-red-300">
                       <AlertTriangle className="h-4 w-4" />
                       {fieldErrors.gender}
                     </p>
@@ -1163,7 +1163,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     Perfil Instagram *
                   </label>
                   <div className="relative">
-                    <Camera className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <Camera className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#00FF41]" />
                     <input
                       type="url"
                       value={data.instagram_url || ''}
@@ -1179,7 +1179,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     Informe o link completo ou seu @. Usamos isso para entender seu alcance.
                   </p>
                   {fieldErrors.instagram_url && (
-                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                    <p className="mt-2 flex items-center gap-2 text-xs text-red-300">
                       <AlertTriangle className="h-4 w-4" />
                       {fieldErrors.instagram_url}
                     </p>
@@ -1191,7 +1191,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     Perfil TikTok (opcional)
                   </label>
                   <div className="relative">
-                    <TrendingUp className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <TrendingUp className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#00FF41]" />
                     <input
                       type="url"
                       value={data.tiktok_url || ''}
@@ -1207,7 +1207,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     Site ou Portfólio (opcional)
                   </label>
                   <div className="relative">
-                    <Globe className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <Globe className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#00FF41]" />
                     <input
                       type="url"
                       value={data.portfolio_url || ''}
@@ -1236,8 +1236,8 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                         onClick={() => handleNicheToggle(niche)}
                         className={`rounded-2xl px-4 py-3 text-sm font-semibold uppercase tracking-[0.2em] transition ${
                           active
-                            ? 'bg-gradient-to-r from-[#4A5BFF]/85 via-[#6E4FFF]/80 to-[#B249FF]/70 text-white shadow-[0_16px_45px_-25px_rgba(91,99,255,0.65)]'
-                            : 'border border-white/10 bg-white/5 text-slate-200 hover:border-white/20'
+                            ? 'bg-gradient-to-r from-[#00FF41] to-[#00CC34] text-black shadow-neon'
+                            : 'border border-white/10 bg-white/5 text-slate-200 hover:border-[#00FF41]/30 hover:bg-[#00FF41]/5'
                         }`}
                       >
                         {niche}
@@ -1246,7 +1246,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                   })}
                 </div>
                 {fieldErrors.niches && (
-                  <p className="mt-3 flex items-center gap-2 text-xs text-rose-300">
+                  <p className="mt-3 flex items-center gap-2 text-xs text-red-300">
                     <AlertTriangle className="h-4 w-4" />
                     {fieldErrors.niches}
                   </p>
@@ -1258,8 +1258,8 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
           {currentStep === 2 && (
             <div className="space-y-10">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[#7CFEEE]">
-                  <CreditCard className="h-6 w-6" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#00FF41]/30 bg-[#00FF41]/10">
+                  <CreditCard className="h-6 w-6 text-[#00FF41]" />
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-white">Dados Bancários</h2>
@@ -1272,7 +1272,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                   Chave PIX *
                 </label>
                 <div className="relative">
-                  <Hash className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7CFEEE]" />
+                  <Hash className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#00FF41]" />
                   <input
                     type="text"
                     value={data.pix_key || ''}
@@ -1285,7 +1285,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                 </div>
                 <p className="text-xs text-slate-400">Pode ser seu CPF, email, telefone ou uma chave aleatória.</p>
                 {fieldErrors.pix_key && (
-                  <p className="flex items-center gap-2 text-xs text-rose-300">
+                  <p className="flex items-center gap-2 text-xs text-red-300">
                     <AlertTriangle className="h-4 w-4" />
                     {fieldErrors.pix_key}
                   </p>
@@ -1297,8 +1297,8 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
           {currentStep === 3 && (
             <div className="space-y-12">
               <div className="flex items-center gap-4">
-                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[#B58CFF]">
-                  <FileText className="h-6 w-6" />
+                <div className="flex h-12 w-12 items-center justify-center rounded-2xl border border-[#00FF41]/30 bg-[#00FF41]/10">
+                  <FileText className="h-6 w-6 text-[#00FF41]" />
                 </div>
                 <div>
                   <h2 className="text-xl font-semibold text-white">Dados para Contrato</h2>
@@ -1320,7 +1320,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     required
                   />
                   {fieldErrors.full_name && (
-                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                    <p className="mt-2 flex items-center gap-2 text-xs text-red-300">
                       <AlertTriangle className="h-4 w-4" />
                       {fieldErrors.full_name}
                     </p>
@@ -1332,7 +1332,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     Telefone *
                   </label>
                   <div className="relative">
-                    <Phone className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#7CFEEE]" />
+                    <Phone className="pointer-events-none absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#00FF41]" />
                     <input
                       type="tel"
                       value={data.phone || ''}
@@ -1344,7 +1344,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     <ValidationIcon field="phone" />
                   </div>
                   {fieldErrors.phone && (
-                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                    <p className="mt-2 flex items-center gap-2 text-xs text-red-300">
                       <AlertTriangle className="h-4 w-4" />
                       {fieldErrors.phone}
                     </p>
@@ -1367,7 +1367,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     Usamos o email da sua conta. Caso precise alterar, atualize em configurações.
                   </p>
                   {fieldErrors.email && (
-                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                    <p className="mt-2 flex items-center gap-2 text-xs text-red-300">
                       <AlertTriangle className="h-4 w-4" />
                       {fieldErrors.email}
                     </p>
@@ -1383,10 +1383,10 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                       <span
                         className={`badge-pill ${
                           data.document_type === 'cnpj'
-                            ? 'bg-gradient-to-r from-[#2ED3B7]/30 to-[#55A0FF]/20 text-[#CFFBEF]'
+                            ? 'bg-gradient-to-r from-[#00FF41]/30 to-[#00CC34]/20 border border-[#00FF41]/30 text-[#00FF41]'
                             : data.document_type === 'cpf'
-                            ? 'bg-gradient-to-r from-[#4A5BFF]/35 to-[#B249FF]/25 text-[#E6E9FF]'
-                            : 'bg-gradient-to-r from-[#FF7B73]/30 to-[#FF4471]/20 text-[#FFD6DA]'
+                            ? 'bg-gradient-to-r from-[#00FF41]/30 to-[#00CC34]/20 border border-[#00FF41]/30 text-[#00FF41]'
+                            : 'bg-gradient-to-r from-[#FF7B73]/30 to-[#FF4471]/20 border border-[#FF7B73]/30 text-[#FFD6DA]'
                         }`}
                       >
                         {data.document_type === 'cnpj'
@@ -1410,13 +1410,13 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     <ValidationIcon field="document_number" />
                   </div>
                   {fieldErrors.document_number && (
-                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                    <p className="mt-2 flex items-center gap-2 text-xs text-red-300">
                       <AlertTriangle className="h-4 w-4" />
                       {fieldErrors.document_number}
                     </p>
                   )}
                   {!fieldErrors.document_number && fieldErrors.document_type && (
-                    <p className="mt-2 flex items-center gap-2 text-xs text-rose-300">
+                    <p className="mt-2 flex items-center gap-2 text-xs text-red-300">
                       <AlertTriangle className="h-4 w-4" />
                       {fieldErrors.document_type}
                     </p>
@@ -1426,8 +1426,8 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
 
               <div className="space-y-8 rounded-3xl border border-white/10 bg-white/5 p-6">
                 <div className="flex items-center gap-4">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-[#7AD3FF]">
-                    <MapPin className="h-5 w-5" />
+                  <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-[#00FF41]/30 bg-[#00FF41]/10">
+                    <MapPin className="h-5 w-5 text-[#00FF41]" />
                   </div>
                   <div>
                     <h3 className="text-sm font-semibold uppercase tracking-[0.35em] text-slate-300">Endereço</h3>
@@ -1463,7 +1463,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                     </p>
                   )}
                   {fieldErrors['address.zipCode'] && (
-                    <p className="flex items-center gap-2 text-xs text-rose-300">
+                    <p className="flex items-center gap-2 text-xs text-red-300">
                       <AlertTriangle className="h-4 w-4" />
                       {fieldErrors['address.zipCode']}
                     </p>
@@ -1484,7 +1484,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                       required
                     />
                     {fieldErrors['address.street'] && (
-                      <p className="flex items-center gap-2 text-xs text-rose-300">
+                      <p className="flex items-center gap-2 text-xs text-red-300">
                         <AlertTriangle className="h-4 w-4" />
                         {fieldErrors['address.street']}
                       </p>
@@ -1504,7 +1504,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                       required
                     />
                     {fieldErrors['address.number'] && (
-                      <p className="flex items-center gap-2 text-xs text-rose-300">
+                      <p className="flex items-center gap-2 text-xs text-red-300">
                         <AlertTriangle className="h-4 w-4" />
                         {fieldErrors['address.number']}
                       </p>
@@ -1539,7 +1539,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                       required
                     />
                     {fieldErrors['address.neighborhood'] && (
-                      <p className="flex items-center gap-2 text-xs text-rose-300">
+                      <p className="flex items-center gap-2 text-xs text-red-300">
                         <AlertTriangle className="h-4 w-4" />
                         {fieldErrors['address.neighborhood']}
                       </p>
@@ -1561,7 +1561,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                       required
                     />
                     {fieldErrors['address.city'] && (
-                      <p className="flex items-center gap-2 text-xs text-rose-300">
+                      <p className="flex items-center gap-2 text-xs text-red-300">
                         <AlertTriangle className="h-4 w-4" />
                         {fieldErrors['address.city']}
                       </p>
@@ -1586,7 +1586,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
                       ))}
                     </select>
                     {fieldErrors['address.state'] && (
-                      <p className="flex items-center gap-2 text-xs text-rose-300">
+                      <p className="flex items-center gap-2 text-xs text-red-300">
                         <AlertTriangle className="h-4 w-4" />
                         {fieldErrors['address.state']}
                       </p>
@@ -1611,7 +1611,7 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
               <button
                 onClick={handleNext}
                 disabled={!validateStep(currentStep)}
-                className="group flex items-center gap-3 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#764BFF] to-[#B249FF] px-8 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-white shadow-[0_22px_60px_-28px_rgba(91,99,255,0.75)] transition hover:shadow-[0_22px_70px_-24px_rgba(91,99,255,0.85)] disabled:cursor-not-allowed disabled:opacity-45"
+                className="group flex items-center gap-3 rounded-full bg-gradient-to-r from-[#00FF41] to-[#00CC34] px-8 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-black shadow-neon transition hover:shadow-neon-lg disabled:cursor-not-allowed disabled:opacity-45"
               >
                 Próximo
                 <ArrowRight className="h-4 w-4 transition group-hover:translate-x-1" />
@@ -1620,11 +1620,11 @@ const CreatorOnboarding: React.FC<CreatorOnboardingProps> = ({ onComplete }) => 
               <button
                 onClick={handleComplete}
                 disabled={!validateStep(3) || loading}
-                className="group flex items-center gap-3 rounded-full bg-gradient-to-r from-[#3AF9BC] via-[#4FDEFF] to-[#8A7CFF] px-10 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-[#0B1023] shadow-[0_22px_65px_-28px_rgba(74,225,204,0.55)] transition hover:shadow-[0_22px_75px_-24px_rgba(74,225,204,0.68)] disabled:cursor-not-allowed disabled:opacity-45"
+                className="group flex items-center gap-3 rounded-full bg-gradient-to-r from-[#00FF41] to-[#00CC34] px-10 py-3 text-xs font-semibold uppercase tracking-[0.35em] text-black shadow-neon transition hover:shadow-neon-lg disabled:cursor-not-allowed disabled:opacity-45"
               >
                 {loading ? (
                   <>
-                    <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-[#0B1023]"></div>
+                    <div className="h-4 w-4 animate-spin rounded-full border-b-2 border-black"></div>
                     Salvando...
                   </>
                 ) : (

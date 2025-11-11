@@ -94,12 +94,12 @@ const ComingSoonModal: React.FC<ComingSoonModalProps> = ({
           <div className="flex flex-col gap-3">
             <button
               onClick={handleClose}
-              className="w-full bg-purple-600 hover:bg-purple-700 text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
+              className="w-full bg-[#00FF41] hover:bg-[#00CC34] text-white px-4 py-2.5 rounded-lg font-medium transition-colors"
             >
               Voltar ao Dashboard
             </button>
             <button
-              onClick={() => window.open('mailto:suporte@ugchub.com.br?subject=Interesse em Gerenciamento de Etapas', '_blank')}
+              onClick={() => window.open('mailto:contato@suaplataforma.com.br?subject=Interesse em Gerenciamento de Etapas', '_blank')}
               className="w-full bg-gray-100 hover:bg-gray-200 text-gray-700 px-4 py-2.5 rounded-lg font-medium transition-colors"
             >
               Notificar quando estiver pronto

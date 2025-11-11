@@ -43,7 +43,7 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
       >
         <div className="space-y-6 text-center">
           <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-white/10">
-            <Mail className="h-8 w-8 text-[#9A91FF]" />
+            <Mail className="h-8 w-8 text-[#00FF41]" />
           </div>
           <p className="text-sm text-slate-200">
             Enviamos um link de recuperação para <span className="font-semibold text-white">{email}</span>.
@@ -53,7 +53,7 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
           </p>
           <button
             onClick={onBack}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] px-6 py-3 text-sm font-semibold text-white shadow-[0_25px_55px_-18px_rgba(74,91,255,0.6)] transition hover:scale-[1.02] hover:shadow-[0_30px_65px_-20px_rgba(74,91,255,0.65)]"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#00FF41] via-[#00CC34] to-[#00FF41] px-6 py-3 text-sm font-semibold text-black shadow-neon transition hover:scale-[1.02] hover:shadow-neon-lg"
           >
             <ArrowLeft className="h-5 w-5" />
             Voltar para login
@@ -80,14 +80,14 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
             Email
           </label>
           <div className="relative">
-            <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+            <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
             <input
               id="email"
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               required
-              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+              className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
               placeholder="seu@email.com"
             />
           </div>
@@ -96,7 +96,7 @@ const ForgotPasswordForm: React.FC<ForgotPasswordFormProps> = ({ onBack }) => {
         <button
           type="submit"
           disabled={loading}
-          className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] px-6 py-3 text-sm font-semibold text-white shadow-[0_25px_55px_-18px_rgba(74,91,255,0.6)] transition hover:scale-[1.02] hover:shadow-[0_30px_65px_-20px_rgba(74,91,255,0.65)] disabled:opacity-50"
+          className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#00FF41] via-[#00CC34] to-[#00FF41] px-6 py-3 text-sm font-semibold text-black shadow-neon transition hover:scale-[1.02] hover:shadow-neon-lg disabled:opacity-50"
         >
           {loading ? (
             <>

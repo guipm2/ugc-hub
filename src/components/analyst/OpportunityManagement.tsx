@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAnalystAuth } from '../../contexts/AnalystAuthContext';
+import { useTabVisibility } from '../../hooks/useTabVisibility';
 import { resolveSiteUrl } from '../../utils/siteUrl';
 import { normalizeCompanyLink } from '../../utils/formatters';
 import { useAutoRefresh } from '../../hooks/useAutoRefresh';
@@ -30,8 +31,7 @@ interface Opportunity {
   company: string;
   company_link?: string;
   description: string;
-  budget_min: number;
-  budget_max: number;
+  budget: number;
   location: string;
   content_type: string;
   requirements: string[];
@@ -39,8 +39,8 @@ interface Opportunity {
   status: string;
   age_range?: string;
   gender?: string;
-  analyst_id: string;
-  created_by: string;
+  analyst_id?: string;
+  created_by?: string;
   candidates_count: number;
   created_at: string;
 }
@@ -50,8 +50,7 @@ type NewOpportunityPayload = {
   company: string;
   company_link?: string;
   description: string;
-  budget_min: number;
-  budget_max: number;
+  budget: number;
   location: string;
   content_type: string;
   requirements: string[];
@@ -64,7 +63,7 @@ type NewOpportunityPayload = {
 
 const OPPORTUNITY_CREATED_WEBHOOK_URL =
   (import.meta.env.VITE_OPPORTUNITY_CREATED_WEBHOOK_URL as string | undefined) ??
-  'https://n8n.turbopartners.com.br/webhook/ugc-hub-turbo';
+  '';
 
 type RawOpportunity = Partial<Opportunity> & Record<string, unknown>;
 
@@ -176,8 +175,7 @@ const normalizeOpportunity = (raw: RawOpportunity, overrides: Partial<Opportunit
     company: (raw?.company as string) ?? overrides.company ?? '',
     company_link: normalizeCompanyLink((raw?.company_link as string) ?? overrides.company_link ?? ''),
     description: (raw?.description as string) ?? overrides.description ?? '',
-    budget_min: typeof raw?.budget_min === 'number' ? (raw.budget_min as number) : overrides.budget_min ?? 0,
-    budget_max: typeof raw?.budget_max === 'number' ? (raw.budget_max as number) : overrides.budget_max ?? 0,
+    budget: typeof raw?.budget === 'number' ? (raw.budget as number) : overrides.budget ?? 0,
     location: (raw?.location as string) ?? overrides.location ?? '',
     content_type: (raw?.content_type as string) ?? overrides.content_type ?? '',
     requirements: safeArray((raw as { requirements?: string[] }).requirements) ?? overrides.requirements ?? [],
@@ -217,8 +215,7 @@ const notifyOpportunityCreated = async (opportunity: Opportunity) => {
         company: safeString(opportunity.company),
         company_link: safeString(opportunity.company_link),
         description: safeString(opportunity.description),
-        budget_min: safeNumber(opportunity.budget_min),
-        budget_max: safeNumber(opportunity.budget_max),
+        budget: safeNumber(opportunity.budget),
         location: safeString(opportunity.location),
         content_type: safeString(opportunity.content_type),
         requirements: safeArray(opportunity.requirements),
@@ -323,6 +320,12 @@ const OpportunityManagement: React.FC = () => {
   }, [fetchOpportunities]);
 
   useAutoRefresh(() => fetchOpportunities({ silent: true }), 20000, true);
+
+  // Recarregar quando a aba voltar a ficar visível
+  useTabVisibility(() => {
+    console.log('🔄 [ANALYST OPPORTUNITIES] Recarregando oportunidades após aba voltar a ficar visível');
+    fetchOpportunities();
+  });
 
   const handleCreateOpportunity = async (opportunityData: NewOpportunityPayload) => {
     if (!profile) return;
@@ -499,7 +502,7 @@ const OpportunityManagement: React.FC = () => {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF41]"></div>
       </div>
     );
   }
@@ -514,7 +517,7 @@ const OpportunityManagement: React.FC = () => {
         </div>
         <button
           onClick={() => setShowCreateModal(true)}
-          className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+          className="bg-[#00FF41] hover:bg-[#00CC34] text-black px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
         >
           <Plus className="h-4 w-4" />
           Nova Oportunidade
@@ -531,7 +534,7 @@ const OpportunityManagement: React.FC = () => {
               placeholder="Pesquisar oportunidades..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
             />
           </div>
         </div>
@@ -542,7 +545,7 @@ const OpportunityManagement: React.FC = () => {
         >
           <Filter className="h-4 w-4" />
           Filtros
-          {hasActiveFilters && <span className="inline-block w-2 h-2 rounded-full bg-purple-600" />}
+          {hasActiveFilters && <span className="inline-block w-2 h-2 rounded-full bg-[#00FF41]" />}
         </button>
       </div>
 
@@ -554,7 +557,7 @@ const OpportunityManagement: React.FC = () => {
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
               >
                 <option value="all">Todos</option>
                 <option value="ativo">Ativas</option>
@@ -567,7 +570,7 @@ const OpportunityManagement: React.FC = () => {
               <select
                 value={contentTypeFilter}
                 onChange={(e) => setContentTypeFilter(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
               >
                 <option value="">Todos</option>
                 {contentTypes.map((type) => (
@@ -583,7 +586,7 @@ const OpportunityManagement: React.FC = () => {
               <select
                 value={deadlineFilter}
                 onChange={(e) => setDeadlineFilter(e.target.value as typeof deadlineFilter)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
               >
                 <option value="all">Todos</option>
                 <option value="upcoming">Próximos prazos</option>
@@ -605,7 +608,7 @@ const OpportunityManagement: React.FC = () => {
             </button>
             <button
               onClick={() => setShowFilters(false)}
-              className="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700"
+              className="px-4 py-2 text-sm bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34]"
             >
               Aplicar
             </button>
@@ -655,10 +658,10 @@ const OpportunityManagement: React.FC = () => {
                     <span className="inline-block h-2 w-2 rounded-full bg-current"></span>
                     {opportunity.status === 'ativo' ? 'Ativa' : 'Inativa'}
                   </span>
-                  <div className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1.5 text-sm font-semibold text-blue-700">
+                  <div className="inline-flex items-center gap-2 rounded-full bg-[#00FF41]/10 px-3 py-1.5 text-sm font-semibold text-[#00FF41]">
                     <Users className="h-4 w-4" />
                     <span>{opportunity.candidates_count}</span>
-                    <span className="text-xs font-medium uppercase tracking-wide text-blue-600">{candidateLabel}</span>
+                    <span className="text-xs font-medium uppercase tracking-wide text-[#00FF41]">{candidateLabel}</span>
                   </div>
                 </div>
               </div>
@@ -674,8 +677,8 @@ const OpportunityManagement: React.FC = () => {
                   </span>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Investimento</p>
-                    <p className="text-sm font-semibold text-gray-900">{formatBudgetRange(opportunity.budget_min, opportunity.budget_max)}</p>
-                    <p className="text-xs text-gray-500">Valores previstos para o criador</p>
+                    <p className="text-sm font-semibold text-gray-900">R$ {opportunity.budget.toFixed(2)}</p>
+                    <p className="text-xs text-gray-500">Valor previsto para o criador</p>
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
@@ -691,8 +694,8 @@ const OpportunityManagement: React.FC = () => {
                   </div>
                 </div>
                 <div className="flex items-start gap-3">
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-purple-50">
-                    <Tag className="h-5 w-5 text-purple-500" />
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-[#00FF41]/10">
+                    <Tag className="h-5 w-5 text-[#00FF41]" />
                   </span>
                   <div>
                     <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">Formato</p>
@@ -732,7 +735,7 @@ const OpportunityManagement: React.FC = () => {
                       href={opportunity.company_link}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 rounded-full border border-purple-200 px-3 py-1 text-purple-600 transition-colors hover:bg-purple-50"
+                      className="inline-flex items-center gap-1 rounded-full border border-[#00FF41]/30 px-3 py-1 text-[#00FF41] transition-colors hover:bg-[#00FF41]/10"
                     >
                       Ver briefing
                     </a>
@@ -746,9 +749,9 @@ const OpportunityManagement: React.FC = () => {
                         opportunityTitle: opportunity.title
                       })
                     }
-                    className="inline-flex items-center gap-2 rounded-lg bg-purple-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-purple-700"
+                    className="inline-flex items-center gap-2 rounded-lg bg-[#00FF41] px-4 py-2 text-sm font-semibold text-black shadow-sm transition-colors hover:bg-[#00CC34]"
                   >
-                    <UserCheck className="h-4 w-4 text-white" />
+                    <UserCheck className="h-4 w-4 text-black" />
                     Candidaturas
                   </button>
                   <button
@@ -794,7 +797,7 @@ const OpportunityManagement: React.FC = () => {
           {opportunities.length === 0 && (
             <button
               onClick={() => setShowCreateModal(true)}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors"
+              className="bg-[#00FF41] hover:bg-[#00CC34] text-black px-6 py-2 rounded-lg font-medium transition-colors"
             >
               Criar Primeira Oportunidade
             </button>

@@ -46,23 +46,23 @@ const CreatorRouter: React.FC<CreatorRouterProps> = ({
 
   switch (route) {
     case '/dashboard':
-      return <Dashboard />;
+      return <Dashboard key={route} />;
     case '/opportunities':
-      return <Opportunities />;
+      return <Opportunities key={route} />;
     case '/projects':
-      return <Projects onOpenConversation={onOpenConversation} />;
+      return <Projects key={route} onOpenConversation={onOpenConversation} />;
     case '/messages':
-      return <Messages selectedProjectId={selectedConversationId} onBackToList={onBackToList} />;
+      return <Messages key={route} selectedProjectId={selectedConversationId} onBackToList={onBackToList} />;
     case '/training':
-      return <Training />;
+      return <Training key={route} />;
     case '/profile':
-      return <Profile />;
+      return <Profile key={route} />;
     case '/help':
-      return <Help />;
+      return <Help key={route} />;
     case '/settings':
-      return <AccountSettings />;
+      return <AccountSettings key={route} />;
     default:
-      return <Opportunities />;
+      return <Opportunities key={route} />;
   }
 };
 

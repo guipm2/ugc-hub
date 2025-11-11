@@ -42,7 +42,7 @@ const AnalystLoginPage: React.FC = () => {
         }
 
         if (!secretKey.trim()) {
-          setError('Informe a chave secreta fornecida pelo UGC Hub.');
+          setError('Informe a chave secreta fornecida pela Influenciando.');
           return;
         }
 
@@ -109,12 +109,12 @@ const AnalystLoginPage: React.FC = () => {
                   Nome completo
                 </label>
                 <div className="relative">
-                  <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                  <User className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+                    className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
                     placeholder="Seu nome completo"
                     required
                   />
@@ -126,12 +126,12 @@ const AnalystLoginPage: React.FC = () => {
                   Nome da empresa
                 </label>
                 <div className="relative">
-                  <Building className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                  <Building className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
                   <input
                     type="text"
                     value={company}
                     onChange={(e) => setCompany(e.target.value)}
-                    className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+                    className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
                     placeholder="Nome da sua empresa"
                     required
                   />
@@ -140,15 +140,15 @@ const AnalystLoginPage: React.FC = () => {
 
                 <div className="space-y-2">
                   <label className="block text-xs font-semibold uppercase tracking-[0.35em] text-slate-400">
-                    Chave secreta do UGC Hub
+                    Chave secreta Influenciando
                   </label>
                   <div className="relative">
-                    <KeyRound className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                    <KeyRound className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
                     <input
                       type="text"
                       value={secretKey}
                       onChange={(e) => setSecretKey(e.target.value)}
-                      className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+                      className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
                       placeholder="Informe a chave fornecida pelo time"
                       required
                     />
@@ -165,12 +165,12 @@ const AnalystLoginPage: React.FC = () => {
               Email corporativo
             </label>
             <div className="relative">
-              <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+              <Mail className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+                className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
                 placeholder="analista@empresa.com"
                 required
               />
@@ -182,12 +182,12 @@ const AnalystLoginPage: React.FC = () => {
               Senha
             </label>
             <div className="relative">
-              <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+              <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
               <input
                 type={showPassword ? 'text' : 'password'}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+                className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
                 placeholder="••••••••"
                 required
               />
@@ -207,12 +207,12 @@ const AnalystLoginPage: React.FC = () => {
                 Confirmar senha
               </label>
               <div className="relative">
-                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-[#8A7CFF]" />
+                <Lock className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-influenciando-primary" />
                 <input
                   type={showConfirmPassword ? 'text' : 'password'}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
-                  className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-[#6E4FFF]"
+                  className="w-full rounded-2xl border border-white/12 bg-white/5 px-11 py-3 text-sm text-white placeholder:text-slate-400 transition focus:border-transparent focus:outline-none focus:ring-2 focus:ring-influenciando-primary"
                   placeholder="••••••••"
                   required
                 />
@@ -230,7 +230,7 @@ const AnalystLoginPage: React.FC = () => {
           <button
             type="submit"
             disabled={loading}
-            className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#4A5BFF] via-[#6E4FFF] to-[#B249FF] px-6 py-3 text-sm font-semibold text-white shadow-[0_25px_55px_-18px_rgba(74,91,255,0.6)] transition hover:scale-[1.02] hover:shadow-[0_30px_65px_-20px_rgba(74,91,255,0.65)] disabled:opacity-50"
+            className="group inline-flex w-full items-center justify-center gap-2 rounded-full bg-gradient-to-r from-[#00FF41] to-[#00CC34] px-6 py-3 text-sm font-semibold text-black shadow-neon transition hover:scale-[1.02] hover:shadow-neon-lg disabled:opacity-50"
           >
             {loading ? (
               <>
@@ -246,7 +246,7 @@ const AnalystLoginPage: React.FC = () => {
         <div className="text-center text-sm text-slate-300">
           <button
             onClick={() => setIsLogin(!isLogin)}
-            className="font-semibold text-[#9A91FF] transition hover:text-white"
+            className="font-semibold text-[#00FF41] transition hover:text-white"
           >
             {isLogin ? 'Não tem uma conta? Cadastre-se' : 'Já tem uma conta? Faça login'}
           </button>
@@ -255,7 +255,7 @@ const AnalystLoginPage: React.FC = () => {
         <div className="text-center text-xs uppercase tracking-[0.3em] text-slate-400">
           <button
             onClick={() => navigate('/login/creators')}
-            className="font-semibold text-[#9A91FF] transition hover:text-white"
+            className="font-semibold text-[#00FF41] transition hover:text-white"
           >
             Você é creator? Acesse a área dedicada →
           </button>

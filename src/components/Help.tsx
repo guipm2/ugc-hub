@@ -49,7 +49,7 @@ const Help = () => {
             <h3 className="text-lg font-semibold text-gray-900 mb-6">Entre em Contato</h3>
             <div className="space-y-4">
               <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
-                <MessageCircle className="h-5 w-5 text-blue-600" />
+                <MessageCircle className="h-5 w-5 text-[#00FF41]" />
                 <div>
                   <div className="font-medium text-gray-900">Chat ao Vivo</div>
                   <div className="text-sm text-gray-600">Resposta em até 5 minutos</div>
@@ -57,15 +57,15 @@ const Help = () => {
               </div>
               
               <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
-                <Mail className="h-5 w-5 text-green-600" />
+                <Mail className="h-5 w-5 text-[#00FF41]" />
                 <div>
                   <div className="font-medium text-gray-900">Email</div>
-                  <div className="text-sm text-gray-600">ugchub@turbopartners.com.br</div>
+                  <div className="text-sm text-gray-600">contato@influenciando.com</div>
                 </div>
               </div>
               
               <div className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-lg cursor-pointer">
-                <Phone className="h-5 w-5 text-purple-600" />
+                <Phone className="h-5 w-5 text-[#00FF41]" />
                 <div>
                   <div className="font-medium text-gray-900">Telefone</div>
                   <div className="text-sm text-gray-600">(27) 99263-0725</div>

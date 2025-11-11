@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { Edit, Save, Eye, EyeOff, Shield, Lock, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { useTabVisibility } from '../hooks/useTabVisibility';
 import { supabase } from '../lib/supabase';
 import { formatCEP, formatDocument, formatPhone } from '../utils/formatters';
 import AvatarUpload from './common/AvatarUpload';
@@ -103,6 +104,13 @@ const Profile = () => {
     if (!user) return;
 
     try {
+      // Validar sessão antes de buscar
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('⚠️ [PROFILE] Sessão inválida ao tentar carregar perfil');
+        return;
+      }
+
       const { data, error } = await supabase
         .from('profiles')
         .select('*')
@@ -110,7 +118,9 @@ const Profile = () => {
         .single();
 
       if (error) {
-        throw error;
+        console.error('❌ [PROFILE] Erro ao buscar perfil:', error);
+        // NÃO limpa dados existentes quando há erro
+        return;
       }
 
       if (data) {
@@ -204,6 +214,12 @@ const Profile = () => {
     const timeout = setTimeout(() => setStatusMessage(null), 4000);
     return () => clearTimeout(timeout);
   }, [statusMessage]);
+
+  // Recarregar dados do perfil quando a aba voltar a ficar visível
+  useTabVisibility(async () => {
+    console.log('🔄 [PROFILE] Recarregando perfil após aba voltar a ficar visível');
+    await fetchProfile();
+  });
 
   const handleFieldChange = (field: keyof ProfileFormData, value: string | number | null) => {
     setProfileData(prev => ({
@@ -357,7 +373,7 @@ const Profile = () => {
           {!isEditing ? (
             <button
               onClick={() => setIsEditing(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+              className="flex items-center gap-2 px-4 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34]"
             >
               <Edit className="h-4 w-4" />
               Editar Perfil
@@ -545,9 +561,9 @@ const Profile = () => {
                     disabled={!isEditing}
                     className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                       profileData.niches.includes(niche)
-                        ? 'bg-blue-600 text-white'
+                        ? 'bg-[#00FF41] text-black'
                         : 'bg-gray-100 text-gray-700'
-                    } ${!isEditing ? 'cursor-default opacity-90' : 'hover:bg-blue-50'}`}
+                    } ${!isEditing ? 'cursor-default opacity-90' : 'hover:bg-[#00FF41]/10'}`}
                   >
                     {niche}
                   </button>

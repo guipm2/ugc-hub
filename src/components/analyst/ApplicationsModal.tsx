@@ -291,7 +291,7 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
         <div className="overflow-y-auto max-h-[calc(90vh-120px)]">
           {loading ? (
             <div className="flex items-center justify-center h-64">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-600"></div>
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#00FF41]"></div>
             </div>
           ) : errorMessage ? (
             <div className="text-center py-12">
@@ -303,7 +303,7 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
                   setLoading(true);
                   void fetchApplications();
                 }}
-                className="inline-flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors"
+                className="inline-flex items-center gap-2 px-4 py-2 bg-[#00FF41] hover:bg-[#00CC34] text-white rounded-lg transition-colors"
               >
                 Tentar novamente
               </button>
@@ -323,7 +323,7 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
                 >
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center space-x-4">
-                      <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-blue-600 rounded-full flex items-center justify-center text-white text-lg font-bold">
+                      <div className="w-12 h-12 bg-gradient-to-br from-[#00FF41] to-[#00CC34] rounded-full flex items-center justify-center text-white text-lg font-bold">
                         {application.creator.name?.charAt(0) || application.creator.email?.charAt(0).toUpperCase()}
                       </div>
                       <div>
@@ -339,7 +339,7 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => openCreatorProfile(application.creator_id)}
-                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-purple-600 border border-purple-200 rounded-lg hover:bg-purple-50 transition-colors"
+                        className="flex items-center gap-1 px-3 py-1.5 text-xs font-medium text-[#00FF41] border border-[#00FF41]/30 rounded-lg hover:bg-[#00FF41]/10 transition-colors"
                       >
                         <ExternalLink className="h-3.5 w-3.5" />
                         Ver perfil
@@ -363,7 +363,7 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
                           {application.creator.niches.map((niche) => (
                             <span
                               key={niche}
-                              className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs"
+                              className="px-2 py-1 bg-[#00FF41]/10 text-[#00FF41] rounded-full text-xs"
                             >
                               {niche}
                             </span>
@@ -373,7 +373,7 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
                     ) : application.creator.niche ? (
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <span className="font-medium">Nicho:</span>
-                        <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded-full text-xs">
+                        <span className="px-2 py-1 bg-[#00FF41]/10 text-[#00FF41] rounded-full text-xs">
                           {application.creator.niche.charAt(0).toUpperCase() + application.creator.niche.slice(1)}
                         </span>
                       </div>
@@ -400,7 +400,7 @@ const ApplicationsModal: React.FC<ApplicationsModalProps> = ({
                           href={application.creator.website}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="text-purple-600 hover:text-purple-700"
+                          className="text-[#00FF41] hover:text-[#00FF41]"
                         >
                           Ver portfolio
                         </a>

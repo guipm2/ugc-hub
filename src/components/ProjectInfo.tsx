@@ -48,7 +48,7 @@ const ProjectInfo: React.FC<ProjectInfoProps> = ({ project, briefing }) => {
 
         <div className="surface-muted rounded-2xl border border-white/12 p-5 flex flex-col sm:flex-row sm:items-start gap-5">
           <div className="p-3 rounded-2xl bg-white/5 border border-white/10 flex-shrink-0">
-            <Building2 className="h-6 w-6 text-indigo-200" />
+            <Building2 className="h-6 w-6 text-[#00FF41]" />
           </div>
           <div className="flex-1 min-w-0 space-y-2">
             <p className="text-lg font-semibold text-white/95 truncate">{project.company}</p>
@@ -57,7 +57,7 @@ const ProjectInfo: React.FC<ProjectInfoProps> = ({ project, briefing }) => {
               Membro desde {formatDate(project.created_at)}
             </p>
             <p className="text-sm text-gray-300 leading-relaxed">
-              Esta empresa confia na UGC Hub para cocriar campanhas com creators e acelerar lançamentos com autenticidade.
+              Esta empresa utiliza a plataforma para cocriar campanhas com creators e acelerar lançamentos com autenticidade.
             </p>
           </div>
         </div>

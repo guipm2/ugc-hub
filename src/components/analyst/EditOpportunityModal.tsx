@@ -11,8 +11,7 @@ interface Opportunity {
   company: string;
   company_link?: string;
   description: string;
-  budget_min: number;
-  budget_max: number;
+  budget: number;
   location: string;
   content_type: string;
   requirements: string[];
@@ -64,8 +63,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
     title: opportunity.title,
     company_link: opportunity.company_link ?? '',
     description: opportunity.description,
-    budget_min: opportunity.budget_min,
-    budget_max: opportunity.budget_max,
+    budget: opportunity.budget,
     location: opportunity.location,
     content_type: opportunity.content_type,
     requirements: [...(opportunity.requirements || [])],
@@ -100,8 +98,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
           title: formData.title,
           company_link: normalizedLink,
           description: formData.description,
-          budget_min: formData.budget_min,
-          budget_max: formData.budget_max,
+          budget: formData.budget,
           location: formData.location,
           content_type: formData.content_type,
           requirements: formData.requirements,
@@ -175,7 +172,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
               type="text"
               value={formData.title}
               onChange={(e) => setFormData(prev => ({ ...prev, title: e.target.value }))}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
               required
             />
           </div>
@@ -189,7 +186,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
               value={formData.description}
               onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
               rows={4}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent resize-none"
               required
             />
           </div>
@@ -203,7 +200,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
               value={formData.company_link}
               onChange={(e) => setFormData(prev => ({ ...prev, company_link: e.target.value }))}
               placeholder="https://instagram.com/empresa ou https://empresa.com"
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
             />
           </div>
 
@@ -211,30 +208,28 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Valor Mínimo (R$) *
+                Orçamento (R$) *
               </label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
-                value={formData.budget_min}
-                onChange={(e) => setFormData(prev => ({ ...prev, budget_min: Number(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                value={formData.budget}
+                onChange={(e) => setFormData(prev => ({ ...prev, budget: Number(e.target.value) }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                 required
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Valor Máximo (R$) *
+                Localização
               </label>
               <input
-                type="number"
-                min="0"
-                step="0.01"
-                value={formData.budget_max}
-                onChange={(e) => setFormData(prev => ({ ...prev, budget_max: Number(e.target.value) }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
-                required
+                type="text"
+                value={formData.location}
+                onChange={(e) => setFormData(prev => ({ ...prev, location: e.target.value }))}
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
+                placeholder="Remoto, São Paulo, etc."
               />
             </div>
           </div>
@@ -248,7 +243,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
               <select
                 value={formData.content_type}
                 onChange={(e) => setFormData(prev => ({ ...prev, content_type: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                 required
               >
                 <option value="">Selecione o tipo</option>
@@ -266,7 +261,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
                 value={formData.deadline}
                 onChange={(e) => setFormData(prev => ({ ...prev, deadline: e.target.value }))}
                 min={new Date().toISOString().split('T')[0]}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                 required
               />
             </div>
@@ -281,7 +276,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
               <select
                 value={formData.status}
                 onChange={(e) => setFormData(prev => ({ ...prev, status: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                 required
               >
                 <option value="ativo">Ativo</option>
@@ -296,7 +291,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
               <select
                 value={formData.gender}
                 onChange={(e) => setFormData(prev => ({ ...prev, gender: e.target.value }))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                 required
               >
                 <option value="">Selecione o gênero</option>
@@ -322,7 +317,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
                   min="13"
                   max="100"
                   placeholder="Idade mín."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                 />
               </div>
               <div>
@@ -333,7 +328,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
                   min="13"
                   max="100"
                   placeholder="Idade máx."
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                 />
               </div>
             </div>
@@ -355,13 +350,13 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
                 value={newRequirement}
                 onChange={(e) => setNewRequirement(e.target.value)}
                 placeholder="Adicionar requisito..."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                 onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addRequirement())}
               />
               <button
                 type="button"
                 onClick={addRequirement}
-                className="px-3 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                className="px-3 py-2 bg-[#00FF41] text-black rounded-lg hover:bg-[#00CC34] transition-colors"
               >
                 <Plus className="w-4 h-4" />
               </button>
@@ -406,7 +401,7 @@ const EditOpportunityModal: React.FC<EditOpportunityModalProps> = ({
             <button
               type="submit"
               disabled={loading}
-              className="px-6 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="px-6 py-2 bg-[#00FF41] hover:bg-[#00CC34] text-black rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {loading ? 'Salvando...' : 'Salvar Alterações'}
             </button>

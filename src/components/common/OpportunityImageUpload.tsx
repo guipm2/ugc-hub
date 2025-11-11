@@ -124,8 +124,8 @@ const OpportunityImageUpload: React.FC<OpportunityImageUploadProps> = ({
       <div
         className={`
           relative border-2 border-dashed rounded-2xl p-8 transition-all
-          ${dragOver ? 'border-indigo-400 bg-indigo-500/10' : 'border-white/20 bg-white/5'}
-          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-indigo-400/50'}
+          ${dragOver ? 'border-[#00FF41] bg-[#00FF41]/10' : 'border-white/20 bg-white/5'}
+          ${disabled ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer hover:border-[#00FF41]/50'}
         `}
         onDrop={handleDrop}
         onDragOver={handleDragOver}
@@ -144,7 +144,7 @@ const OpportunityImageUpload: React.FC<OpportunityImageUploadProps> = ({
 
         <div className="flex flex-col items-center justify-center gap-3 text-center">
           <div className="p-4 rounded-xl bg-white/5 border border-white/10">
-            <Upload className="h-8 w-8 text-indigo-200" />
+            <Upload className="h-8 w-8 text-gray-300" />
           </div>
           <div>
             <p className="text-sm font-semibold text-white/90">
@@ -154,7 +154,7 @@ const OpportunityImageUpload: React.FC<OpportunityImageUploadProps> = ({
               JPEG, PNG ou WebP • Máx. 5MB por imagem • Até {maxImages} imagens
             </p>
             {remainingSlots < maxImages && (
-              <p className="text-xs text-indigo-200 mt-1">
+              <p className="text-xs text-gray-300 mt-1">
                 {remainingSlots} {remainingSlots === 1 ? 'espaço disponível' : 'espaços disponíveis'}
               </p>
             )}
@@ -181,13 +181,13 @@ const OpportunityImageUpload: React.FC<OpportunityImageUploadProps> = ({
               key={index}
               className="surface-muted border border-white/12 rounded-2xl p-3 flex items-center gap-3"
             >
-              <ImageIcon className="h-4 w-4 text-indigo-200 flex-shrink-0" />
+              <ImageIcon className="h-4 w-4 text-gray-300 flex-shrink-0" />
               <div className="flex-1 min-w-0">
                 <p className="text-xs text-white/90 truncate">{progress.fileName}</p>
                 {progress.status === 'uploading' && (
                   <div className="mt-1.5 h-1 bg-white/10 rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-indigo-400 transition-all duration-300"
+                      className="h-full bg-[#00FF41] transition-all duration-300"
                       style={{ width: `${progress.progress}%` }}
                     />
                   </div>
@@ -201,7 +201,7 @@ const OpportunityImageUpload: React.FC<OpportunityImageUploadProps> = ({
                   <span className="text-xs text-red-200">✗</span>
                 )}
                 {progress.status === 'uploading' && (
-                  <span className="text-xs text-indigo-200">{progress.progress}%</span>
+                  <span className="text-xs text-gray-300">{progress.progress}%</span>
                 )}
               </div>
             </div>
@@ -232,7 +232,7 @@ const OpportunityImageUpload: React.FC<OpportunityImageUploadProps> = ({
                 className={`
                   relative group aspect-square rounded-2xl overflow-hidden
                   border-2 transition-all
-                  ${draggedIndex === index ? 'border-indigo-400 opacity-50' : 'border-white/12'}
+                  ${draggedIndex === index ? 'border-[#00FF41] opacity-50' : 'border-white/12'}
                   ${disabled ? 'cursor-default' : 'cursor-move'}
                 `}
               >

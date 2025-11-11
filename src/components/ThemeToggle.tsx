@@ -23,7 +23,7 @@ const ThemeToggle = () => {
         }`}
       >
         {isDark ? (
-          <Moon className="h-4 w-4 text-indigo-200" />
+          <Moon className="h-4 w-4 text-[#00FF41]" />
         ) : (
           <Sun className="h-4 w-4 text-amber-400" />
         )}
@@ -37,7 +37,7 @@ const ThemeToggle = () => {
         />
         <Moon
           className={`h-4 w-4 transition-opacity duration-300 ${
-            isDark ? 'opacity-100 text-indigo-300' : 'opacity-0'
+            isDark ? 'opacity-100 text-[#00FF41]' : 'opacity-0'
           }`}
         />
       </div>

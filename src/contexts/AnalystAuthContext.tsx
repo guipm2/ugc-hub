@@ -348,13 +348,13 @@ export const AnalystAuthProvider: React.FC<{ children: React.ReactNode }> = ({ c
 
       const trimmedSecret = secretKey.trim();
       if (!trimmedSecret) {
-        return { error: 'Insira a chave secreta fornecida pelo time do UGC Hub.' };
+        return { error: 'Insira a chave secreta fornecida pela administração.' };
       }
 
-      const expectedSecret = (import.meta.env.VITE_ANALYST_SIGNUP_SECRET ?? 'ugc-turbo').trim();
+      const expectedSecret = (import.meta.env.VITE_ANALYST_SIGNUP_SECRET ?? 'default-secret-change-me').trim();
 
       if (trimmedSecret !== expectedSecret) {
-        return { error: 'Chave secreta inválida. Verifique com o time do UGC Hub.' };
+        return { error: 'Chave secreta inválida. Verifique com a administração.' };
       }
 
       // Cria o usuário com role analyst no user_metadata

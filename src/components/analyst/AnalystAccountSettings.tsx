@@ -182,7 +182,7 @@ const AnalystAccountSettings = () => {
                       name="name"
                       value={profileData.name}
                       onChange={handleInputChange}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                       placeholder="Seu nome completo"
                     />
                   </div>
@@ -199,7 +199,7 @@ const AnalystAccountSettings = () => {
                       name="email"
                       value={profileData.email}
                       onChange={handleInputChange}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                       placeholder="seu@email.com"
                     />
                   </div>
@@ -216,7 +216,7 @@ const AnalystAccountSettings = () => {
                       name="company"
                       value={profileData.company}
                       onChange={handleInputChange}
-                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                       placeholder="Nome da empresa"
                     />
                   </div>
@@ -227,7 +227,7 @@ const AnalystAccountSettings = () => {
             <div className="pt-6 border-t border-gray-200">
               <button
                 onClick={handleSaveProfile}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                className="bg-[#00FF41] hover:bg-[#00CC34] text-black px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
               >
                 <Save className="h-4 w-4" />
                 Salvar Alterações
@@ -253,7 +253,7 @@ const AnalystAccountSettings = () => {
                       name="currentPassword"
                       value={profileData.currentPassword}
                       onChange={handleInputChange}
-                      className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                       placeholder="Sua senha atual"
                     />
                     <button
@@ -277,7 +277,7 @@ const AnalystAccountSettings = () => {
                       name="newPassword"
                       value={profileData.newPassword}
                       onChange={handleInputChange}
-                      className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                       placeholder="Nova senha (mínimo 6 caracteres)"
                     />
                     <button
@@ -301,7 +301,7 @@ const AnalystAccountSettings = () => {
                       name="confirmPassword"
                       value={profileData.confirmPassword}
                       onChange={handleInputChange}
-                      className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                      className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#00FF41] focus:border-transparent"
                       placeholder="Confirme a nova senha"
                     />
                     <button
@@ -319,7 +319,7 @@ const AnalystAccountSettings = () => {
             <div className="pt-6 border-t border-gray-200">
               <button
                 onClick={handleChangePassword}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                className="bg-[#00FF41] hover:bg-[#00CC34] text-black px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
               >
                 <Save className="h-4 w-4" />
                 Alterar Senha
@@ -368,7 +368,7 @@ const AnalystAccountSettings = () => {
                         onChange={() => handleNotificationChange(key)}
                         className="sr-only peer"
                       />
-                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-purple-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-purple-600"></div>
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-[#00FF41]/30 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-[#00FF41]"></div>
                     </label>
                   </div>
                 ))}
@@ -378,7 +378,7 @@ const AnalystAccountSettings = () => {
             <div className="pt-6 border-t border-gray-200">
               <button
                 onClick={handleSaveNotifications}
-                className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                className="bg-[#00FF41] hover:bg-[#00CC34] text-black px-6 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
               >
                 <Save className="h-4 w-4" />
                 Salvar Preferências
@@ -394,14 +394,14 @@ const AnalystAccountSettings = () => {
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Gerenciar Dados</h3>
               
               <div className="space-y-4">
-                <div className="p-4 bg-purple-50 rounded-lg border border-purple-200">
-                  <h4 className="font-medium text-purple-900 mb-2">Exportar Dados</h4>
-                  <p className="text-sm text-purple-800 mb-3">
+                <div className="p-4 bg-[#00FF41]/10 rounded-lg border border-[#00FF41]/30">
+                  <h4 className="font-medium text-[#00FF41] mb-2">Exportar Dados</h4>
+                  <p className="text-sm text-gray-700 mb-3">
                     Baixe uma cópia de todos os seus dados da plataforma
                   </p>
                   <button
                     onClick={handleExportData}
-                    className="bg-purple-600 hover:bg-purple-700 text-white px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
+                    className="bg-[#00FF41] hover:bg-[#00CC34] text-black px-4 py-2 rounded-lg font-medium transition-colors flex items-center gap-2"
                   >
                     <Download className="h-4 w-4" />
                     Exportar Dados
@@ -453,11 +453,11 @@ const AnalystAccountSettings = () => {
                       onClick={() => setActiveTab(tab.id)}
                       className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-left transition-colors ${
                         activeTab === tab.id
-                          ? 'bg-purple-50 text-purple-600 border-r-2 border-purple-600'
+                          ? 'bg-[#00FF41]/10 text-[#00FF41] border-r-2 border-[#00FF41]'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                     >
-                      <Icon className={`h-5 w-5 ${activeTab === tab.id ? 'text-purple-600' : 'text-gray-400'}`} />
+                      <Icon className={`h-5 w-5 ${activeTab === tab.id ? 'text-[#00FF41]' : 'text-gray-400'}`} />
                       {tab.label}
                     </button>
                   );

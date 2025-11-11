@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ArrowLeft, Folder, Calendar, Upload, MessageCircle, CheckCircle, Clock, AlertCircle, FileText, X, Grid3X3, List, Eye, EyeOff } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
+import { useTabVisibility } from '../hooks/useTabVisibility';
 import ProjectInfo from './ProjectInfo';
 import { router } from '../utils/router';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
@@ -171,7 +172,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
   const [projects, setProjects] = useState<Project[]>([]);
   const [selectedProject, setSelectedProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(true);
-  const [fetching, setFetching] = useState(false);
+  const fetchingRef = useRef(false); // ✅ Usar ref em vez de state para evitar re-renders
   const [showUploadModal, setShowUploadModal] = useState<string | null>(null);
   const [uploadFiles, setUploadFiles] = useState<FileList | null>(null);
   const [uploadingDeliverableId, setUploadingDeliverableId] = useState<string | null>(null);
@@ -219,13 +220,13 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
   }, [viewMode]);
 
   const fetchProjects = useCallback(async ({ silent = false, force = false }: { silent?: boolean; force?: boolean } = {}) => {
-    if (!user || fetching) return;
+    if (!user || fetchingRef.current) return; // ✅ Usar ref
 
     if (!silent) {
       setLoading(true);
     }
 
-    setFetching(true);
+    fetchingRef.current = true; // ✅ Marcar como executando
     try {
       if (!force && typeof window !== 'undefined') {
         const cached = window.sessionStorage.getItem('creators-projects:cache');
@@ -262,8 +263,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
             description,
             deadline,
             content_type,
-            budget_min,
-            budget_max,
+            budget,
             created_by,
             company_link,
             briefing,
@@ -275,6 +275,8 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
 
       if (error) {
         console.error('❌ [PROJECTS] Erro ao buscar projetos:', error);
+        setLoading(false);
+        fetchingRef.current = false; // ✅ Liberar flag
         return;
       }
 
@@ -343,7 +345,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
           deadline: opportunity.deadline,
           status: getProjectStatus(opportunity.deadline, allDeliverables),
           content_type: opportunity.content_type,
-          budget: `R$ ${opportunity.budget_min} - R$ ${opportunity.budget_max}`,
+          budget: `R$ ${opportunity.budget?.toFixed(2) || '0.00'}`,
           conversation_id: conversation?.id || '',
           deliverables: allDeliverables,
           created_at: new Date().toISOString(),
@@ -372,14 +374,14 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
       console.error('❌ [PROJECTS] Erro geral ao buscar projetos:', err);
     } finally {
       setLoading(false);
-      setFetching(false);
+      fetchingRef.current = false; // ✅ Sempre liberar flag
     }
-  }, [user, fetching]);
+  }, [user]);
 
   useEffect(() => {
     let mounted = true;
     
-    if (user && !fetching) {
+    if (user) {
       fetchProjects({ force: true }).then(() => {
         if (!mounted) return;
         // Execução completa
@@ -389,9 +391,31 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
     return () => {
       mounted = false;
     };
-  }, [user, fetchProjects, fetching]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user]); // Intencionalmente não incluindo fetchProjects para evitar loop infinito
 
   useAutoRefresh(() => fetchProjects({ silent: true }), 25000, Boolean(user));
+
+  // Recarregar quando a aba voltar a ficar visível
+  useTabVisibility(async () => {
+    if (!user) return;
+    
+    console.log('🔄 [PROJECTS] Recarregando projetos após aba voltar a ficar visível');
+    
+    // Validar sessão antes de recarregar
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('⚠️ [PROJECTS] Sessão inválida ao tentar recarregar');
+        return;
+      }
+    } catch (err) {
+      console.error('❌ [PROJECTS] Erro ao validar sessão:', err);
+      return;
+    }
+    
+    await fetchProjects({ force: true });
+  });
 
   const getProjectStatus = (deadline: string, deliverables?: Deliverable[]): 'em_andamento' | 'entregue' | 'aprovado' | 'atrasado' => {
     const deadlineDate = new Date(deadline);
@@ -675,7 +699,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                 {deliveredCount}/{totalDeliverables}
               </p>
               {awaitingFeedback > 0 && (
-                <p className="text-xs text-indigo-200 mt-1">{awaitingFeedback} aguardando avaliação</p>
+                <p className="text-xs text-[#00FF41] mt-1">{awaitingFeedback} aguardando avaliação</p>
               )}
             </div>
           </div>
@@ -721,7 +745,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                 return (
                   <div
                     key={deliverable.id}
-                    className="surface-muted rounded-2xl border border-white/12 p-5 sm:p-6 transition-all hover:border-white/25 hover:shadow-[0_18px_45px_-28px_rgba(12,18,60,0.85)]"
+                    className="surface-muted rounded-2xl border border-white/12 p-5 sm:p-6 transition-all hover:border-[#00FF41]/30 hover:shadow-[0_18px_45px_-28px_rgba(0,0,0,0.9)]"
                   >
                     <div className="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4">
                       <div className="space-y-2">
@@ -761,7 +785,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                               className="surface-muted border border-white/10 rounded-xl p-3 flex items-center gap-3"
                             >
                               <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                                <FileText className="h-4 w-4 text-indigo-200" />
+                                <FileText className="h-4 w-4 text-[#00FF41]" />
                               </div>
                               <div className="flex-1 min-w-0">
                                 <p className="text-sm font-medium text-white/90 truncate">{file.name}</p>
@@ -814,7 +838,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
           ) : (
             <div className="surface-muted rounded-2xl border border-dashed border-white/15 p-10 text-center">
               <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full border border-white/15 bg-white/5">
-                <Clock className="h-6 w-6 text-indigo-200" />
+                <Clock className="h-6 w-6 text-[#00FF41]" />
               </div>
               <h5 className="text-lg font-semibold text-white/90">Nenhuma entrega definida</h5>
               <p className="mt-2 text-sm text-gray-400 max-w-md mx-auto">
@@ -951,7 +975,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
       {filteredProjects.length === 0 ? (
         <div className="glass-card p-12 flex flex-col items-center text-center gap-4">
           <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/12 bg-white/5">
-            <Folder className="h-8 w-8 text-indigo-200" />
+            <Folder className="h-8 w-8 text-[#00FF41]" />
           </div>
           <h3 className="text-lg font-semibold text-white/90">Nenhum projeto encontrado</h3>
           <p className="text-sm text-gray-400 max-w-md">
@@ -996,7 +1020,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div className="surface-muted rounded-2xl border border-white/10 p-4 flex items-center gap-3">
                       <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                        <Calendar className="h-4 w-4 text-indigo-200" />
+                        <Calendar className="h-4 w-4 text-[#00FF41]" />
                       </div>
                       <div>
                         <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Prazo</p>
@@ -1005,7 +1029,7 @@ const Projects: React.FC<ProjectsProps> = ({ onOpenConversation, selectedProject
                     </div>
                     <div className="surface-muted rounded-2xl border border-white/10 p-4 flex items-center gap-3">
                       <div className="p-2 rounded-xl bg-white/5 border border-white/10">
-                        <FileText className="h-4 w-4 text-indigo-200" />
+                        <FileText className="h-4 w-4 text-[#00FF41]" />
                       </div>
                       <div>
                         <p className="text-xs uppercase tracking-[0.2em] text-gray-500">Conteúdo</p>

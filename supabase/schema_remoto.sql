@@ -3265,8 +3265,7 @@ CREATE TABLE IF NOT EXISTS "public"."opportunities" (
     "title" "text" NOT NULL,
     "company" "text" NOT NULL,
     "description" "text" NOT NULL,
-    "budget_min" integer NOT NULL,
-    "budget_max" integer NOT NULL,
+    "budget" numeric(10,2) DEFAULT 0 NOT NULL,
     "location" "text" DEFAULT 'Remoto'::"text" NOT NULL,
     "content_type" "text" NOT NULL,
     "requirements" "jsonb" DEFAULT '[]'::"jsonb",
@@ -3284,6 +3283,9 @@ CREATE TABLE IF NOT EXISTS "public"."opportunities" (
 
 
 ALTER TABLE "public"."opportunities" OWNER TO "postgres";
+
+
+COMMENT ON COLUMN "public"."opportunities"."budget" IS 'Orçamento total do projeto por criador';
 
 
 COMMENT ON COLUMN "public"."opportunities"."company_link" IS 'Link para o site ou perfil da empresa';

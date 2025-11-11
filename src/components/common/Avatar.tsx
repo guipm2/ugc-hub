@@ -85,7 +85,7 @@ const Avatar: React.FC<AvatarProps> = ({
     relative inline-flex items-center justify-center
     rounded-full overflow-hidden
     border-2 border-white/10
-    bg-gradient-to-br from-indigo-500/20 via-purple-500/20 to-pink-500/20
+    bg-gradient-to-br from-[#00FF41]/20 via-[#00CC34]/20 to-[#00FF41]/20
     ${sizeClasses[size]}
     ${onClick ? 'cursor-pointer hover:border-white/30 transition-all' : ''}
     ${className}

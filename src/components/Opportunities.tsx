@@ -17,6 +17,7 @@ import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
 import { useRouter } from '../hooks/useRouter';
 import { useAutoRefresh } from '../hooks/useAutoRefresh';
+import { useTabVisibility } from '../hooks/useTabVisibility';
 import { normalizeCompanyLink } from '../utils/formatters';
 import ModalPortal from './common/ModalPortal';
 
@@ -32,8 +33,7 @@ interface DbOpportunity {
   company: string;
   company_link?: string | null;
   location?: string | null;
-  budget_min?: number | null;
-  budget_max?: number | null;
+  budget?: number | null;
   deadline?: string | null;
   description?: string | null;
   requirements?: string[] | null;
@@ -258,7 +258,10 @@ const Opportunities: React.FC = () => {
 
         if (opportunitiesError) {
           console.error('Erro ao buscar oportunidades:', opportunitiesError);
-          setOpportunities([]);
+          // NÃO limpa dados existentes quando há erro
+          if (!silent) {
+            setLoading(false);
+          }
           return;
         }
 
@@ -288,7 +291,7 @@ const Opportunities: React.FC = () => {
             companyLogo: DEFAULT_LOGO,
             companyLink: normalizeCompanyLink(opp.company_link ?? undefined),
             location: opp.location || 'Remoto',
-            budget: formatBudgetRange(opp.budget_min, opp.budget_max),
+            budget: opp.budget ? `R$ ${opp.budget.toFixed(2)}` : 'A combinar',
             deadlineLabel,
             deadlineDate,
             description: opp.description ?? 'Descrição não informada.',
@@ -334,6 +337,25 @@ const Opportunities: React.FC = () => {
   }, [fetchOpportunities]);
 
   useAutoRefresh(() => fetchOpportunities({ silent: true }), 20000, true);
+
+  // Recarregar quando a aba voltar a ficar visível
+  useTabVisibility(async () => {
+    console.log('🔄 [OPPORTUNITIES] Recarregando oportunidades após aba voltar a ficar visível');
+    
+    // Validar sessão antes de recarregar
+    try {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.warn('⚠️ [OPPORTUNITIES] Sessão inválida ao tentar recarregar');
+        return;
+      }
+    } catch (err) {
+      console.error('❌ [OPPORTUNITIES] Erro ao validar sessão:', err);
+      return;
+    }
+    
+    await fetchOpportunities({ force: true });
+  });
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -592,7 +614,7 @@ const Opportunities: React.FC = () => {
               </div>
               <div className="surface-muted rounded-xl border border-white/10 p-3 flex items-center gap-2">
                 <Clock className="h-4 w-4 text-amber-200" />
-                <span className={opportunity.isClosed ? 'text-gray-400' : 'text-rose-200'}>
+                <span className={opportunity.isClosed ? 'text-gray-400' : 'text-red-200'}>
                   {opportunity.deadlineLabel}
                 </span>
               </div>
@@ -601,7 +623,7 @@ const Opportunities: React.FC = () => {
                 <span>{opportunity.location}</span>
               </div>
               <div className="surface-muted rounded-xl border border-white/10 p-3 flex items-center gap-2">
-                <Users className="h-4 w-4 text-indigo-200" />
+                <Users className="h-4 w-4 text-[#00FF41]" />
                 <span>{opportunity.candidates} candidatos</span>
               </div>
             </div>
@@ -691,7 +713,7 @@ const Opportunities: React.FC = () => {
               title={isSaved ? 'Remover dos favoritos' : 'Salvar para revisar depois'}
               className={`btn-ghost-glass text-xs transition-colors ${
                 isSaved
-                  ? 'border-indigo-400/60 bg-indigo-500/20 text-indigo-100 hover:bg-indigo-500/25'
+                  ? 'border-[#00FF41]/60 bg-[#00FF41]/20 text-[#00FF41] hover:bg-[#00FF41]/25'
                   : ''
               }`}
             >
@@ -717,10 +739,6 @@ const Opportunities: React.FC = () => {
                   {filteredOpportunities.length} de {opportunities.length} oportunidades disponíveis
                 </p>
               </div>
-            </div>
-            <div className="glass-chip chip-info text-xs">
-              <Clock className="h-3.5 w-3.5" />
-              Atualização a cada 20 segundos
             </div>
           </div>
 
@@ -760,7 +778,7 @@ const Opportunities: React.FC = () => {
         {filteredOpportunities.length === 0 ? (
           <div className="glass-card p-12 flex flex-col items-center text-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-full border border-white/12 bg-white/5">
-              <Search className="h-8 w-8 text-indigo-200" />
+              <Search className="h-8 w-8 text-[#00FF41]" />
             </div>
             <h3 className="text-lg font-semibold text-white/90">
               {opportunities.length === 0 ? 'Nenhuma oportunidade disponível' : 'Nenhuma oportunidade encontrada'}
@@ -783,7 +801,7 @@ const Opportunities: React.FC = () => {
           <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black/70 backdrop-blur-md px-4">
             <div className="glass-card w-full max-w-md border px-6 py-7 space-y-6">
               <div className="flex items-start gap-3">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-rose-400/40 bg-rose-500/20 text-rose-100">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl border border-red-400/40 bg-red-500/20 text-red-100">
                   <AlertTriangle className="h-5 w-5" />
                 </div>
                 <div>
@@ -801,7 +819,7 @@ const Opportunities: React.FC = () => {
               </p>
 
               {cancelError && (
-                <div className="rounded-xl border border-rose-400/40 bg-rose-500/10 px-4 py-3 text-sm text-rose-100">
+                <div className="rounded-xl border border-red-400/40 bg-red-500/10 px-4 py-3 text-sm text-red-100">
                   {cancelError}
                 </div>
               )}
@@ -817,7 +835,7 @@ const Opportunities: React.FC = () => {
                 <button
                   onClick={handleCancelApplication}
                   disabled={isCancellationInProgress}
-                  className="btn-ghost-glass px-4 py-2 border border-rose-400/60 bg-rose-500/20 text-rose-100 hover:bg-rose-500/30 disabled:cursor-not-allowed disabled:opacity-60"
+                  className="btn-ghost-glass px-4 py-2 border border-red-400/60 bg-red-500/20 text-red-100 hover:bg-red-500/30 disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {isCancellationInProgress ? (
                     <span className="flex items-center gap-2">
